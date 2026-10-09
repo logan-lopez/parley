@@ -1,0 +1,31 @@
+{
+  "name": "@parley/desktop",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vue-tsc --noEmit && vite build",
+    "typecheck": "vue-tsc --noEmit",
+    "preview": "vite preview",
+    "tauri": "tauri"
+  },
+  "dependencies": {
+    "@jsonforms/core": "3.8.0",
+    "@jsonforms/vue": "3.8.0",
+    "@jsonforms/vue-vanilla": "3.8.0",
+    "@parley/protocol": "workspace:*",
+    "@tauri-apps/api": "^2.12.2",
+    "@tauri-apps/plugin-dialog": "^2.8.1",
+    "@tauri-apps/plugin-notification": "^2.5.1",
+    "vue": "^3.5.43"
+  },
+  "devDependencies": {
+    "@tauri-apps/cli": "^2.12.1",
+    "@types/node": "^24.19.2",
+    "@vitejs/plugin-vue": "^6.0.9",
+    "typescript": "~6.0.3",
+    "vite": "^8.3.4",
+    "vue-tsc": "^3.3.12"
+  }
+}

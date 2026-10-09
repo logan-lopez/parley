@@ -1,1 +1,10 @@
 .mcp.json
+
+.inn
+
+node_modules
+dist
+*.log
+.DS_Store
+.vite
+*.tsbuildinfo

@@ -1,0 +1,15 @@
+{
+  "name": "parley",
+  "private": true,
+  "type": "module",
+  "packageManager": "pnpm@10.33.2",
+  "engines": {
+    "node": ">=24"
+  },
+  "scripts": {
+    "app": "pnpm --filter @parley/desktop tauri dev",
+    "server": "pnpm --filter @parley/server dev",
+    "build": "pnpm -r build",
+    "typecheck": "pnpm -r typecheck"
+  }
+}
