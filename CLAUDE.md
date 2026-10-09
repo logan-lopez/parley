@@ -3,6 +3,15 @@
 An MCP server for model → user questions, rendered as forms in a floating desktop app. Design doc
 lives in Obsidian: `Development/Projects/Parley/Project Doc.md`.
 
+The project doc is the source of truth for decisions and scope. When a decision is made or changed
+(architecture, tool surface, scope moving between MVP and v2), update the doc in the same session
+with the Obsidian MCP tools. Edit the relevant section. Don't append a changelog, and don't rewrite
+sections that are unaffected. When a decision replaces an earlier lean, keep a one-line *Was:* note
+beside it so the reasoning trail survives. Implementation details belong here or in code, not in
+the doc.
+
+MVP handoff briefs are in `docs/briefs/`. Start with `README.md`.
+
 ## Layout
 
 pnpm workspace, Node 24.
@@ -46,8 +55,8 @@ From the root:
 
 ## Open / deferred
 
-- Server ↔ app transport (localhost WebSocket vs unix socket): undecided. Stubs are in
-  `apps/server/src/app-client.ts` and `src-tauri/src/hub.rs`.
+- Server ↔ app transport: **decided** as a unix socket with NDJSON (see `docs/briefs/`), but not
+  built yet. The stubs are still in `apps/server/src/app-client.ts` and `src-tauri/src/hub.rs`.
 - `tauri-nspanel` (non-activating macOS panel): deferred past the MVP.
 - AeroSpace tiles new windows. The app needs a float rule for `com.loganlopez.parley`, set in
   dotfiles.
