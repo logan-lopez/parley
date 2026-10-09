@@ -1,0 +1,31 @@
+{
+  "title": "Error handling in the API client",
+  "questions": [
+    {
+      "header": "Errors",
+      "question": "How should `fetchUser` report failures to its callers?",
+      "options": [
+        {
+          "label": "Result type (Recommended)",
+          "description": "Return a discriminated union. Callers must handle both branches.",
+          "preview": "```ts\ntype Result<T> =\n  | { ok: true; value: T }\n  | { ok: false; error: ApiError }\n\nconst res = await fetchUser(id)\nif (!res.ok) return showError(res.error)\nrender(res.value)\n```\n\nNo `try`/`catch` at call sites. TypeScript flags an unhandled error branch."
+        },
+        {
+          "label": "Throw",
+          "description": "Throw an `ApiError`. Matches what `fetch` callers expect.",
+          "preview": "```ts\ntry {\n  render(await fetchUser(id))\n} catch (e) {\n  if (e instanceof ApiError) showError(e)\n  else throw e\n}\n```\n\nShortest happy path, but nothing forces callers to catch."
+        },
+        {
+          "label": "Callback",
+          "description": "Node-style `(err, value)` callbacks.",
+          "preview": "```ts\nfetchUser(id, (err, user) => {\n  if (err) return showError(err)\n  render(user)\n})\n```\n\nOnly worth it if you need to support the old plugin API."
+        },
+        {
+          "label": "Null on failure",
+          "description": "Return `null` and log the error.",
+          "preview": "```ts\nconst user = await fetchUser(id)\nif (!user) return\nrender(user)\n```\n\nSimplest, but callers can't tell *not found* from *network down*."
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,16 @@
+{
+  "title": "Cleanup before the 2.0 release",
+  "questions": [
+    {
+      "header": "Cleanup",
+      "question": "I found three groups of things that look unused. Deleting them is **hard to reverse** once the release is tagged, so I'd like a decision first.\n\n### 1. Legacy exporters\n\n`src/export/csv-v1.ts` and `src/export/xml.ts` have no imports anywhere in the repo. The last commit touching them is from 2023. The changelog says CSV v1 was deprecated in 1.4.\n\n### 2. Feature flags\n\nThese flags are `true` everywhere and have been for over a year:\n\n- `newCheckout`\n- `fastSearch`\n- `inlineEdit`\n\nRemoving them means deleting the `false` branches, about 600 lines across 11 files.\n\n### 3. Scripts\n\n| Script | Last run | Referenced by |\n| --- | --- | --- |\n| `scripts/seed-old.sh` | never in CI | nothing |\n| `scripts/migrate-2022.ts` | 2022-11 | `docs/ops.md` |\n\nThe migration script is still linked from the [ops runbook](https://example.com/runbook), so deleting it would leave a dead link.\n\n```sh\n# what I'd run\ngit rm src/export/csv-v1.ts src/export/xml.ts scripts/seed-old.sh\n```\n\nWhat should I remove?",
+      "multiSelect": true,
+      "options": [
+        { "label": "Exporters (Recommended)", "description": "Delete both unused exporters." },
+        { "label": "Feature flags", "description": "Inline the three flags and delete the dead branches." },
+        { "label": "Scripts", "description": "Delete both scripts and fix the runbook link." },
+        { "label": "Nothing yet", "description": "Leave everything; I'll list it in the release notes instead." }
+      ]
+    }
+  ]
+}

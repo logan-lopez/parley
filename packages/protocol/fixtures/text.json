@@ -1,0 +1,17 @@
+{
+  "questions": [
+    {
+      "header": "Name",
+      "question": "What should the new package be called?",
+      "type": "text",
+      "placeholder": "e.g. @parley/forms"
+    },
+    {
+      "header": "Notes",
+      "question": "Anything I should know before I start? Constraints, things to avoid, people to check with.",
+      "type": "text",
+      "multiline": true,
+      "required": false
+    }
+  ]
+}

@@ -19,7 +19,9 @@ pnpm workspace, Node 24.
 - `apps/server`: the MCP server (stdio). Thin: validates the form spec, relays it to the app.
 - `apps/desktop`: Tauri 2 shell (`src-tauri/`) + Vue 3 webview (`src/`).
 - `packages/protocol`: the form spec and server ↔ app wire messages. Source-only, so consumers import
-  the `.ts` directly, with no build step.
+  the `.ts` directly, with no build step. `@parley/protocol/ask` is a separate entry (the `ask`
+  tool's Zod schema, `compileQuestions`, `shapeAnswer`), so the app bundle doesn't pull in Zod.
+  Shared question fixtures live in `packages/protocol/fixtures/`.
 
 ## Commands
 
@@ -32,10 +34,20 @@ From the root:
   client config points at (`node .../dist/index.mjs`). `.mcp.json` at the root registers it for
   Claude Code in this repo. Needs Node 24: tsdown loads its `.ts` config through native type
   stripping, and Node 22.17 fails with "Failed to import module unrun".
-- `pnpm --filter @parley/server fake-ask <form.json> [--timeout <s>]`: acts as one session without
-  an MCP client. It connects to the hub, sends a `FormSpec` file (sample:
-  `apps/server/fixtures/sample.json`), and prints the outcome. Ctrl-C kills it without a cancel,
-  which exercises the disconnect path.
+- `pnpm --filter @parley/protocol test`: vitest for the compiler and answer shaper.
+- `pnpm --filter @parley/server fake-ask <file.json | fixture> [--timeout <s>]`: acts as one session
+  without an MCP client. It connects to the hub, sends the form, and prints the outcome. Takes `ask`
+  tool input (a bare name like `choice` resolves to `packages/protocol/fixtures/choice.json`), which
+  goes through the tool's validation, compiler and shaper, or a raw `FormSpec` (sample:
+  `apps/server/fixtures/sample.json`). Ctrl-C kills it without a cancel, which exercises the
+  disconnect path.
+- `pnpm --filter @parley/server fake-hub <socket> [--log f.jsonl] [--reply <policy>]...`: stands in
+  for the app on a socket and answers on a script (`first`, `second`, `other:<text>`, `skip`,
+  `none`). Pair with `PARLEY_SOCKET` to test how models use the tool with nobody at the keyboard.
+  macOS caps socket paths at 104 bytes, so put the socket under `$TMPDIR`, not a deep scratch dir.
+- Gallery: `pnpm --filter @parley/desktop dev`, then `http://localhost:1420/?gallery` (dev only).
+  Renders every fixture through `compileQuestions` and the real card without the hub; submitting
+  shows the `shapeAnswer` output. `&fixture=<name>` picks one.
 
 ## Pinned choices
 
@@ -68,7 +80,17 @@ From the root:
 - Keep the Rust side small: tray, global hotkey, window management, socket hub. Everything else
   belongs in the webview.
 - Global hotkey is `Cmd+Ctrl+P` (`src-tauri/src/shortcut.rs`). Check `~/.config/keymap/keymap.md`
-  before changing it.
+  before changing it. In-window keys live in `src/card/AskCard.vue`. Renderers talk to the card only
+  through the DOM contract in `src/forms/keyboard.ts`. Cmd+0 belongs to AeroSpace, so page zoom
+  (`src/zoom.ts`, Cmd+= / Cmd+-) has no reset key.
+- Renderers import `src/platform.ts` (`pickPaths`, `openExternal`), never `@tauri-apps/*`, so they
+  can run in an MCP Apps iframe later. Outside Tauri it falls back to browser APIs.
+- CSP: `tauri dev` on macOS loads the Vite server directly, so the CSP in `tauri.conf.json` only
+  applies to bundled assets. `vite.config.ts` serves the same policy as a header in dev; keep the two
+  in sync. `script-src` needs `'unsafe-eval'` because AJV (JSON Forms validation) compiles
+  validators with `new Function`; without it no card renders. To test the real CSP, build with
+  `pnpm tauri build --debug --no-bundle` and run `src-tauri/target/debug/parley` directly (no
+  `.app`, so `open -b` won't find it).
 
 ## Open / deferred
 
@@ -93,3 +115,16 @@ Checked against Claude Code 2.1.296 (2026-10-09), in the docs and by logging the
   task id instead of blocking. Brief 2's instructions and testing need to account for that.
 - Esc during a call sends `notifications/cancelled`. `ctx.mcpReq.signal` aborts, and the card is
   withdrawn as `cancelled`.
+- Auto-backgrounding was confirmed live: the call shows as an "MCP Task", the card keeps waiting, and
+  the model resumes with the answer when it arrives. Print mode (`claude -p`) doesn't background; the
+  call blocks until it ends.
+- When a tool declares an `outputSchema`, Claude Code shows the model only `structuredContent` (as
+  JSON) and drops the text content. That's why the structured result carries `message`, the same
+  text. Codex shows both.
+- MCP tools are deferred behind ToolSearch by default. `ask` sets `_meta["anthropic/alwaysLoad"]:
+  true` (2.1.285+), and in trials that's what got the model calling it unprompted. Server
+  instructions always load, capped at 2,048 characters.
+- `"permissions": { "deny": ["AskUserQuestion"] }` in a project's `.claude/settings.local.json`
+  hides the built-in in interactive sessions (confirmed live). `claude -p` doesn't offer
+  `AskUserQuestion` at all, so print mode can't show that. Model trials ran in print mode against `fake-hub`, with `--setting-sources project,local
+  --strict-mcp-config --no-session-persistence`. `--bare` and a scratch `HOME` both break OAuth.

@@ -1,18 +1,37 @@
 import { createApp } from 'vue'
-import { getCurrentWindow } from '@tauri-apps/api/window'
-import '@jsonforms/vue-vanilla/vanilla.css'
-import App from './App.vue'
-import { startHub } from './hub/client'
-import { hubHandlers } from './asks/store'
-import { initNotifications } from './asks/notifications'
+import './styles.css'
+import { initZoom } from './zoom'
 
-createApp(App).mount('#app')
+// The webview never navigates; links in model text open through the platform adapter.
+document.addEventListener('click', (event) => {
+  if ((event.target as Element | null)?.closest('a[href]')) event.preventDefault()
+}, { capture: true })
 
-// Esc hides the window; it doesn't dismiss the ask.
-window.addEventListener('keydown', (event) => {
-  if (event.key === 'Escape') void getCurrentWindow().hide()
-})
+if (import.meta.env.DEV && new URLSearchParams(location.search).has('gallery')) {
+  const { default: Gallery } = await import('./gallery/Gallery.vue')
+  createApp(Gallery).mount('#app')
+} else {
+  await startApp()
+}
 
-void initNotifications()
-  .catch((error) => console.warn('notifications unavailable:', error))
-  .then(() => startHub(hubHandlers))
+async function startApp() {
+  const [{ default: App }, { getCurrentWindow }, { startHub }, { hubHandlers }, { initNotifications }] = await Promise.all([
+    import('./App.vue'),
+    import('@tauri-apps/api/window'),
+    import('./hub/client'),
+    import('./asks/store'),
+    import('./asks/notifications'),
+  ])
+
+  initZoom()
+  createApp(App).mount('#app')
+
+  // Esc hides the window; it doesn't dismiss the ask.
+  window.addEventListener('keydown', (event) => {
+    if (event.key === 'Escape') void getCurrentWindow().hide()
+  })
+
+  void initNotifications()
+    .catch((error) => console.warn('notifications unavailable:', error))
+    .then(() => startHub(hubHandlers))
+}

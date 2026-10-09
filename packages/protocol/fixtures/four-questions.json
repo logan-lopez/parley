@@ -1,0 +1,37 @@
+{
+  "title": "Before I refactor the auth module",
+  "timeoutSeconds": 900,
+  "questions": [
+    {
+      "header": "Scope",
+      "question": "How much of `src/auth/` should this refactor touch?",
+      "options": [
+        { "label": "Session only (Recommended)", "description": "`session.ts` and its tests. About 300 lines." },
+        { "label": "Session + tokens", "description": "Also `tokens.ts`, which changes the refresh flow." },
+        { "label": "Everything", "description": "All 14 files, including the OAuth callbacks." }
+      ]
+    },
+    {
+      "header": "Providers",
+      "question": "Which OAuth providers still need to work afterwards?",
+      "multiSelect": true,
+      "options": [
+        { "label": "GitHub" },
+        { "label": "Google" },
+        { "label": "Okta" }
+      ]
+    },
+    {
+      "header": "Keep API",
+      "question": "Keep the public `Auth` class API unchanged?",
+      "type": "boolean"
+    },
+    {
+      "header": "Branch",
+      "question": "Branch name, if you want something other than `refactor/auth`.",
+      "type": "text",
+      "placeholder": "refactor/auth",
+      "required": false
+    }
+  ]
+}

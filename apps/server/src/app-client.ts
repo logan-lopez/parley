@@ -17,12 +17,9 @@ import {
   type ServerToApp,
   type SessionInfo,
 } from '@parley/protocol'
+import type { AskOutcome } from '@parley/protocol/ask'
 
-export type AskOutcome =
-  | { status: 'answered'; data: unknown }
-  | { status: 'dismissed' }
-  | { status: 'cancelled' }   // the MCP client cancelled the call
-  | { status: 'timed_out' }
+export type { AskOutcome }
 
 export interface AskOptions {
   timeoutMs: number

@@ -27,6 +27,10 @@ export const queue = computed(() =>
   [...records.values()].filter((r) => r.status === 'pending').sort((a, b) => a.createdAt - b.createdAt),
 )
 
+export function getRecord(id: string): AskRecord | undefined {
+  return records.get(id)
+}
+
 watch(() => queue.value.length, (n) => void invoke('set_pending_count', { n }), { immediate: true })
 
 export function answer(id: string, data: unknown) {

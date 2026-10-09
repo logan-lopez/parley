@@ -1,0 +1,19 @@
+{
+  "questions": [
+    {
+      "header": "Retries",
+      "question": "How many times should a failed upload retry before giving up?",
+      "type": "number",
+      "integer": true,
+      "min": 0,
+      "max": 10
+    },
+    {
+      "header": "Budget",
+      "question": "Monthly spend cap in USD, if you want one. Leave it blank for no cap.",
+      "type": "number",
+      "min": 0,
+      "required": false
+    }
+  ]
+}

@@ -1,0 +1,24 @@
+{
+  "title": "Set up the monorepo",
+  "questions": [
+    {
+      "header": "Layout",
+      "question": "How should I lay out the new packages?",
+      "options": [
+        { "label": "Workspace (Recommended)", "description": "One pnpm workspace with `apps/` and `packages/`. Shared tsconfig, one lockfile." },
+        { "label": "Single package", "description": "Everything in one `package.json`. Simplest, but the server bundle drags in Vue." },
+        { "label": "Separate repos", "description": "One repo per app. Versioning the protocol between them becomes your job." }
+      ]
+    },
+    {
+      "id": "node_version",
+      "header": "Node",
+      "question": "Which Node version should CI pin?",
+      "allowOther": false,
+      "options": [
+        { "label": "24 LTS (Recommended)" },
+        { "label": "26 current" }
+      ]
+    }
+  ]
+}

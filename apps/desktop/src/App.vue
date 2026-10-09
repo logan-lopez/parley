@@ -1,43 +1,93 @@
 <script setup lang="ts">
-// Crude on purpose: brief 2 replaces this UI.
+// The queue of pending asks, one card at a time. After Send or Skip it moves
+// to the next ask, and hides the window when none are left. An ask that ends
+// under the user (cancelled, timed out, agent gone) stays up with a note
+// until they move on.
 import { computed, ref, watch } from 'vue'
-import { JsonForms } from '@jsonforms/vue'
-import type { JsonFormsChangeEvent } from '@jsonforms/vue'
-import { renderers } from './forms/renderers'
+import { getCurrentWindow } from '@tauri-apps/api/window'
+import AskCard from './card/AskCard.vue'
 import { sourceLabel } from './asks/source'
-import { answer, dismiss, queue } from './asks/store'
+import { answer, dismiss, getRecord, queue, type AskRecord } from './asks/store'
 
-const head = computed(() => queue.value[0])
-const data = ref<unknown>({})
+const selectedId = ref<string | null>(null)
+const shown = computed(() => (selectedId.value ? getRecord(selectedId.value) : undefined))
+const position = computed(() => queue.value.findIndex((r) => r.id === selectedId.value) + 1)
 
-watch(() => head.value?.id, () => { data.value = {} })
+// Unsent input per ask, so moving through the queue doesn't lose it.
+const drafts = new Map<string, unknown>()
 
-function onChange(event: JsonFormsChangeEvent) {
-  data.value = event.data
+watch(
+  () => queue.value.map((r) => r.id).join(),
+  () => {
+    if (!shown.value) selectedId.value = queue.value[0]?.id ?? null
+  },
+  { immediate: true },
+)
+
+const WITHDRAWN: Partial<Record<AskRecord['status'], string>> = {
+  cancelled: 'Withdrawn by the agent.',
+  timed_out: 'Withdrawn: this question timed out.',
+  orphaned: 'The agent disconnected. If it reconnects, this question comes back.',
+}
+const withdrawn = computed(() => (shown.value ? WITHDRAWN[shown.value.status] : undefined))
+
+// Ended while shown. If nobody's looking, move on without the note.
+watch(() => shown.value?.status, async (status, before) => {
+  if (before !== 'pending' || !status || status === 'pending') return
+  const id = selectedId.value
+  if (!(await getCurrentWindow().isVisible()) && selectedId.value === id) advanceFrom(id)
+})
+
+function advanceFrom(id: string | null) {
+  const pending = queue.value
+  const i = pending.findIndex((r) => r.id === id)
+  const next = i === -1 ? pending[0] : (pending[i + 1] ?? pending[i - 1])
+  selectedId.value = next?.id ?? null
+  if (!next) void getCurrentWindow().hide()
+}
+
+function step(by: number) {
+  if (withdrawn.value) return advanceFrom(selectedId.value)
+  const next = queue.value[position.value - 1 + by]
+  if (next) selectedId.value = next.id
+}
+
+function send(data: unknown) {
+  const id = selectedId.value!
+  advanceFrom(id)
+  drafts.delete(id)
+  answer(id, data)
+}
+
+function skip() {
+  const id = selectedId.value!
+  advanceFrom(id)
+  drafts.delete(id)
+  dismiss(id)
 }
 </script>
 
 <template>
-  <main v-if="head" :key="head.id">
-    <p class="meta">{{ sourceLabel(head.session) }} · 1 of {{ queue.length }}</p>
-    <h1 v-if="head.form.title">{{ head.form.title }}</h1>
-    <p v-if="head.form.description">{{ head.form.description }}</p>
-    <JsonForms :data="data" :schema="head.form.schema" :renderers="renderers" @change="onChange" />
-    <button type="button" @click="answer(head.id, data)">Send</button>
-    <button type="button" @click="dismiss(head.id)">Skip</button>
-  </main>
-  <main v-else>
-    <p class="meta">Nothing is waiting.</p>
+  <AskCard
+    v-if="shown"
+    :key="shown.id"
+    :form="shown.form"
+    :source="sourceLabel(shown.session)"
+    :created-at="shown.createdAt"
+    :expires-at="shown.expiresAt"
+    :position="position || undefined"
+    :total="queue.length"
+    :withdrawn="withdrawn"
+    :initial-data="drafts.get(shown.id)"
+    @change="drafts.set(shown.id, $event)"
+    @submit="send"
+    @skip="skip"
+    @prev="step(-1)"
+    @next="step(1)"
+    @continue="advanceFrom(shown.id)"
+  />
+  <main v-else class="empty-state">
+    <p>Nothing is waiting.</p>
+    <p class="hints"><kbd>esc</kbd> hide</p>
   </main>
 </template>
-
-<style>
-main {
-  padding: 1rem;
-  font-family: system-ui, sans-serif;
-}
-.meta {
-  color: #666;
-  font-size: 0.85em;
-}
-</style>

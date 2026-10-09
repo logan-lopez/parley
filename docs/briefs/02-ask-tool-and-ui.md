@@ -105,6 +105,7 @@ maximum, and long markdown.
 ```ts
 {
   status: 'answered' | 'dismissed' | 'timed_out' | 'cancelled',
+  message: string,                     // the text content, repeated (added in implementation, see below)
   answers?: Record<string, {           // keyed by question id; only when answered
     header: string,
     value: string | string[] | number | boolean | null,   // null = optional question left blank
@@ -126,6 +127,10 @@ The user answered:
   best judgment and say what you assumed."
 - **timed_out:** "No answer after N minutes, so the question was withdrawn. Continue with your best
   judgment and say what you assumed, or ask in chat."
+
+Claude Code shows the model only `structuredContent` when a tool declares an `outputSchema`, and
+drops the text content, so `message` repeats the text there. Without it, the skip and timeout
+guidance never reaches Claude.
 
 Return `isError` only for invalid input (Zod already handles that) and for the app being
 unavailable. Set tool annotations `readOnlyHint: true` and `openWorldHint: false`; check the SDK's

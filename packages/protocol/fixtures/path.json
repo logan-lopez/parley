@@ -1,0 +1,18 @@
+{
+  "questions": [
+    {
+      "header": "Fixtures",
+      "question": "Which JSON files should I import as test fixtures?",
+      "type": "path",
+      "multiple": true,
+      "extensions": ["json", ".jsonc"]
+    },
+    {
+      "header": "Output",
+      "question": "Where should the generated report go? Leave it blank for `./reports`.",
+      "type": "path",
+      "pathKind": "directory",
+      "required": false
+    }
+  ]
+}

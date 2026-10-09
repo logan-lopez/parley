@@ -1,0 +1,15 @@
+{
+  "questions": [
+    {
+      "header": "Migrate",
+      "question": "Run the database migration against **staging** now? It takes about 4 minutes and locks the `orders` table.",
+      "type": "boolean"
+    },
+    {
+      "header": "Notify",
+      "question": "Post in #deploys when it's done?",
+      "type": "boolean",
+      "required": false
+    }
+  ]
+}

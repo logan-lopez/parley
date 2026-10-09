@@ -1,0 +1,15 @@
+{
+  "questions": [
+    {
+      "header": "Checks",
+      "question": "Which checks should run on every push? Pick all that apply.",
+      "multiSelect": true,
+      "options": [
+        { "label": "Typecheck", "description": "`pnpm typecheck` across the workspace, about 20 s." },
+        { "label": "Unit tests", "description": "Vitest in `packages/protocol`." },
+        { "label": "Lint", "description": "There's no lint config yet; I'd add one." },
+        { "label": "Rust build", "description": "`cargo check` for the Tauri shell. Slow on a cold cache." }
+      ]
+    }
+  ]
+}
