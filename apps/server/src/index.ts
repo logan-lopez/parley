@@ -3,6 +3,7 @@
 
 import { McpServer } from '@modelcontextprotocol/server'
 import { StdioServerTransport } from '@modelcontextprotocol/server/stdio'
+import { bindServer } from './ask-lifecycle.ts'
 import { registerAsk } from './tools/ask.ts'
 
 // TODO: this is most of what decides whether models reach for the tool.
@@ -15,6 +16,7 @@ const server = new McpServer(
   { instructions },
 )
 
+bindServer(server)
 registerAsk(server)
 
 await server.connect(new StdioServerTransport())

@@ -17,6 +17,7 @@
         "width": 440,
         "height": 600,
         "alwaysOnTop": true,
+        "visible": false,
         "resizable": true
       }
     ],

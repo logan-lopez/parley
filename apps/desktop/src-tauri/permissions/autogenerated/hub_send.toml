@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-hub-send"
+description = "Enables the hub_send command without any pre-configured scope."
+commands.allow = ["hub_send"]
+
+[[permission]]
+identifier = "deny-hub-send"
+description = "Denies the hub_send command without any pre-configured scope."
+commands.deny = ["hub_send"]

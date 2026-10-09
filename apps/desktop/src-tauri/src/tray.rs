@@ -1,17 +1,19 @@
 use tauri::{
     menu::{Menu, MenuItem},
     tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent},
-    App,
+    App, AppHandle,
 };
 
 use crate::window;
+
+const TRAY: &str = "main";
 
 pub fn init(app: &App) -> tauri::Result<()> {
     let show = MenuItem::with_id(app, "show", "Show Parley", true, None::<&str>)?;
     let quit = MenuItem::with_id(app, "quit", "Quit", true, None::<&str>)?;
     let menu = Menu::with_items(app, &[&show, &quit])?;
 
-    let mut builder = TrayIconBuilder::new()
+    let mut builder = TrayIconBuilder::with_id(TRAY)
         .tooltip("Parley")
         .menu(&menu)
         .show_menu_on_left_click(false)
@@ -37,4 +39,13 @@ pub fn init(app: &App) -> tauri::Result<()> {
     }
     builder.build(app)?;
     Ok(())
+}
+
+// The number beside the menu bar icon; empty when nothing is waiting.
+#[tauri::command]
+pub fn set_pending_count(app: AppHandle, n: u32) {
+    if let Some(tray) = app.tray_by_id(TRAY) {
+        let title = (n > 0).then(|| n.to_string());
+        let _ = tray.set_title(title);
+    }
 }

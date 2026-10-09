@@ -29,7 +29,13 @@ From the root:
 - `pnpm server`: run the MCP server from source (tsx)
 - `pnpm typecheck` / `pnpm build`: all packages
 - `pnpm --filter @parley/server build`: bundles to `apps/server/dist/index.mjs`, which is what an MCP
-  client config points at (`node .../dist/index.mjs`)
+  client config points at (`node .../dist/index.mjs`). `.mcp.json` at the root registers it for
+  Claude Code in this repo. Needs Node 24: tsdown loads its `.ts` config through native type
+  stripping, and Node 22.17 fails with "Failed to import module unrun".
+- `pnpm --filter @parley/server fake-ask <form.json> [--timeout <s>]`: acts as one session without
+  an MCP client. It connects to the hub, sends a `FormSpec` file (sample:
+  `apps/server/fixtures/sample.json`), and prints the outcome. Ctrl-C kills it without a cancel,
+  which exercises the disconnect path.
 
 ## Pinned choices
 
@@ -45,6 +51,17 @@ From the root:
 ## Conventions
 
 - The server's stdout is the MCP channel. Never `console.log` there; log to stderr.
+- Transport: unix socket, NDJSON, wire protocol v1 in `packages/protocol/src/wire.ts`. The socket is
+  `~/Library/Application Support/com.loganlopez.parley/hub.sock` (Tauri's `app_data_dir`, which the
+  server computes on its own), mode 0600. Set `PARLEY_SOCKET` to override it on both sides.
+  `PARLEY_NO_LAUNCH=1` stops the server running `open -b com.loganlopez.parley` when the app isn't
+  up.
+- The Rust hub (`src-tauri/src/hub.rs`) doesn't parse message types. It forwards lines tagged with a
+  connection id as `hub:message` / `hub:disconnected`, and the webview owns the protocol
+  (`src/hub/client.ts`, `src/asks/store.ts`). A second `hub_ready` (webview reload) drops every
+  connection; servers reconnect and re-send their pending asks.
+- Window state (position, size) is remembered by `tauri-plugin-window-state`, which never restores
+  visibility. The window starts hidden.
 - Form spec = JSON Schema + `x-widget` hints. The model doesn't write JSON Forms UI schemas. Custom
   widgets are JSON Forms renderers in `apps/desktop/src/forms/renderers/`, with testers that match on
   `x-widget`, registered in `src/forms/renderers.ts`.
@@ -55,8 +72,24 @@ From the root:
 
 ## Open / deferred
 
-- Server ↔ app transport: **decided** as a unix socket with NDJSON (see `docs/briefs/`), but not
-  built yet. The stubs are still in `apps/server/src/app-client.ts` and `src-tauri/src/hub.rs`.
 - `tauri-nspanel` (non-activating macOS panel): deferred past the MVP.
-- AeroSpace tiles new windows. The app needs a float rule for `com.loganlopez.parley`, set in
-  dotfiles.
+- AeroSpace float rule: drafted in `~/Dev/dotfiles/.aerospace.toml`, not yet reviewed. An unbundled
+  `tauri dev` binary reports `NULL-APP-BUNDLE-ID` with app name `parley`, so the rule matches on both.
+- Notification clicks can't open the window: `tauri-plugin-notification` only shows title, body,
+  icon and sound on desktop (`onAction` is mobile-only). The hotkey and tray are the way in.
+
+## Claude Code and long asks
+
+Checked against Claude Code 2.1.296 (2026-10-09), in the docs and by logging the server:
+
+- `MCP_TOOL_TIMEOUT` applies to MCP tool calls, in ms. The default is 100000000 (about 28 h), so in
+  practice there's no wall-clock cap. A per-server `"timeout"` in `.mcp.json` overrides it. Progress
+  doesn't extend this one.
+- The limit that matters is the idle timeout, `CLAUDE_CODE_MCP_TOOL_IDLE_TIMEOUT`: 30 min for stdio.
+  Progress notifications reset it. Claude Code sends `_meta.progressToken` on `tools/call`, so
+  `runAsk`'s 15 s keep-alives cover asks up to the 3600 s maximum.
+- Interactive calls still running after 2 min get moved to a background task
+  (`CLAUDE_CODE_MCP_AUTO_BACKGROUND_MS`, 0 disables). The ask keeps waiting, but the model gets a
+  task id instead of blocking. Brief 2's instructions and testing need to account for that.
+- Esc during a call sends `notifications/cancelled`. `ctx.mcpReq.signal` aborts, and the card is
+  withdrawn as `cancelled`.

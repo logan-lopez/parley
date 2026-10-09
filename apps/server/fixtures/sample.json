@@ -1,0 +1,13 @@
+{
+  "title": "Which approach should I take?",
+  "description": "Sample form for the fake-ask harness.",
+  "schema": {
+    "type": "object",
+    "properties": {
+      "approach": { "type": "string", "enum": ["Workspace", "Single package", "Something else"] },
+      "notes": { "type": "string", "description": "Anything else I should know" },
+      "confirm": { "type": "boolean", "title": "Go ahead after this?" }
+    },
+    "required": ["approach"]
+  }
+}

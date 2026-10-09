@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-set-pending-count"
+description = "Enables the set_pending_count command without any pre-configured scope."
+commands.allow = ["set_pending_count"]
+
+[[permission]]
+identifier = "deny-set-pending-count"
+description = "Denies the set_pending_count command without any pre-configured scope."
+commands.deny = ["set_pending_count"]

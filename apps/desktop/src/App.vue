@@ -1,43 +1,33 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+// Crude on purpose: brief 2 replaces this UI.
+import { computed, ref, watch } from 'vue'
 import { JsonForms } from '@jsonforms/vue'
 import type { JsonFormsChangeEvent } from '@jsonforms/vue'
-import type { FormSpec } from '@parley/protocol'
 import { renderers } from './forms/renderers'
+import { sourceLabel } from './asks/source'
+import { answer, dismiss, queue } from './asks/store'
 
-// TODO: replace with forms that arrive from the hub.
-const form: FormSpec = {
-  title: 'Sample ask',
-  schema: {
-    type: 'object',
-    properties: {
-      name: { type: 'string', description: 'Free text' },
-      count: { type: 'integer', minimum: 0 },
-      confirm: { type: 'boolean', title: 'Looks good?' },
-      approach: { type: 'string', enum: ['Workspace', 'Single package', 'Something else'] },
-    },
-    required: ['approach'],
-  },
-}
-
+const head = computed(() => queue.value[0])
 const data = ref<unknown>({})
+
+watch(() => head.value?.id, () => { data.value = {} })
 
 function onChange(event: JsonFormsChangeEvent) {
   data.value = event.data
 }
-
-function submit() {
-  // TODO: send the answer back through the hub.
-  console.log('answer', data.value)
-}
 </script>
 
 <template>
-  <main>
-    <h1 v-if="form.title">{{ form.title }}</h1>
-    <p v-if="form.description">{{ form.description }}</p>
-    <JsonForms :data="data" :schema="form.schema" :renderers="renderers" @change="onChange" />
-    <button type="button" @click="submit">Send</button>
+  <main v-if="head" :key="head.id">
+    <p class="meta">{{ sourceLabel(head.session) }} · 1 of {{ queue.length }}</p>
+    <h1 v-if="head.form.title">{{ head.form.title }}</h1>
+    <p v-if="head.form.description">{{ head.form.description }}</p>
+    <JsonForms :data="data" :schema="head.form.schema" :renderers="renderers" @change="onChange" />
+    <button type="button" @click="answer(head.id, data)">Send</button>
+    <button type="button" @click="dismiss(head.id)">Skip</button>
+  </main>
+  <main v-else>
+    <p class="meta">Nothing is waiting.</p>
   </main>
 </template>
 
@@ -45,5 +35,9 @@ function submit() {
 main {
   padding: 1rem;
   font-family: system-ui, sans-serif;
+}
+.meta {
+  color: #666;
+  font-size: 0.85em;
 }
 </style>
