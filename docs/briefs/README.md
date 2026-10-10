@@ -10,17 +10,19 @@ and move to `archive/` when they're done. Ideas that aren't scheduled yet are in
 
 - Built: the hub, `ask` with six question types, the trial harness, history and the `review` type
   (briefs 1–5), and inline cards in Claude Desktop (briefs 6–7, merged to main as `aaef062`).
-- In flight: nothing. No brief is open.
-- Next: pick a direction (`ideate`) or brief one of [`FUTURE.md`](FUTURE.md)'s three sections. The
-  reconnect fix is the smallest; trial prompts for show-then-wait are the one that tells us whether
-  the Desktop flow holds up with real models.
+- In flight: nothing. Brief 8 is open.
+- Next: brief 8, the NSPanel spike. Under AeroSpace, showing the window pulls Logan to the
+  workspace it last lived on. After that, [`FUTURE.md`](FUTURE.md)'s three sections: the reconnect
+  fix is the smallest, and trial prompts for show-then-wait tell us whether the Desktop flow holds
+  up with real models.
 - Loose ends: brief 7's check 11 (does the card render in Desktop's agent mode?) and whether
   `parley_status` polls show in the chat UI weren't written down. Record them if either surprised
   Logan.
 
 ## Open
 
-Nothing open.
+8. [`08-nspanel-spike.md`](08-nspanel-spike.md): spike. Does a non-activating `NSPanel` stop
+   AeroSpace switching workspaces when Parley shows? Ends in go or no-go.
 
 ## Done
 
@@ -66,6 +68,7 @@ Don't relitigate these. If one turns out to be wrong in practice, stop and say s
 | Platform | macOS only for the MVP | Other platforms fail clearly. Don't silently half-work there. |
 | Inline asks in MCP Apps clients | "Show, then wait": `ask` returns an `askId` at once, and `ask_wait` blocks in 200 s slices. Registered only for clients that advertise MCP Apps. | Desktop mounts a view only after its call returns, and cuts local calls at 240 s (brief 6). Claude Code's tool list stays as it is. |
 | MCP Apps hosts | Claude Desktop only. claude.ai and ChatGPT need a remote (HTTP) server. | Desktop is the host that runs local stdio servers, and Logan is fine with it being the only one (brief 7, 2026-10-10). |
+| AeroSpace workspace jump | Spike a non-activating `NSPanel` first (brief 8). If no-go, the fallback is opt-in `on_show`/`on_hide` hooks with a park mode. Window-manager commands live in Logan's dotfiles; Parley never calls `aerospace`. | AeroSpace can't see or move a hidden window, and puts it back on its old workspace when it reappears (2026-10-10). |
 | Inline answers and the window | The window races the card quietly (no notification). The server sends an inline answer to the app (`resolved`), and history records it as answered in the chat. | The user already sees the card. History stays complete (2026-10-10). |
 | History when the window and the card both answer | The server's first-in answer wins, and `resolved` overwrites the window's answered or skipped record | History matches what the agent got (brief 7, 2026-10-10). |
 

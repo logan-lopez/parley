@@ -68,7 +68,8 @@ in brief 7. Rare enough to wait for a brief that touches `AppClient` anyway.
   agent should tell the user something without waiting for an answer.
 - **More widgets:** rank, slider, A/B and annotate. Pick one up when a real ask needs it and the
   harness shows models would use it. `preview` covers most A/B comparisons.
-- **`tauri-nspanel`:** still deferred, as it was in the MVP.
+- **`tauri-nspanel`:** still deferred, as it was in the MVP. Scheduled as a spike in brief 8, for
+  the AeroSpace workspace jump.
 - **A committed card harness:** brief 7 checked the card in headless Chromium with an ext-apps
   `AppBridge` host page, the real server and `fake-hub` (14 checks). It lives only in that
   session's scratchpad. Commit it as a `pnpm` script if the card starts changing often. The cost is
