@@ -1,9 +1,14 @@
 # Briefs
 
-Each brief is a self-contained handoff for a fresh session. New ones go here, numbered from `06`.
-Ideas that aren't scheduled yet, starting with an MCP Apps spike, are in [`FUTURE.md`](FUTURE.md).
+Each brief is a self-contained handoff for a fresh session. New ones go here, numbered in order,
+and move to `archive/` when they're done. Ideas that aren't scheduled yet are in
+[`FUTURE.md`](FUTURE.md).
 
-There are no open briefs.
+## Open
+
+6. [`06-mcp-apps-spike.md`](06-mcp-apps-spike.md): can the card render inline in Claude Desktop
+   while a blocking `ask` runs? It's a spike on a branch that ends in go or no-go. Nothing merges by
+   default.
 
 ## Done
 

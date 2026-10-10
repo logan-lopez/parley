@@ -5,6 +5,9 @@ decisions themselves live in the project doc in Obsidian.
 
 ## MCP Apps: the card inline in the chat (spike first)
 
+**Scheduled (2026-10-10):** the spike is brief 6, [`06-mcp-apps-spike.md`](06-mcp-apps-spike.md).
+This section stays as the background it builds on.
+
 **The question:** when the host supports MCP Apps, can an ask render inline in the conversation,
 with the floating window as the fallback?
 
