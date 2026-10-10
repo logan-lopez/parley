@@ -10,6 +10,7 @@
     "dev": "tsx src/index.ts",
     "fake-ask": "tsx scripts/fake-session.ts",
     "fake-hub": "tsx scripts/fake-hub.ts",
+    "trial": "tsx scripts/trial.ts",
     "build": "tsdown",
     "start": "node dist/index.mjs",
     "typecheck": "tsc"

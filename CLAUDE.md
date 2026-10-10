@@ -50,6 +50,10 @@ From the root:
   for the app on a socket and answers on a script (`first`, `second`, `other:<text>`, `skip`,
   `none`). Pair with `PARLEY_SOCKET` to test how models use the tool with nobody at the keyboard.
   macOS caps socket paths at 104 bytes, so put the socket under `$TMPDIR`, not a deep scratch dir.
+- `pnpm --filter @parley/server trial [--client claude|codex|all] [--runs N] [--prompt <name>]...`:
+  the model-uptake harness. Runs `apps/server/trials/prompts/` through real clients against
+  `fake-hub` and scores whether they asked, validly, and used the answer. Rerun it after changing
+  the tool description or the server instructions; the baseline is in `apps/server/trials/README.md`.
 - Gallery: `pnpm --filter @parley/desktop dev`, then `http://localhost:1420/?gallery` (dev only).
   Renders every fixture through `compileQuestions` and the real card without the hub; submitting
   shows the `shapeAnswer` output. `&fixture=<name>` picks one.

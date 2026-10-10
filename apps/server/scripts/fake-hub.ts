@@ -69,9 +69,12 @@ function serve(socket: Socket) {
     }
     console.error(`fake-hub: ask ${id.slice(0, 8)} → ${policy}`)
     if (policy === 'none') return
-    if (policy === 'skip') return send({ type: 'dismissed', id })
+    if (policy === 'skip') {
+      log({ at: new Date().toISOString(), type: 'dismissed', id })
+      return send({ type: 'dismissed', id })
+    }
     const data = fill(form, policy)
-    log({ at: new Date().toISOString(), type: 'reply', id, data })
+    log({ at: new Date().toISOString(), type: 'reply', id, policy, data })
     send({ type: 'answer', id, data })
   }
 }
