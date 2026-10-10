@@ -8,17 +8,19 @@ and move to `archive/` when they're done. Ideas that aren't scheduled yet are in
 
 *Updated 2026-10-10.*
 
-- The MVP and the groundwork are built: the hub, `ask` with six question types, the trial
-  harness, history, and the `review` type (briefs 1–5).
-- The MCP Apps spike (brief 6) says go for Claude Desktop, as "show, then wait". Its code is on
-  `spike/mcp-apps` (`fc40ffb`) as reference, and that branch stays unmerged.
-- Brief 7 (inline cards in Desktop) is built on `feat/inline-cards`, awaiting Logan's checks in
-  Claude Desktop. `apps/server/dist/` is now that branch's build, which Desktop runs.
+- Built: the hub, `ask` with six question types, the trial harness, history and the `review` type
+  (briefs 1–5), and inline cards in Claude Desktop (briefs 6–7, merged to main as `aaef062`).
+- In flight: nothing. No brief is open.
+- Next: pick a direction (`ideate`) or brief one of [`FUTURE.md`](FUTURE.md)'s three sections. The
+  reconnect fix is the smallest; trial prompts for show-then-wait are the one that tells us whether
+  the Desktop flow holds up with real models.
+- Loose ends: brief 7's check 11 (does the card render in Desktop's agent mode?) and whether
+  `parley_status` polls show in the chat UI weren't written down. Record them if either surprised
+  Logan.
 
 ## Open
 
-7. [`07-inline-cards.md`](07-inline-cards.md) (done, awaiting review): the ask card inline in Claude Desktop chat (show,
-   then wait), racing the window, with inline answers recorded in history.
+Nothing open.
 
 ## Done
 
@@ -28,6 +30,11 @@ now. For that, read `CLAUDE.md` and the code.
 The MVP (briefs 1–2, done 2026-10-09) is a working equivalent of Claude's built-in question tool
 (`AskUserQuestion`), served over MCP, with answers given in a floating Parley window instead of
 inside the client. Briefs 3–5 (done 2026-10-10) set up for new features.
+
+Briefs 6–7 (done 2026-10-10) put the ask card inline in Claude Desktop's chat. The spike found
+that Desktop mounts a view only after the call returns, so MCP Apps clients get "show, then wait":
+`ask` returns an `askId` and `ask_wait` blocks. The card races the window, and history records
+answers given in the chat. Claude Code and every other client see the blocking `ask`, unchanged.
 
 1. [`01-hub-and-lifecycle.md`](archive/01-hub-and-lifecycle.md): the unix socket hub, wire protocol
    v1, the ask lifecycle (timeout, cancel, disconnect), and notify-only window behavior.
@@ -42,6 +49,9 @@ inside the client. Briefs 3–5 (done 2026-10-10) set up for new features.
 6. [`06-mcp-apps-spike.md`](archive/06-mcp-apps-spike.md): spike, done 2026-10-10. Desktop mounts
    a tool's view only after the call returns, so a blocking inline ask can't work; "show, then
    wait" does. Eval is allowed, and the card themes from the host. Go.
+7. [`07-inline-cards.md`](archive/07-inline-cards.md): the card inline in Desktop chat as a
+   single-file MCP Apps view, `ask_wait` in 200 s slices, the `resolved` wire message, quiet
+   inline asks in the window, chat answers in history, and `fake-host`.
 
 ## Decisions already made
 
@@ -55,14 +65,16 @@ Don't relitigate these. If one turns out to be wrong in practice, stop and say s
 | New ask arrives | Notify only: system notification and tray count. The window doesn't open on its own. | No focus stealing. You open it with `Cmd+Ctrl+P` or the tray. |
 | Platform | macOS only for the MVP | Other platforms fail clearly. Don't silently half-work there. |
 | Inline asks in MCP Apps clients | "Show, then wait": `ask` returns an `askId` at once, and `ask_wait` blocks in 200 s slices. Registered only for clients that advertise MCP Apps. | Desktop mounts a view only after its call returns, and cuts local calls at 240 s (brief 6). Claude Code's tool list stays as it is. |
+| MCP Apps hosts | Claude Desktop only. claude.ai and ChatGPT need a remote (HTTP) server. | Desktop is the host that runs local stdio servers, and Logan is fine with it being the only one (brief 7, 2026-10-10). |
 | Inline answers and the window | The window races the card quietly (no notification). The server sends an inline answer to the app (`resolved`), and history records it as answered in the chat. | The user already sees the card. History stays complete (2026-10-10). |
 | History when the window and the card both answer | The server's first-in answer wins, and `resolved` overwrites the window's answered or skipped record | History matches what the agent got (brief 7, 2026-10-10). |
 
 ## Not built
 
 `ask_async`/`collect`, `notify`, raw-schema `ask_form`, rank/slider/A-B/annotate widgets, native
-elicitation, MCP Apps outside Claude Desktop (brief 7 is Desktop only), `tauri-nspanel`, and remote/headless channels. `FUTURE.md` says
-where most of these stand. Anything that collects secrets stays out for good.
+elicitation, MCP Apps outside Claude Desktop (they need a remote server), `tauri-nspanel`, and
+remote/headless channels. `FUTURE.md` says where most of these stand. Anything that collects
+secrets stays out for good.
 
 ## Future direction new work must not block
 
@@ -79,7 +91,8 @@ Each item below is cheap now and expensive to retrofit later.
   (`oneOf`/`anyOf` of `{ const, title }`), so a flat form can be handed to native elicitation later
   without a rewrite.
 - **MCP Apps.** Form renderers don't import Tauri APIs directly. The file picker and link opening
-  go through a small adapter, so the same Vue renderers can run in an iframe later.
+  go through `src/platform.ts`, which is what lets the same renderers run in the inline card
+  (brief 7). A renderer that imports `@tauri-apps/*` breaks the card.
 - **Remote.** The server talks to the app only through the `AppClient` interface
   (`apps/server/src/app-client.ts`). A second transport later shouldn't touch tool code.
 - **Answer shaping.** One pure function in `packages/protocol` produces both the structured answer

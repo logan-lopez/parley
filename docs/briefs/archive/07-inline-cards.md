@@ -1,7 +1,7 @@
 # Brief 7: Inline cards in Claude Desktop
 
-Read `CLAUDE.md`, [`README.md`](README.md) and the findings of brief 6
-([`archive/06-mcp-apps-spike.md`](archive/06-mcp-apps-spike.md#findings)) first. Briefs 1–6 are
+Read `CLAUDE.md`, [`README.md`](../README.md) and the findings of brief 6
+([`archive/06-mcp-apps-spike.md`](06-mcp-apps-spike.md#findings)) first. Briefs 1–6 are
 done. The spike's code is on the `spike/mcp-apps` branch (`fc40ffb`), unmerged. Port from it, but
 build this on a fresh branch from main (`feat/inline-cards`), and don't merge the spike branch.
 

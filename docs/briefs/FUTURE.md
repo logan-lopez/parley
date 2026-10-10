@@ -3,57 +3,49 @@
 These aren't scheduled. Each has enough here to turn into a brief when it's picked up. The
 decisions themselves live in the project doc in Obsidian.
 
-## MCP Apps: the card inline in the chat (spike first)
+## MCP Apps in claude.ai and ChatGPT (remote transport)
 
-**Spike done (2026-10-10): go, for Claude Desktop, as "show, then wait".** Brief 6's findings
-([`06-mcp-apps-spike.md`](archive/06-mcp-apps-spike.md#findings)) have the evidence and the outline of brief
-7. In short: Desktop mounts a tool's view only after the call returns, so a blocking inline ask
-can't work. Instead `ask` returns at once with an `askId` and `ask_wait` blocks, in slices under
-Desktop's 240 s cap. Eval is allowed, and the card themes from the host. **Scheduled
-(2026-10-10):** brief 7, [`07-inline-cards.md`](07-inline-cards.md). This section stays as the
-background it builds on, and claude.ai/ChatGPT (remote transport) stay unscheduled.
-*Was:* a blocking `ask` whose own call renders the card inline.
+Brief 7 ([`archive/07-inline-cards.md`](archive/07-inline-cards.md)) shipped inline cards for
+Claude Desktop, the one MCP Apps host that runs local stdio servers. The spike's background is in
+[`archive/06-mcp-apps-spike.md`](archive/06-mcp-apps-spike.md#findings).
 
-**The question:** when the host supports MCP Apps, can an ask render inline in the conversation,
-with the floating window as the fallback?
+**The question:** is the card worth having in claude.ai or ChatGPT, where an MCP server has to be
+remote (HTTP)?
 
-**Why it matters:** this changes what Parley is. It becomes a form language that renders wherever
-the user is, not one more widget in the window. The MVP already paid for most of it: `platform.ts`
-keeps renderers free of Tauri, the compiler is pure, and the app renders only JSON Schema.
+**Why it matters:** those are the hosts where the window can't be the fallback, since Parley.app
+runs on Logan's Mac and the conversation doesn't. A card there would be card-only.
 
-**What the spec allows** (ext-apps spec 2026-01-26, checked 2026-10-10):
+**Likely shape:** a streamable-HTTP transport for the server, auth for it, and a way for a remote
+server to reach the app (or no app at all). It touches the "Remote" item in the README's future
+direction: `AppClient` is the seam. The inline tool surface (`src/tools/inline.ts`) and the card
+should carry over unchanged.
 
-- When a tool with a `ui://` resource is called, the host renders the view. After the view
-  initializes, the host sends `ui/notifications/tool-input` with the tool's arguments. It sends
-  `ui/notifications/tool-result` when the tool finishes, "if the View is displayed during tool
-  execution". So showing the view *while* the call runs is allowed, but it isn't required.
-- The view can call server tools. A tool registered with `_meta.ui.visibility: ["app"]` is visible
-  to the view and hidden from the model.
+**Kill criteria:** Logan doesn't use claude.ai or ChatGPT for agent work that needs asks. Desktop
+being the only MCP Apps host was fine with him on 2026-10-10.
 
-**Likely shape:**
+## Trial prompts for show-then-wait
 
-- `ask` gets `_meta.ui.resourceUri`. The resource is the card, built as one self-contained HTML
-  file.
-- An app-only `parley_submit` tool settles the pending ask inside the server process. It races the
-  socket path, and whichever answers first wins. The loser is cancelled: the window card is
-  withdrawn, or the inline view shows that the ask was answered elsewhere.
-- This sits beside `AppClient`, not inside it. `runAsk` waits on either path.
+**The question:** in an MCP Apps client, does the model call `ask_wait` after `ask`, call it again
+after "still waiting", and hold off on the work in between?
 
-**What the spike has to answer** (about a day):
+**Why it matters:** the trial harness (brief 3) only scores the blocking `ask`. The two-step flow
+depends on the model following the instructions, and the one miss in the spike (a model ending its
+turn without `ask_wait`) is the parked case below.
 
-1. Does Claude Desktop (or claude.ai) show the view during the tool call, or only after the result?
-   If it's only after, a blocking inline ask can't work, and this turns into the async design
-   instead.
-2. Does the host's iframe CSP allow `'unsafe-eval'`? AJV compiles validators with `new Function`.
-   Without it, no card renders, and the fix is precompiled validators or a validator that doesn't
-   use AJV.
-3. Can the card's styles live in a host iframe? Theme comes from the host context. Zoom probably
-   doesn't apply there.
+**Likely shape:** a trial client that advertises MCP Apps, which Claude Code and Codex don't. Either
+drive Desktop (hard to automate) or extend `fake-host` into a model-in-the-loop client over the API,
+with `fake-hub` answering. New scores: waited, re-waited after a slice, didn't act before the
+answer.
 
-**Kill criteria:** if the answer to (1) is "only after the result" in the hosts Logan uses, park
-this until async exists. (It was "only after" in Desktop. Show-then-wait is that async, scoped to
-the one tool, so the criterion doesn't park it.) Claude Code, the main client, doesn't render MCP Apps at all, so this
-mostly serves Claude Desktop and claude.ai.
+**Kill criteria:** real use in Desktop shows the model always waits. Then it's not worth a harness.
+
+## Queue `resolved` and `cancel` across a reconnect
+
+If the card wins while the app is restarting, the server drops the window's ask from its pending
+list and writes `resolved` into a dead socket. The app's record stays orphaned in history, though
+the agent still gets the answer. `cancel` has the same gap. The fix is small: `AppClient` queues
+them and sends them after the next connect, alongside the pending asks it already re-sends. Found
+in brief 7. Rare enough to wait for a brief that touches `AppClient` anyway.
 
 ## Parked
 
@@ -77,3 +69,10 @@ mostly serves Claude Desktop and claude.ai.
 - **More widgets:** rank, slider, A/B and annotate. Pick one up when a real ask needs it and the
   harness shows models would use it. `preview` covers most A/B comparisons.
 - **`tauri-nspanel`:** still deferred, as it was in the MVP.
+- **A committed card harness:** brief 7 checked the card in headless Chromium with an ext-apps
+  `AppBridge` host page, the real server and `fake-hub` (14 checks). It lives only in that
+  session's scratchpad. Commit it as a `pnpm` script if the card starts changing often. The cost is
+  a `playwright-core` dev dependency.
+- **One dark token block:** `src/styles.css` keeps two identical dark blocks in step by hand.
+  `light-dark()` with `color-scheme` would make it one, if WKWebView's support is confirmed. Worth
+  doing the next time the tokens change.
