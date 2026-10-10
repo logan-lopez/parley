@@ -57,6 +57,13 @@ mostly serves Claude Desktop and claude.ai.
 
 ## Parked
 
+- **Inline answers when the model never calls `ask_wait`:** with show-then-wait (brief 7), an answer
+  given in the card waits on the server until something calls `ask_wait`. If the model ends its
+  turn instead, nothing reaches the chat. In the spike that happened once in 7 runs, and only
+  because the prompt said "call the tool once". The likely fix: when no wait is pending, the card
+  posts the answer as the user's next message through `ui/message` (Desktop advertises `message`,
+  but whether it starts a model turn is unverified). Revisit if it happens in real use after
+  brief 7.
 - **`ask_async` / `collect`:** demoted on 2026-10-10. Claude Code already moves calls still running
   after 2 min into a background task, and the model picks up the answer when it lands (confirmed
   live). `collect()` would depend on the model remembering to poll. Revisit when a client Logan
