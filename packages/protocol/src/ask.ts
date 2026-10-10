@@ -5,7 +5,7 @@
 import * as z from 'zod/v4'
 import type { ChoiceOptionSchema, FormSpec, JsonSchema, OtherOptionSchema, Widget } from './form.ts'
 
-export const DEFAULT_TIMEOUT_SECONDS = 600
+export const DEFAULT_TIMEOUT_SECONDS = 1800
 export const QUESTION_TYPES = ['choice', 'text', 'number', 'boolean', 'path'] as const satisfies readonly Widget[]
 
 // Not `.describe()`d field by field: the tool description carries the shape

@@ -237,7 +237,7 @@ describe('shapeAnswer', () => {
       structured: { status: 'dismissed', message: dismissed },
       text: dismissed,
     })
-    const timedOut = 'No answer after 10 minutes, so the question was withdrawn. Continue with your best judgment and say what you assumed, or ask in chat.'
+    const timedOut = 'No answer after 30 minutes, so the question was withdrawn. Continue with your best judgment and say what you assumed, or ask in chat.'
     expect(shapeAnswer(input, { status: 'timed_out' })).toEqual({
       structured: { status: 'timed_out', message: timedOut },
       text: timedOut,
