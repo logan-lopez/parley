@@ -5,8 +5,10 @@ import { isPermissionGranted, requestPermission, sendNotification } from '@tauri
 import { sourceLabel } from './source'
 import type { AskRecord } from './store'
 
-// A webview reload empties the store, and servers re-send their asks, which
-// then look new. sessionStorage survives the reload, so they don't re-notify.
+// A webview reload empties the store, and servers re-send their asks. The
+// store reloads from disk first, so they're usually not new. When history
+// writes are failing they look new, and sessionStorage, which survives the
+// reload, keeps them from notifying twice.
 const NOTIFIED_KEY = 'parley:notified'
 
 let granted = false

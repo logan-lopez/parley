@@ -40,6 +40,7 @@ From the root:
   Claude Code in this repo. Needs Node 24: tsdown loads its `.ts` config through native type
   stripping, and Node 22.17 fails with "Failed to import module unrun".
 - `pnpm --filter @parley/protocol test`: vitest for the compiler and answer shaper.
+- `pnpm --filter @parley/desktop test`: vitest for the history file's startup fold.
 - `pnpm --filter @parley/server fake-ask <file.json | fixture> [--timeout <s>]`: acts as one session
   without an MCP client. It connects to the hub, sends the form, and prints the outcome. Takes `ask`
   tool input (a bare name like `choice` resolves to `packages/protocol/fixtures/choice.json`), which
@@ -54,6 +55,8 @@ From the root:
   the model-uptake harness. Runs `apps/server/trials/prompts/` through real clients against
   `fake-hub` and scores whether they asked, validly, and used the answer. Rerun it after changing
   the tool description or the server instructions; the baseline is in `apps/server/trials/README.md`.
+  Skip it when nothing model-facing changed (tool schema or description, server instructions,
+  result text): it runs real clients and costs time and tokens.
 - Gallery: `pnpm --filter @parley/desktop dev`, then `http://localhost:1420/?gallery` (dev only).
   Renders every fixture through `compileQuestions` and the real card without the hub; submitting
   shows the `shapeAnswer` output. `&fixture=<name>` picks one.
@@ -83,6 +86,12 @@ From the root:
   connection; servers reconnect and re-send their pending asks.
 - Window state (position, size) is remembered by `tauri-plugin-window-state`, which never restores
   visibility. The window starts hidden.
+- History: every record (with its unsent `draft`) is appended as a snapshot line to
+  `$APPDATA/history.jsonl` by `src/asks/persist.ts`, on create, status change, and draft change
+  (debounced). At startup the file is folded to the last line per id, records that ended over 30
+  days ago are dropped, the result is rewritten through a temp file, and the store is hydrated
+  *before* `hub_ready`. The fs capability is scoped to those two files: `hub.sock` lives in the same
+  dir. `Cmd+Y` toggles the history view; Esc there goes back (detail → list → queue), never hides.
 - Form spec = JSON Schema + `x-widget` hints. The model doesn't write JSON Forms UI schemas. Custom
   widgets are JSON Forms renderers in `apps/desktop/src/forms/renderers/`, with testers that match on
   `x-widget`, registered in `src/forms/renderers.ts`.

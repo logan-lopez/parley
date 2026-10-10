@@ -16,23 +16,23 @@ if (import.meta.env.DEV && new URLSearchParams(location.search).has('gallery')) 
 }
 
 async function startApp() {
-  const [{ default: App }, { getCurrentWindow }, { startHub }, { hubHandlers }, { initNotifications }] = await Promise.all([
+  const [{ default: App }, { startHub }, { hubHandlers, hydrate }, { load }, { initNotifications }] = await Promise.all([
     import('./App.vue'),
-    import('@tauri-apps/api/window'),
     import('./hub/client'),
     import('./asks/store'),
+    import('./asks/persist'),
     import('./asks/notifications'),
   ])
 
   initZoom()
   createApp(App).mount('#app')
 
-  // Esc hides the window; it doesn't dismiss the ask.
-  window.addEventListener('keydown', (event) => {
-    if (event.key === 'Escape') void getCurrentWindow().hide()
-  })
-
-  void initNotifications()
-    .catch((error) => console.warn('notifications unavailable:', error))
-    .then(() => startHub(hubHandlers))
+  // History loads before the hub: servers re-send their pending asks on
+  // connect, and those must find their records (and drafts) already there.
+  const [snapshots] = await Promise.all([
+    load(),
+    initNotifications().catch((error) => console.warn('notifications unavailable:', error)),
+  ])
+  hydrate(snapshots)
+  await startHub(hubHandlers)
 }

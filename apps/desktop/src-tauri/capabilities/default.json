@@ -13,6 +13,13 @@
     "allow-hub-ready",
     "allow-hub-send",
     "allow-hub-close",
-    "allow-set-pending-count"
+    "allow-set-pending-count",
+    "fs:allow-read-text-file",
+    "fs:allow-write-text-file",
+    "fs:allow-rename",
+    {
+      "identifier": "fs:scope",
+      "allow": [{ "path": "$APPDATA/history.jsonl" }, { "path": "$APPDATA/history.jsonl.tmp" }]
+    }
   ]
 }

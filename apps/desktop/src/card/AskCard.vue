@@ -18,6 +18,7 @@ const props = defineProps<{
   position?: number   // 1-based place in the queue
   total?: number
   withdrawn?: string  // why it ended under the user; the card goes read-only
+  readonly?: boolean  // history: no Send or Skip, no keys, a `footer` slot instead
   initialData?: unknown
   initialNote?: string
 }>()
@@ -61,6 +62,7 @@ function onChange(event: JsonFormsChangeEvent) {
 }
 
 const valid = computed(() => errors.value.length === 0)
+const locked = computed(() => props.readonly || !!props.withdrawn)
 
 // What stands between the user and Send, by question header.
 const problems = computed(() => {
@@ -85,7 +87,7 @@ const problems = computed(() => {
 })
 
 function submit() {
-  if (props.withdrawn) return
+  if (locked.value) return
   if (!valid.value) {
     nudge.value = true
     setTimeout(() => (nudge.value = false), 600)
@@ -95,7 +97,7 @@ function submit() {
 }
 
 function skip() {
-  if (!props.withdrawn) emit('skip', note.value)
+  if (!locked.value) emit('skip', note.value)
 }
 
 // Time.
@@ -108,7 +110,9 @@ function ago(ms: number) {
   if (s < 45) return 'just now'
   const m = Math.round(s / 60)
   if (m < 60) return `${m} min ago`
-  return `${Math.floor(m / 60)} h ago`
+  const h = Math.floor(m / 60)
+  if (h < 48) return `${h} h ago`
+  return `${Math.floor(h / 24)} d ago`
 }
 
 function clock(ms: number) {
@@ -155,6 +159,7 @@ function isTyping(el: Element | null) {
 }
 
 function onKey(event: KeyboardEvent) {
+  if (props.readonly) return
   const target = document.activeElement
   const mod = event.metaKey || event.ctrlKey || event.altKey
 
@@ -215,7 +220,9 @@ onMounted(() => {
   window.addEventListener('focus', onWindowFocus)
   document.addEventListener('focusin', onFocusIn)
   void nextTick(() => {
-    focusQuestion(questions()[0])
+    // Read-only: focus the body, so the arrow keys scroll it.
+    if (props.readonly) body.value?.focus({ preventScroll: true })
+    else focusQuestion(questions()[0])
     body.value?.scrollTo({ top: 0 })   // keep the title in view
   })
 })
@@ -227,12 +234,12 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <article ref="root" class="card" :class="{ withdrawn: !!withdrawn }">
+  <article ref="root" class="card" :class="{ withdrawn: !!withdrawn && !readonly }">
     <header class="meta">
       <span class="source" :title="source">{{ source }}</span>
       <span class="sep">·</span>
       <span>{{ age }}</span>
-      <template v-if="remaining !== undefined && !withdrawn">
+      <template v-if="remaining !== undefined && !locked">
         <span class="sep">·</span>
         <span :class="{ urgent: remaining < 60_000 }">expires in {{ clock(remaining) }}</span>
       </template>
@@ -244,19 +251,23 @@ onBeforeUnmount(() => {
 
     <div v-if="withdrawn" class="banner" role="status">{{ withdrawn }}</div>
 
-    <div ref="body" class="body">
+    <div ref="body" class="body" :tabindex="readonly ? -1 : undefined">
       <h1 v-if="form.title" class="title">{{ form.title }}</h1>
       <JsonForms
         :data="data"
         :schema="form.schema"
         :renderers="renderers"
-        :readonly="!!withdrawn"
+        :readonly="locked"
         validation-mode="ValidateAndHide"
         @change="onChange"
       />
 
       <!-- A stop for Tab like a question, but number-key advance skips it. -->
-      <section v-if="!withdrawn || note" class="note" data-question data-note>
+      <section v-if="readonly && note" class="note">
+        <span class="note-label">Note for the agent</span>
+        <p class="note-text">{{ note }}</p>
+      </section>
+      <section v-else-if="!locked || note" class="note" data-question data-note>
         <button v-if="!noteOpen" type="button" class="note-toggle" data-primary @click="openNote">
           Add a note for the agent <kbd class="key">⌘N</kbd>
         </button>
@@ -270,7 +281,7 @@ onBeforeUnmount(() => {
             maxlength="2000"
             placeholder="Context, a correction, or why you're skipping"
             :value="note"
-            :disabled="!!withdrawn"
+            :disabled="locked"
             data-primary
             @input="onNoteInput"
           />
@@ -279,7 +290,8 @@ onBeforeUnmount(() => {
     </div>
 
     <footer class="actions">
-      <template v-if="withdrawn">
+      <slot v-if="readonly" name="footer" />
+      <template v-else-if="withdrawn">
         <span class="hints">Nothing was sent.</span>
         <button type="button" class="button primary" @click="emit('continue')">
           Continue <kbd class="key">↵</kbd>

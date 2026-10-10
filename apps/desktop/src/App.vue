@@ -2,24 +2,21 @@
 // The queue of pending asks, one card at a time. After Send or Skip it moves
 // to the next ask, and hides the window when none are left. An ask that ends
 // under the user (cancelled, timed out, agent gone) stays up with a note
-// until they move on.
-import { computed, ref, watch } from 'vue'
+// until they move on. Cmd+Y switches to history and back; the queue keeps
+// filling while history is open, and its count shows there.
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { getCurrentWindow } from '@tauri-apps/api/window'
 import AskCard from './card/AskCard.vue'
 import ZoomControl from './ZoomControl.vue'
+import HistoryView from './history/HistoryView.vue'
 import { sourceLabel } from './asks/source'
-import { answer, dismiss, getRecord, queue, type AskRecord } from './asks/store'
+import { answer, dismiss, getRecord, queue, setDraft, type AskRecord } from './asks/store'
+
+const view = ref<'queue' | 'history'>('queue')
 
 const selectedId = ref<string | null>(null)
 const shown = computed(() => (selectedId.value ? getRecord(selectedId.value) : undefined))
 const position = computed(() => queue.value.findIndex((r) => r.id === selectedId.value) + 1)
-
-// Unsent input per ask, so moving through the queue doesn't lose it.
-const drafts = new Map<string, { data?: unknown; note?: string }>()
-
-function draft(id: string, patch: { data?: unknown; note?: string }) {
-  drafts.set(id, { ...drafts.get(id), ...patch })
-}
 
 watch(
   () => queue.value.map((r) => r.id).join(),
@@ -60,21 +57,34 @@ function step(by: number) {
 function send(data: unknown, note: string) {
   const id = selectedId.value!
   advanceFrom(id)
-  drafts.delete(id)
   answer(id, data, note)
 }
 
 function skip(note: string) {
   const id = selectedId.value!
   advanceFrom(id)
-  drafts.delete(id)
   dismiss(id, note)
 }
+
+// Esc hides the window from the queue; it doesn't dismiss the ask. History
+// handles its own Esc, which goes back instead.
+function onKey(event: KeyboardEvent) {
+  if (event.metaKey && !event.shiftKey && event.key.toLowerCase() === 'y') {
+    event.preventDefault()
+    view.value = view.value === 'queue' ? 'history' : 'queue'
+  } else if (event.key === 'Escape' && view.value === 'queue') {
+    void getCurrentWindow().hide()
+  }
+}
+
+onMounted(() => window.addEventListener('keydown', onKey))
+onBeforeUnmount(() => window.removeEventListener('keydown', onKey))
 </script>
 
 <template>
+  <HistoryView v-if="view === 'history'" @back="view = 'queue'" />
   <AskCard
-    v-if="shown"
+    v-else-if="shown"
     :key="shown.id"
     :form="shown.form"
     :source="sourceLabel(shown.session)"
@@ -83,21 +93,25 @@ function skip(note: string) {
     :position="position || undefined"
     :total="queue.length"
     :withdrawn="withdrawn"
-    :initial-data="drafts.get(shown.id)?.data"
-    :initial-note="drafts.get(shown.id)?.note"
-    @change="draft(shown.id, { data: $event })"
-    @note="draft(shown.id, { note: $event })"
+    :initial-data="shown.draft?.data"
+    :initial-note="shown.draft?.note"
+    @change="setDraft(shown.id, { data: $event })"
+    @note="setDraft(shown.id, { note: $event })"
     @submit="send"
     @skip="skip"
     @prev="step(-1)"
     @next="step(1)"
     @continue="advanceFrom(shown.id)"
   >
-    <template #meta><ZoomControl /></template>
+    <template #meta>
+      <ZoomControl />
+      <button type="button" class="history-button" tabindex="-1" title="History (⌘Y)" @click="view = 'history'">History <kbd>⌘Y</kbd></button>
+    </template>
   </AskCard>
   <main v-else class="empty-state">
     <ZoomControl class="corner" />
     <p>Nothing is waiting.</p>
-    <p class="hints"><kbd>esc</kbd> hide</p>
+    <button type="button" class="button history-open" @click="view = 'history'">History <kbd class="key">⌘Y</kbd></button>
+    <p class="hints"><kbd>⌘Y</kbd> history · <kbd>esc</kbd> hide</p>
   </main>
 </template>
