@@ -5,8 +5,14 @@ decisions themselves live in the project doc in Obsidian.
 
 ## MCP Apps: the card inline in the chat (spike first)
 
-**Scheduled (2026-10-10):** the spike is brief 6, [`06-mcp-apps-spike.md`](06-mcp-apps-spike.md).
-This section stays as the background it builds on.
+**Spike done (2026-10-10): go, for Claude Desktop, as "show, then wait".** Brief 6's findings
+([`06-mcp-apps-spike.md`](archive/06-mcp-apps-spike.md#findings)) have the evidence and the outline of brief
+7. In short: Desktop mounts a tool's view only after the call returns, so a blocking inline ask
+can't work. Instead `ask` returns at once with an `askId` and `ask_wait` blocks, in slices under
+Desktop's 240 s cap. Eval is allowed, and the card themes from the host. **Scheduled
+(2026-10-10):** brief 7, [`07-inline-cards.md`](07-inline-cards.md). This section stays as the
+background it builds on, and claude.ai/ChatGPT (remote transport) stay unscheduled.
+*Was:* a blocking `ask` whose own call renders the card inline.
 
 **The question:** when the host supports MCP Apps, can an ask render inline in the conversation,
 with the floating window as the fallback?
@@ -45,7 +51,8 @@ keeps renderers free of Tauri, the compiler is pure, and the app renders only JS
    doesn't apply there.
 
 **Kill criteria:** if the answer to (1) is "only after the result" in the hosts Logan uses, park
-this until async exists. Claude Code, the main client, doesn't render MCP Apps at all, so this
+this until async exists. (It was "only after" in Desktop. Show-then-wait is that async, scoped to
+the one tool, so the criterion doesn't park it.) Claude Code, the main client, doesn't render MCP Apps at all, so this
 mostly serves Claude Desktop and claude.ai.
 
 ## Parked
