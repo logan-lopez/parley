@@ -1,6 +1,6 @@
 # Brief 5: The `review` question type
 
-Read `CLAUDE.md`, [`README.md`](README.md) and brief 2 first. Brief 3 must be merged: this brief
+Read `CLAUDE.md`, [`README.md`](../README.md) and brief 2 first. Brief 3 must be merged: this brief
 changes the tool description, and the harness is how you check what that does to uptake.
 
 ## Goal

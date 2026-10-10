@@ -125,4 +125,28 @@ the answer. Trust it more on `export-sentinel`, where the string is distinctive.
 
 ## Baseline
 
-Pending.
+2026-10-10, Claude Code 2.1.296, `claude-opus-5-5`, `--runs 3`, with the `review` type in the tool
+description (8280b48). From `results/2026-10-10T16-03-18-435Z.jsonl`:
+
+| prompt | expect | asked | first call valid | used | over-asked | re-asked after skip |
+| --- | --- | --- | --- | --- | --- | --- |
+| config-format | ask | 0/3 | – | – | – | – |
+| date-library | ask | 3/3 | 3/3 | 3/3 | – | – |
+| dead-code-cleanup | ask | 3/3 | 3/3 | 0/3 | – | – |
+| explain-by-category | no-ask | 0/3 | – | – | 0 | – |
+| export-sentinel | ask | 3/3 | 3/3 | 3/3 | – | – |
+| fix-negative-cents | no-ask | 0/3 | – | – | 0 | – |
+| json-flag | no-ask | 0/3 | – | – | 0 | – |
+| naming-skip | ask | 3/3 | 3/3 | – | – | 0 |
+| prune-unused | ask | 3/3 | 3/3 | 3/3 | – | – |
+| refactor-reports | ask | 3/3 | 3/3 | 0/3 | – | – |
+
+- `config-format` is noisy. A rerun at `--runs 5` asked 4/5, every time with a `choice` and never a
+  `review`. Across both, 4 of 8.
+- `prune-unused` asked with a `review` question in all three runs. One `dead-code-cleanup` run used
+  a `review` too.
+- `used` 0/3 on `dead-code-cleanup` and `refactor-reports` is the generic-label problem above, not
+  ignored answers.
+- Not recorded: a Codex baseline, and a full pass from before the `review` change. Run
+  `--client codex --runs 1` before the next model-facing change, so there's something to compare
+  Codex against.

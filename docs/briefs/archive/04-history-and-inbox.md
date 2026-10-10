@@ -1,6 +1,6 @@
 # Brief 4: Persisted history and the inbox view
 
-Read `CLAUDE.md` and [`README.md`](README.md) first. Briefs 1 and 2 are merged. This brief doesn't
+Read `CLAUDE.md` and [`README.md`](../README.md) first. Briefs 1 and 2 are merged. This brief doesn't
 depend on brief 3, but rerun the harness at the end if it exists.
 
 ## Goal

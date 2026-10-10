@@ -1,6 +1,6 @@
 # Brief 1: Hub, wire protocol, and ask lifecycle
 
-Read `CLAUDE.md` and [`README.md`](README.md) first. The decisions table there is settled.
+Read `CLAUDE.md` and [`README.md`](../README.md) first. The decisions table there is settled.
 
 ## Goal
 

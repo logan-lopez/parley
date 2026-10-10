@@ -1,6 +1,6 @@
 # Brief 3: Trial harness for model uptake
 
-Read `CLAUDE.md` and [`README.md`](README.md) first. Briefs 1 and 2 are merged. You build on
+Read `CLAUDE.md` and [`README.md`](../README.md) first. Briefs 1 and 2 are merged. You build on
 `fake-hub`, the built server in `apps/server/dist/`, and the print-mode trial setup described under
 "Claude Code and long asks" in `CLAUDE.md`.
 

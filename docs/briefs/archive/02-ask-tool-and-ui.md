@@ -1,6 +1,6 @@
 # Brief 2: The `ask` tool and the question UI
 
-Read `CLAUDE.md`, [`README.md`](README.md), and brief 1 first. Brief 1 must already be merged. You
+Read `CLAUDE.md`, [`README.md`](../README.md), and brief 1 first. Brief 1 must already be merged. You
 build on its wire protocol, `AppClient`, `runAsk`, the webview ask store, and the `fake-ask` script.
 
 ## Goal

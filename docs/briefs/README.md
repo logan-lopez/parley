@@ -1,34 +1,29 @@
-# MVP briefs
+# Briefs
 
-The MVP is a working equivalent of Claude's built-in question tool (`AskUserQuestion`), served over
-MCP, with answers given in a floating Parley window instead of inside the client. It should be good
-enough to use every day in Claude Code and one non-Claude client.
+Each brief is a self-contained handoff for a fresh session. New ones go here, numbered from `06`.
+Ideas that aren't scheduled yet, starting with an MCP Apps spike, are in [`FUTURE.md`](FUTURE.md).
 
-Run these in order. Each one is a self-contained handoff for a fresh session:
+There are no open briefs.
 
-1. [`01-hub-and-lifecycle.md`](01-hub-and-lifecycle.md): the pipe. Unix socket hub in Rust, server
-   ↔ app connection, wire protocol v1, the ask lifecycle (timeout, cancel, disconnect), and notify-only
-   window behavior. It ends with a crude form making a full round trip.
-2. [`02-ask-tool-and-ui.md`](02-ask-tool-and-ui.md): the product. The questions-array `ask` tool,
-   its compiler to JSON Schema, the question-card UI, answer shaping, and the server instructions.
+## Done
 
-Brief 2 depends on brief 1's wire protocol and app client, so run it after brief 1 is merged.
+Archived in [`archive/`](archive/). They record what was asked for and why, not how the code works
+now. For that, read `CLAUDE.md` and the code.
 
-## After the MVP
+The MVP (briefs 1–2, done 2026-10-09) is a working equivalent of Claude's built-in question tool
+(`AskUserQuestion`), served over MCP, with answers given in a floating Parley window instead of
+inside the client. Briefs 3–5 (done 2026-10-10) set up for new features.
 
-Briefs 1 and 2 are done. The next three set up for new features:
-
-3. [`03-trial-harness.md`](03-trial-harness.md): a repeatable score for whether models use `ask`
-   and use it well. It measures without tuning, and it records the baseline the later briefs
-   compare against.
-4. [`04-history-and-inbox.md`](04-history-and-inbox.md): asks persisted to disk, a history view in
-   the window, and drafts that survive a reload or a restart. App-side only.
-5. [`05-review-question.md`](05-review-question.md): a `review` question type, where the user
-   approves or rejects each item, with a comment per item.
-
-Brief 4 doesn't depend on brief 3. Brief 5 does, because it changes the tool description and is
-checked against the harness. Ideas that aren't scheduled yet, starting with an MCP Apps spike, are in
-[`FUTURE.md`](FUTURE.md).
+1. [`01-hub-and-lifecycle.md`](archive/01-hub-and-lifecycle.md): the unix socket hub, wire protocol
+   v1, the ask lifecycle (timeout, cancel, disconnect), and notify-only window behavior.
+2. [`02-ask-tool-and-ui.md`](archive/02-ask-tool-and-ui.md): the questions-array `ask` tool, its
+   compiler to JSON Schema, the question card, answer shaping, and the server instructions.
+3. [`03-trial-harness.md`](archive/03-trial-harness.md): a repeatable score for whether models use
+   `ask` and use it well. Results and the baseline are in `apps/server/trials/README.md`.
+4. [`04-history-and-inbox.md`](archive/04-history-and-inbox.md): asks persisted to
+   `history.jsonl`, a history view, and drafts that survive a reload or a restart.
+5. [`05-review-question.md`](archive/05-review-question.md): the `review` question type, where the
+   user approves or rejects each item, with a comment per item.
 
 ## Decisions already made
 
@@ -42,20 +37,20 @@ Don't relitigate these. If one turns out to be wrong in practice, stop and say s
 | New ask arrives | Notify only: system notification and tray count. The window doesn't open on its own. | No focus stealing. You open it with `Cmd+Ctrl+P` or the tray. |
 | Platform | macOS only for the MVP | Other platforms fail clearly. Don't silently half-work there. |
 
-## Out of scope for the MVP
+## Not built
 
-`ask_async`/`collect`, `notify`, persisted history, raw-schema `ask_form`, rank/slider/A-B/annotate
-widgets, native elicitation or MCP Apps rendering, `tauri-nspanel`, remote/headless channels,
-and anything that collects secrets. (Persisted history is now brief 4.)
+`ask_async`/`collect`, `notify`, raw-schema `ask_form`, rank/slider/A-B/annotate widgets, native
+elicitation or MCP Apps rendering, `tauri-nspanel`, and remote/headless channels. `FUTURE.md` says
+where most of these stand. Anything that collects secrets stays out for good.
 
-## Future direction the MVP must not block
+## Future direction new work must not block
 
 Each item below is cheap now and expensive to retrofit later.
 
 - **Async and inbox.** The app treats an ask as a record with an id, session metadata and a status,
-  not as a modal. It never assumes the server is blocking. Answered and cancelled asks stay in the
-  in-memory store with their final status, not deleted, so a history view later is just a filter.
-  The server's blocking `ask` is one consumer of an id-based lifecycle, and `ask_async` will be
+  not as a modal. It never assumes the server is blocking. Ended asks stay in the store with their
+  final status, and the history view (brief 4) is a filter over it, not a second store. The
+  server's blocking `ask` is one consumer of an id-based lifecycle, and `ask_async` will be
   another.
 - **Form language.** The app renders JSON Schema + `x-widget` and knows nothing about the
   questions-array shape. The questions-to-schema compiler is a pure function in `packages/protocol`.

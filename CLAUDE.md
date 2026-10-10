@@ -10,7 +10,8 @@ sections that are unaffected. When a decision replaces an earlier lean, keep a o
 beside it so the reasoning trail survives. Implementation details belong here or in code, not in
 the doc.
 
-Handoff briefs are in `docs/briefs/`. Start with `README.md`; unscheduled ones are in `FUTURE.md`.
+Handoff briefs are in `docs/briefs/`. Start with `README.md`; unscheduled ones are in `FUTURE.md`,
+and finished ones move to `archive/`.
 
 ## Layout
 
@@ -137,7 +138,7 @@ Checked against Claude Code 2.1.296 (2026-10-09), in the docs and by logging the
   `runAsk`'s 15 s keep-alives cover asks up to the 3600 s maximum.
 - Interactive calls still running after 2 min get moved to a background task
   (`CLAUDE_CODE_MCP_AUTO_BACKGROUND_MS`, 0 disables). The ask keeps waiting, but the model gets a
-  task id instead of blocking. Brief 2's instructions and testing need to account for that.
+  task id instead of blocking.
 - Esc during a call sends `notifications/cancelled`. `ctx.mcpReq.signal` aborts, and the card is
   withdrawn as `cancelled`.
 - Auto-backgrounding was confirmed live: the call shows as an "MCP Task", the card keeps waiting, and
