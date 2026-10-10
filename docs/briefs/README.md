@@ -14,6 +14,22 @@ Run these in order. Each one is a self-contained handoff for a fresh session:
 
 Brief 2 depends on brief 1's wire protocol and app client, so run it after brief 1 is merged.
 
+## After the MVP
+
+Briefs 1 and 2 are done. The next three set up for new features:
+
+3. [`03-trial-harness.md`](03-trial-harness.md): a repeatable score for whether models use `ask`
+   and use it well. It measures without tuning, and it records the baseline the later briefs
+   compare against.
+4. [`04-history-and-inbox.md`](04-history-and-inbox.md): asks persisted to disk, a history view in
+   the window, and drafts that survive a reload or a restart. App-side only.
+5. [`05-review-question.md`](05-review-question.md): a `review` question type, where the user
+   approves or rejects each item, with a comment per item.
+
+Brief 4 doesn't depend on brief 3. Brief 5 does, because it changes the tool description and is
+checked against the harness. Ideas that aren't scheduled yet, starting with an MCP Apps spike, are in
+[`FUTURE.md`](FUTURE.md).
+
 ## Decisions already made
 
 Don't relitigate these. If one turns out to be wrong in practice, stop and say so.
@@ -30,7 +46,7 @@ Don't relitigate these. If one turns out to be wrong in practice, stop and say s
 
 `ask_async`/`collect`, `notify`, persisted history, raw-schema `ask_form`, rank/slider/A-B/annotate
 widgets, native elicitation or MCP Apps rendering, `tauri-nspanel`, remote/headless channels,
-and anything that collects secrets.
+and anything that collects secrets. (Persisted history is now brief 4.)
 
 ## Future direction the MVP must not block
 

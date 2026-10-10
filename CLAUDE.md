@@ -10,7 +10,7 @@ sections that are unaffected. When a decision replaces an earlier lean, keep a o
 beside it so the reasoning trail survives. Implementation details belong here or in code, not in
 the doc.
 
-MVP handoff briefs are in `docs/briefs/`. Start with `README.md`.
+Handoff briefs are in `docs/briefs/`. Start with `README.md`; unscheduled ones are in `FUTURE.md`.
 
 ## Layout
 
