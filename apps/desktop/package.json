@@ -8,7 +8,8 @@
     "build": "vue-tsc --noEmit && vite build",
     "typecheck": "vue-tsc --noEmit",
     "preview": "vite preview",
-    "tauri": "tauri"
+    "tauri": "tauri",
+    "install:app": "bash scripts/install.sh"
   },
   "dependencies": {
     "@jsonforms/core": "3.8.0",

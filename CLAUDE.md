@@ -28,6 +28,11 @@ pnpm workspace, Node 24.
 From the root:
 
 - `pnpm app`: `tauri dev` for the desktop app
+- `pnpm install:desktop`: release-builds `Parley.app` and installs it in `~/Applications`
+  (`PARLEY_APP_DIR` overrides), registered with LaunchServices so the server's `open -b` finds it.
+  It never quits or opens Parley: a running copy keeps the old build until you quit it from the
+  tray and reopen. The dev app and the installed one can't run at once (single instance, one
+  socket).
 - `pnpm server`: run the MCP server from source (tsx)
 - `pnpm typecheck` / `pnpm build`: all packages
 - `pnpm --filter @parley/server build`: bundles to `apps/server/dist/index.mjs`, which is what an MCP

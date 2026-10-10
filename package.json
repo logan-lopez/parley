@@ -8,6 +8,7 @@
   },
   "scripts": {
     "app": "pnpm --filter @parley/desktop tauri dev",
+    "install:desktop": "pnpm --filter @parley/desktop install:app",
     "server": "pnpm --filter @parley/server dev",
     "build": "pnpm -r build",
     "typecheck": "pnpm -r typecheck"
