@@ -1,0 +1,24 @@
+{
+  "title": "Cleaning up after the v2 migration",
+  "questions": [
+    {
+      "header": "Cleanup",
+      "question": "These files look unused since the v2 migration. I'll delete the ones you approve. Reject any you want to keep.",
+      "type": "review",
+      "items": [
+        { "label": "src/legacy/router.ts", "detail": "Replaced by `src/router/index.ts`. Nothing imports it." },
+        { "label": "src/legacy/session-store.ts", "detail": "Only imported by `src/legacy/router.ts`." },
+        { "label": "src/utils/format-old.ts", "detail": "Superseded by `src/format.ts`. Its header comment says so." },
+        { "label": "src/utils/deprecated-dates.ts", "detail": "Imported by `scripts/migrate-v1.ts`, which ran once in March." },
+        { "label": "scripts/migrate-v1.ts", "detail": "One-off v0.1 → v0.2 converter." },
+        { "label": "scripts/seed-staging.sh", "detail": "Points at a staging host that no longer resolves." },
+        { "label": "test/fixtures/v1-export.csv", "detail": "Only used by the v1 parser tests, which were deleted." },
+        { "label": "test/legacy-router.test.ts", "detail": "Tests `src/legacy/router.ts`. Skipped with `describe.skip` since June." },
+        { "label": "docs/v1-migration.md", "detail": "Upgrade guide for v1 users. Linked from the README." },
+        { "label": "config/webpack.config.js", "detail": "The build moved to Vite. No script references it." },
+        { "label": ".babelrc", "detail": "Read by nothing after the Vite move." },
+        { "label": "CHANGELOG.old.md", "detail": "Pre-1.0 entries, copied into `CHANGELOG.md` in May." }
+      ]
+    }
+  ]
+}

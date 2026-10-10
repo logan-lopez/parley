@@ -1,0 +1,33 @@
+{
+  "title": "Proposed fixes for the money helpers",
+  "questions": [
+    {
+      "header": "Changes",
+      "question": "I'd make these four changes to `src/utils/money.ts`. Decide on each one.",
+      "type": "review",
+      "defaultDecision": "none",
+      "items": [
+        {
+          "label": "Fix the sign of small negative amounts",
+          "detail": "`fromCents(-5)` prints `$0.05` today.",
+          "preview": "```diff\n@@ -5,6 +5,7 @@ export function toCents(dollars: string): number {\n export function fromCents(cents: number): string {\n-  const dollars = Math.trunc(cents / 100)\n-  const rest = Math.abs(cents % 100).toString().padStart(2, '0')\n-  return `$${dollars}.${rest}`\n+  const sign = cents < 0 ? '-' : ''\n+  const dollars = Math.trunc(Math.abs(cents) / 100)\n+  const rest = (Math.abs(cents) % 100).toString().padStart(2, '0')\n+  return `${sign}$${dollars}.${rest}`\n }\n```"
+        },
+        {
+          "label": "Round toCents half-even",
+          "detail": "Matches `roundHalfEven`, which nothing calls yet.",
+          "preview": "```diff\n@@ -1,3 +1,3 @@\n export function toCents(dollars: string): number {\n-  return Math.round(Number(dollars) * 100)\n+  return roundHalfEven(Number(dollars) * 100)\n }\n```"
+        },
+        {
+          "label": "Reject non-numeric input",
+          "detail": "`toCents('abc')` returns `NaN` and poisons every total.",
+          "preview": "```diff\n@@ -1,3 +1,5 @@\n export function toCents(dollars: string): number {\n-  return Math.round(Number(dollars) * 100)\n+  const value = Number(dollars)\n+  if (!Number.isFinite(value)) throw new Error(`not an amount: ${dollars}`)\n+  return Math.round(value * 100)\n }\n```"
+        },
+        {
+          "label": "Add thousands separators",
+          "detail": "`$12345.00` becomes `$12,345.00`. Changes every snapshot.",
+          "preview": "```diff\n@@ -8,3 +8,4 @@ export function fromCents(cents: number): string {\n-  return `${sign}$${dollars}.${rest}`\n+  const grouped = dollars.toLocaleString('en-US')\n+  return `${sign}$${grouped}.${rest}`\n }\n```"
+        }
+      ]
+    }
+  ]
+}

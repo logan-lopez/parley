@@ -40,7 +40,8 @@ From the root:
   Claude Code in this repo. Needs Node 24: tsdown loads its `.ts` config through native type
   stripping, and Node 22.17 fails with "Failed to import module unrun".
 - `pnpm --filter @parley/protocol test`: vitest for the compiler and answer shaper.
-- `pnpm --filter @parley/desktop test`: vitest for the history file's startup fold.
+- `pnpm --filter @parley/desktop test`: vitest for the history file's startup fold, and every
+  fixture's compiled schema under JSON Forms' AJV settings and strict mode.
 - `pnpm --filter @parley/server fake-ask <file.json | fixture> [--timeout <s>]`: acts as one session
   without an MCP client. It connects to the hub, sends the form, and prints the outcome. Takes `ask`
   tool input (a bare name like `choice` resolves to `packages/protocol/fixtures/choice.json`), which

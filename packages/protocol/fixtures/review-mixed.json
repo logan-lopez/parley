@@ -1,0 +1,26 @@
+{
+  "title": "Dependency upgrades",
+  "questions": [
+    {
+      "header": "Strategy",
+      "question": "How should I land the upgrades you approve below?",
+      "options": [
+        { "label": "One PR each (Recommended)", "description": "Easy to revert one at a time." },
+        { "label": "One PR for all", "description": "Faster to review, harder to bisect." }
+      ]
+    },
+    {
+      "header": "Upgrades",
+      "question": "Which of these major upgrades should I apply? Nothing is approved until you say so.",
+      "type": "review",
+      "defaultDecision": "reject",
+      "items": [
+        { "label": "vite 7 → 8", "detail": "Drops Node 20. Config is compatible." },
+        { "label": "vitest 4 → 5", "detail": "`workspace` is renamed to `projects`." },
+        { "label": "typescript 6.0 → 7.0", "detail": "The Go port. vue-tsc doesn't support it yet." },
+        { "label": "eslint 9 → 10", "detail": "Flat config only; we already use it." },
+        { "label": "zod 4 → 5", "detail": "Not released yet; this would be the beta." }
+      ]
+    }
+  ]
+}

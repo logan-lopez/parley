@@ -1,7 +1,7 @@
 import { readdirSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
-import { askInputSchema, compileQuestions, questionIds, shapeAnswer, type AskInput } from './ask.ts'
+import { askInputSchema, askResultSchema, compileQuestions, questionIds, shapeAnswer, type AskInput } from './ask.ts'
 
 const fixturesDir = join(import.meta.dirname, '../fixtures')
 const fixtures = Object.fromEntries(
@@ -25,7 +25,7 @@ describe('fixtures', () => {
   it('covers every question type, the maximum and previews', () => {
     const all = Object.values(fixtures).map(parse)
     const types = new Set(all.flatMap((f) => f.questions.map((q) => q.type)))
-    expect([...types].sort()).toEqual(['boolean', 'choice', 'number', 'path', 'text'])
+    expect([...types].sort()).toEqual(['boolean', 'choice', 'number', 'path', 'review', 'text'])
     expect(all.some((f) => f.questions.length === 4)).toBe(true)
     expect(all.some((f) => f.questions.some((q) => q.options?.every((o) => o.preview)))).toBe(true)
   })
@@ -72,6 +72,47 @@ describe('input validation', () => {
       .toEqual([expect.stringContaining('at least 2 options')])
     expect(issues({ questions: Array(5).fill({ ...q, options }) }))
       .toEqual([expect.stringContaining('at most 4 questions')])
+  })
+})
+
+describe('review validation', () => {
+  const q = { header: 'Cleanup', question: 'Delete these?' }
+  const items = [{ label: 'a.ts' }, { label: 'b.ts' }]
+
+  it('explains a review without items', () => {
+    expect(issues({ questions: [{ ...q, type: 'text' }, { ...q, type: 'review' }] }))
+      .toEqual(["question 2 has type 'review' but no items; list 1–30 items to approve or reject"])
+  })
+
+  it('points options on a review at items', () => {
+    expect(issues({ questions: [{ ...q, type: 'review', options: items }] }))
+      .toEqual([expect.stringContaining("question 1 has type 'review' but lists its items in `options`; put them in `items`")])
+    expect(issues({ questions: [{ ...q, type: 'review', items, options: items }] }))
+      .toEqual([expect.stringContaining("question 1 has type 'review' but also has options")])
+  })
+
+  it('points items on other types at review', () => {
+    expect(issues({ questions: [{ ...q, items }] }))
+      .toEqual([expect.stringContaining("question 1 has items but type 'choice'; set type to 'review'")])
+    expect(issues({ questions: [{ ...q, items, options: [{ label: 'Yes' }, { label: 'No' }] }] }))
+      .toEqual([expect.stringContaining("question 1 has type 'choice' but also has items; items only apply to type 'review'")])
+    expect(issues({ questions: [{ ...q, type: 'text', items }] }))
+      .toEqual([expect.stringContaining("question 1 has type 'text' but also has items; items only apply to type 'review'")])
+  })
+
+  it('rejects duplicate item labels', () => {
+    expect(issues({ questions: [{ ...q, type: 'review', items: [...items, { label: 'a.ts' }] }] }))
+      .toEqual(["question 1 has two items labelled 'a.ts'; labels identify items in the answer, so they must be unique"])
+  })
+
+  it('limits item count and label length', () => {
+    expect(issues({ questions: [{ ...q, type: 'review', items: [] }] }))
+      .toEqual([expect.stringContaining('at least 1 item')])
+    const many = Array.from({ length: 31 }, (_, i) => ({ label: `file-${i}.ts` }))
+    expect(issues({ questions: [{ ...q, type: 'review', items: many }] }))
+      .toEqual([expect.stringContaining('at most 30 items')])
+    expect(issues({ questions: [{ ...q, type: 'review', items: [{ label: 'x'.repeat(121) }] }] }))
+      .toEqual([expect.stringContaining('120 characters or fewer')])
   })
 })
 
@@ -159,6 +200,49 @@ describe('compileQuestions', () => {
       items: { type: 'string', minLength: 1 }, 'x-path-kind': 'file', 'x-extensions': ['json', 'jsonc'],
     })
     expect(p.output).toMatchObject({ 'x-widget': 'path', type: 'string', 'x-path-kind': 'directory' })
+  })
+})
+
+describe('compileQuestions: review', () => {
+  const decision = { type: 'string', enum: ['approve', 'reject'] }
+  const properties = { decision, comment: { type: 'string' } }
+
+  it('compiles a tuple with the approve default, details and previews', () => {
+    const p = props(parse({
+      questions: [{
+        header: 'Cleanup', question: 'Delete these?', type: 'review',
+        items: [{ label: 'a.ts', detail: 'Unused.' }, { label: 'b.ts', preview: '```diff\n-x\n```' }],
+      }],
+    }))
+    expect(p.cleanup).toEqual({
+      'x-widget': 'review',
+      title: 'Cleanup',
+      description: 'Delete these?',
+      type: 'array',
+      items: [
+        { type: 'object', title: 'a.ts', description: 'Unused.', properties },
+        { type: 'object', title: 'b.ts', 'x-preview': '```diff\n-x\n```', properties },
+      ],
+      minItems: 2,
+      maxItems: 2,
+      additionalItems: false,
+      'x-default-decision': 'approve',
+    })
+  })
+
+  it('carries reject as a default, and none as a required decision per item', () => {
+    const upgrades = props(fixture('review-mixed')).upgrades!
+    expect(upgrades['x-default-decision']).toBe('reject')
+    expect(upgrades.items).toHaveLength(5)
+    expect((upgrades.items as object[]).every((i) => !('required' in i))).toBe(true)
+
+    const changes = props(fixture('review-diff')).changes!
+    expect(changes['x-default-decision']).toBe('none')
+    expect(changes).toMatchObject({ minItems: 4, maxItems: 4, additionalItems: false })
+    for (const item of changes.items as Record<string, unknown>[]) {
+      expect(item.required).toEqual(['decision'])
+      expect(item['x-preview']).toMatch(/^```diff\n/)
+    }
   })
 })
 
@@ -272,6 +356,100 @@ describe('shapeAnswer', () => {
 
     // A blank note is no note.
     expect(shapeAnswer(fixture('choice'), { status: 'dismissed', note: '  ' }).structured).not.toHaveProperty('note')
+  })
+
+  describe('review', () => {
+    const input = parse({
+      questions: [{
+        header: 'Cleanup', question: '?', type: 'review',
+        items: ['src/old.ts', 'README.md', 'package.json', 'a.ts', 'b.ts'].map((label) => ({ label })),
+      }],
+    })
+    const labels = input.questions[0]!.items!.map((i) => i.label)
+    const entries = (...decisions: string[]) => decisions.map((decision) => ({ decision }))
+
+    it('says one line when everything is approved, or rejected, without comments', () => {
+      const approved = shapeAnswer(input, { status: 'answered', data: { cleanup: entries('approve', 'approve', 'approve', 'approve', 'approve') } })
+      expect(approved.text).toBe('The user answered:\n- Cleanup: approved all 5')
+      expect(approved.structured.answers!.cleanup).toEqual({
+        header: 'Cleanup',
+        value: labels,
+        review: labels.map((label) => ({ label, decision: 'approve' })),
+      })
+
+      const rejected = shapeAnswer(input, { status: 'answered', data: { cleanup: entries('reject', 'reject', 'reject', 'reject', 'reject') } })
+      expect(rejected.text).toBe('The user answered:\n- Cleanup: rejected all 5')
+      expect(rejected.structured.answers!.cleanup!.value).toEqual([])
+    })
+
+    it('lists rejections and comments when most are approved', () => {
+      const { structured, text } = shapeAnswer(input, {
+        status: 'answered',
+        data: {
+          cleanup: [
+            { decision: 'reject', comment: 'still imported by cli.ts' },
+            { decision: 'reject', comment: '  ' },
+            { decision: 'approve', comment: 'bump the version too' },
+            { decision: 'approve' },
+            { decision: 'approve' },
+          ],
+        },
+      })
+      expect(text).toBe([
+        'The user answered:',
+        '- Cleanup: approved 3 of 5',
+        '  - Rejected: src/old.ts ("still imported by cli.ts")',
+        '  - Rejected: README.md',
+        '  - Approved, with a comment: package.json ("bump the version too")',
+      ].join('\n'))
+      expect(structured.answers!.cleanup).toEqual({
+        header: 'Cleanup',
+        value: ['package.json', 'a.ts', 'b.ts'],
+        review: [
+          { label: 'src/old.ts', decision: 'reject', comment: 'still imported by cli.ts' },
+          { label: 'README.md', decision: 'reject' },
+          { label: 'package.json', decision: 'approve', comment: 'bump the version too' },
+          { label: 'a.ts', decision: 'approve' },
+          { label: 'b.ts', decision: 'approve' },
+        ],
+      })
+    })
+
+    it('leads with rejected when most are rejected', () => {
+      const data = { cleanup: [{ decision: 'approve' }, { decision: 'reject', comment: 'not yet' }, ...entries('reject', 'reject', 'reject')] }
+      expect(shapeAnswer(input, { status: 'answered', data }).text).toBe([
+        'The user answered:',
+        '- Cleanup: rejected 4 of 5',
+        '  - Approved: src/old.ts',
+        '  - Rejected, with a comment: README.md ("not yet")',
+      ].join('\n'))
+    })
+
+    it('falls back to the default for missing entries', () => {
+      const partial = { status: 'answered' as const, data: { cleanup: [{ decision: 'reject' }, null, { decision: 'maybe' }] } }
+      expect(shapeAnswer(input, partial).structured.answers!.cleanup!.value).toEqual(['README.md', 'package.json', 'a.ts', 'b.ts'])
+      expect(shapeAnswer(input, { status: 'answered', data: {} }).text).toBe('The user answered:\n- Cleanup: approved all 5')
+
+      const opt = (defaultDecision: string) => parse({ ...input, questions: [{ ...input.questions[0], defaultDecision }] })
+      expect(shapeAnswer(opt('reject'), partial).structured.answers!.cleanup!.value).toEqual([])
+      expect(shapeAnswer(opt('none'), partial).text).toBe('The user answered:\n- Cleanup: rejected all 5')
+    })
+
+    it('leaves a blank optional review blank', () => {
+      const optional = parse({ questions: [{ ...input.questions[0], required: false }] })
+      const { structured, text } = shapeAnswer(optional, { status: 'answered', data: {} })
+      expect(structured.answers!.cleanup).toEqual({ header: 'Cleanup', value: null })
+      expect(text).toBe('The user answered:\n- Cleanup: (left blank)')
+    })
+
+    it('validates against the result schema', () => {
+      const { structured } = shapeAnswer(fixture('review-mixed'), {
+        status: 'answered',
+        data: { strategy: 'One PR each (Recommended)', upgrades: [{ decision: 'approve', comment: 'go' }] },
+      })
+      expect(askResultSchema.parse(structured)).toEqual(structured)
+      expect(structured.answers!.upgrades!.value).toEqual(['vite 7 → 8'])
+    })
   })
 
   it('treats junk data as blanks', () => {

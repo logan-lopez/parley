@@ -9,6 +9,9 @@
 //
 //   first | second | last   pick that option in every choice question
 //   other:<text>            answer every choice question with free text
+//
+// Review questions: `first` and `last` approve every item, `second` rejects
+// the first item, and `other:<text>` rejects it with <text> as the comment.
 //   skip                    dismiss
 //   none                    never answer (let it time out or be cancelled)
 //   delay:<s>:<policy>      wait, then apply the policy
@@ -97,6 +100,15 @@ function fill(form: FormSpec, policy: string): Record<string, unknown> {
       case 'number': data[key] = prop.minimum ?? 1; break
       case 'boolean': data[key] = policy !== 'second'; break
       case 'path': data[key] = prop.type === 'array' ? ['/tmp/example'] : '/tmp/example'; break
+      case 'review': {
+        const other = policy.startsWith('other:') ? policy.slice(6) : undefined
+        const items: unknown[] = Array.isArray(prop.items) ? prop.items : []
+        data[key] = items.map((_, i) => {
+          if (i > 0 || (policy !== 'second' && other === undefined)) return { decision: 'approve' }
+          return { decision: 'reject', ...(other !== undefined && { comment: other }) }
+        })
+        break
+      }
     }
   }
   return data

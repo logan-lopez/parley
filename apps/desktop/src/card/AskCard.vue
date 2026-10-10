@@ -70,10 +70,14 @@ const problems = computed(() => {
   const record = (data.value ?? {}) as Record<string, unknown>
   const missing = new Set<string>()
   const invalid = new Map<string, string>()
+  const undecided = new Map<string, Set<string>>()   // a review's items with no decision yet
   for (const error of errors.value) {
-    const key = error.keyword === 'required'
-      ? String(error.params.missingProperty)
-      : error.instancePath.split('/')[1]
+    const [, top, item] = error.instancePath.split('/')
+    if (error.keyword === 'required' && top && item !== undefined) {
+      undecided.set(top, (undecided.get(top) ?? new Set()).add(item))
+      continue
+    }
+    const key = error.keyword === 'required' ? String(error.params.missingProperty) : top
     if (!key) continue
     const value = record[key]
     const title = properties[key]?.title ?? key
@@ -82,6 +86,9 @@ const problems = computed(() => {
   }
   const parts: string[] = []
   if (missing.size) parts.push(`Still needs an answer: ${[...missing].join(', ')}`)
+  for (const [key, items] of undecided) {
+    parts.push(`${properties[key]?.title ?? key}: ${items.size} ${items.size === 1 ? 'item' : 'items'} undecided`)
+  }
   for (const [title, message] of invalid) parts.push(`${title} ${message}`)
   return parts
 })

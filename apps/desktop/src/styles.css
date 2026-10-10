@@ -15,6 +15,8 @@
   --warn: #b5530b;
   --warn-soft: #fbefe3;
   --danger: #b4232a;
+  --danger-soft: #fbeaea;
+  --success: #2b7a3d;
   --code-bg: #efeee9;
   --focus: 0 0 0 2px var(--bg), 0 0 0 4px color-mix(in srgb, var(--accent) 70%, transparent);
   --radius: 8px;
@@ -45,6 +47,8 @@
     --warn: #f0a35e;
     --warn-soft: #3a2a1b;
     --danger: #f07a7f;
+    --danger-soft: #3a2224;
+    --success: #7ccf8f;
     --code-bg: #2e2e33;
   }
 }
@@ -210,6 +214,10 @@ kbd {
 .md table { border-collapse: collapse; font-size: 12px; display: block; overflow-x: auto; }
 .md th, .md td { border: 1px solid var(--border); padding: 3px 6px; text-align: left; }
 .md blockquote { margin: 0 0 8px; padding-left: 10px; border-left: 3px solid var(--border-strong); color: var(--muted); }
+.md .diff-add { color: var(--success); }
+.md .diff-del { color: var(--danger); }
+.md .diff-hunk { color: var(--accent); }
+.md .diff-meta { color: var(--muted); font-weight: 600; }
 
 /* Choice */
 
@@ -350,6 +358,112 @@ textarea.text-input { resize: vertical; min-height: 60px; line-height: 1.4; }
 }
 .icon-button:hover:not(:disabled) { background: var(--surface-2); color: var(--text); }
 .path-row { display: flex; align-items: center; gap: 10px; }
+
+/* Review */
+
+.review { display: flex; flex-direction: column; gap: 6px; }
+
+.review-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 12px;
+  color: var(--muted);
+}
+.review-count { font-variant-numeric: tabular-nums; }
+.review-undecided { color: var(--warn); font-weight: 600; }
+.review-all { display: inline-flex; gap: 10px; }
+
+.review-list {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  overflow: hidden;
+}
+/* With previews, the list scrolls on its own so the preview stays in reach. */
+.review-list.bounded { max-height: 50vh; overflow-y: auto; }
+
+.review-row {
+  position: relative;
+  padding: 6px 8px 6px 12px;
+  cursor: pointer;
+}
+.review-row + .review-row { border-top: 1px solid var(--border); }
+.review-row:focus-visible { box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--accent) 70%, transparent); }
+.review-row::before {
+  content: '';
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 3px;
+}
+.review-row.approve::before { background: var(--accent); }
+.review-row.reject { background: var(--danger-soft); }
+.review-row.reject::before { background: var(--danger); }
+.review-row.undecided::before { background: repeating-linear-gradient(var(--warn) 0 3px, transparent 3px 6px); }
+
+.review-main { display: flex; align-items: flex-start; gap: 8px; }
+.review-body { display: flex; flex-direction: column; flex: 1; min-width: 0; }
+.review-label { font-weight: 550; overflow-wrap: anywhere; }
+.review-row.reject .review-label {
+  color: var(--muted);
+  text-decoration: line-through;
+  text-decoration-thickness: 1.5px;
+}
+.review-row.reject .option-desc { opacity: 0.75; }
+
+.review-actions { display: inline-flex; align-items: center; gap: 4px; flex: none; }
+.review-comment-button {
+  display: inline-grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  border: 0;
+  border-radius: 4px;
+  background: none;
+  color: var(--faint);
+  cursor: pointer;
+  visibility: hidden;
+}
+.review-comment-button svg { width: 14px; height: 14px; }
+.review-row:hover .review-comment-button,
+.review-row:focus-visible .review-comment-button { visibility: visible; }
+.review-comment-button:hover { color: var(--text); background: var(--surface-2); }
+
+.decision {
+  display: inline-flex;
+  border: 1px solid var(--border-strong);
+  border-radius: 6px;
+  overflow: hidden;
+}
+.decision-button {
+  width: 26px;
+  height: 22px;
+  padding: 0;
+  border: 0;
+  background: var(--surface);
+  color: var(--faint);
+  font-size: 12px;
+  cursor: pointer;
+}
+.decision-button + .decision-button { border-left: 1px solid var(--border); }
+.decision-button:hover:not(:disabled) { color: var(--text); background: var(--surface-2); }
+.decision-button.approve[aria-pressed='true'] { background: var(--accent); color: var(--accent-text); }
+.decision-button.reject[aria-pressed='true'] { background: var(--danger); color: var(--surface); }
+.decision-button:disabled { cursor: default; }
+
+.review-comment {
+  width: 100%;
+  margin-top: 5px;
+  padding: 3px 7px;
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  background: var(--surface);
+  font-size: 12px;
+}
+.review-comment::placeholder { color: var(--faint); }
+.review-comment:disabled { border-color: transparent; padding-left: 0; background: none; color: var(--muted); }
 
 /* Empty state */
 

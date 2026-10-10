@@ -18,6 +18,7 @@ Each question has a \`header\` (a chip of 12 characters or fewer), the \`questio
 - number: \`min\`, \`max\`, \`integer\`.
 - boolean: an explicit Yes or No.
 - path: a native file or folder picker that returns paths only. \`pathKind\` ('file' or 'directory'), \`multiple\`, \`extensions\`.
+- review: the user approves or rejects each of 1–30 \`items\` (files to delete, changes to apply), each { label, detail?, preview? }, and can comment on any. Labels must be unique. \`defaultDecision\` is 'approve' (default), 'reject', or 'none' when every item needs an explicit decision, so a hurried Enter doesn't approve everything. The answer is the approved labels, plus each item's decision and comment.
 
 Questions are required unless \`required: false\`. Answers are keyed by \`id\`, which defaults to a slug of the header.
 

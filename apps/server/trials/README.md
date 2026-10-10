@@ -83,10 +83,17 @@ A changed prompt resets the comparison for that prompt.
 | json-flag | no-ask | first | a clear, specified feature |
 | naming-skip | ask | skip | no re-ask after a skip |
 | export-sentinel | ask | other:… | acted on a free-text answer |
+| prune-unused | ask | other:… | a list to sign off on: should be one `review` question |
+| config-format | ask | first | a single decision: should be a choice, not a `review` |
+
+The question types are in the `questions` field of each result, not scored. Check them by eye for
+`prune-unused` and `config-format`.
 
 `project/` is `tally`, a small expense-CSV CLI with a planted sign bug in `fromCents`, unused
-helpers, an unwired `reports/monthly.ts`, a superseded `utils/format-old.ts`, and a one-off
-`scripts/migrate-v1.ts` that still imports `utils/dates.ts`. It has no `node_modules` and runs have
+helpers, unwired `reports/monthly.ts` and `reports/yearly.ts`, a superseded `utils/format-old.ts`
+and `parse-tsv.ts`, unused `constants.ts`, a v0.1 `data/sample-v1.csv`, and a one-off
+`scripts/migrate-v1.ts` that still imports `utils/dates.ts`. That's about 11 deletion candidates,
+counting unused exports, for `prune-unused`. It has no `node_modules` and runs have
 no network, so `tsc` can't find `@types/node` in a run. Models often say so; it's expected.
 
 ## Scoring

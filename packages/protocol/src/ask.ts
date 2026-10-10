@@ -3,16 +3,32 @@
 // Pure functions: the server, fake-ask, the gallery and the tests share them.
 
 import * as z from 'zod/v4'
-import type { ChoiceOptionSchema, FormSpec, JsonSchema, OtherOptionSchema, Widget } from './form.ts'
+import {
+  REVIEW_DECISIONS,
+  type ChoiceOptionSchema,
+  type DefaultDecision,
+  type FormSpec,
+  type JsonSchema,
+  type OtherOptionSchema,
+  type ReviewDecision,
+  type ReviewItemSchema,
+  type Widget,
+} from './form.ts'
 
 export const DEFAULT_TIMEOUT_SECONDS = 1800
-export const QUESTION_TYPES = ['choice', 'text', 'number', 'boolean', 'path'] as const satisfies readonly Widget[]
+export const QUESTION_TYPES = ['choice', 'text', 'number', 'boolean', 'path', 'review'] as const satisfies readonly Widget[]
 
 // Not `.describe()`d field by field: the tool description carries the shape
 // and an example, and per-field descriptions bloat every tools/list.
 const option = z.object({
   label: z.string().min(1).max(60, 'option labels are 60 characters or fewer; put detail in `description`'),
   description: z.string().max(300).optional(),
+  preview: z.string().optional(),
+})
+
+const reviewItem = z.object({
+  label: z.string().min(1).max(120, 'item labels are 120 characters or fewer; put detail in `detail`'),
+  detail: z.string().max(300).optional(),
   preview: z.string().optional(),
 })
 
@@ -42,6 +58,12 @@ const question = z.object({
   pathKind: z.enum(['file', 'directory']).optional(),
   multiple: z.boolean().optional(),
   extensions: z.array(z.string()).optional(),
+  // review
+  items: z.array(reviewItem)
+    .min(1, 'a review question needs at least 1 item')
+    .max(30, 'a review question takes at most 30 items; ask about the rest in a follow-up call')
+    .optional(),
+  defaultDecision: z.enum(['approve', 'reject', 'none']).optional(),
 })
 
 export const askInputSchema = z.object({
@@ -63,6 +85,10 @@ export const askInputSchema = z.object({
     }
 
     if (q.type === 'choice') {
+      if (!q.options && q.items) {
+        ctx.addIssue({ code: 'custom', path: at('items'), message: `question ${n} has items but type 'choice'; set type to 'review' to have the user approve or reject each item, or give a choice question 2–6 options instead` })
+        return
+      }
       if (!q.options) {
         ctx.addIssue({ code: 'custom', path: at('options'), message: `question ${n} has type 'choice' but no options; add 2–6 options, or use type 'text' for a free-form answer` })
         return
@@ -77,8 +103,32 @@ export const askInputSchema = z.object({
           ctx.addIssue({ code: 'custom', path: at('options', j, 'label'), message: `question ${n} has an option labelled '${o.label}'; leave it out, because choice questions already let the user type their own answer` })
         }
       })
+    } else if (q.type === 'review') {
+      if (!q.items) {
+        ctx.addIssue(q.options
+          ? { code: 'custom', path: at('options'), message: `question ${n} has type 'review' but lists its items in \`options\`; put them in \`items\` instead, each { label, detail?, preview? }` }
+          : { code: 'custom', path: at('items'), message: `question ${n} has type 'review' but no items; list 1–30 items to approve or reject` })
+        return
+      }
+      if (q.options) {
+        ctx.addIssue({ code: 'custom', path: at('options'), message: `question ${n} has type 'review' but also has options; a review lists what to approve in \`items\`, and \`options\` only apply to type 'choice', so drop them` })
+      }
+      const labels = new Set<string>()
+      q.items.forEach((item, j) => {
+        if (labels.has(item.label)) {
+          ctx.addIssue({ code: 'custom', path: at('items', j, 'label'), message: `question ${n} has two items labelled '${item.label}'; labels identify items in the answer, so they must be unique` })
+        }
+        labels.add(item.label)
+      })
     } else if (q.options) {
       ctx.addIssue({ code: 'custom', path: at('options'), message: `question ${n} has type '${q.type}' but also has options; options only apply to type 'choice', so drop them or set type to 'choice'` })
+    }
+
+    if (q.type !== 'review' && q.type !== 'choice' && q.items) {
+      ctx.addIssue({ code: 'custom', path: at('items'), message: `question ${n} has type '${q.type}' but also has items; items only apply to type 'review', so drop them or set type to 'review'` })
+    }
+    if (q.type === 'choice' && q.options && q.items) {
+      ctx.addIssue({ code: 'custom', path: at('items'), message: `question ${n} has type 'choice' but also has items; items only apply to type 'review', and a choice question takes \`options\`` })
     }
 
     if (q.type === 'number' && q.min !== undefined && q.max !== undefined && q.min > q.max) {
@@ -95,6 +145,12 @@ export type Question = AskInput['questions'][number]
 // outputSchema, so guidance like "don't ask again" has to live here too.
 const answerValue = z.union([z.string(), z.array(z.string()), z.number(), z.boolean(), z.null()])
 
+const reviewOutcome = z.object({
+  label: z.string(),
+  decision: z.enum(REVIEW_DECISIONS),
+  comment: z.string().optional(),
+})
+
 export const askResultSchema = z.object({
   status: z.enum(['answered', 'dismissed', 'timed_out', 'cancelled']),
   message: z.string(),
@@ -102,6 +158,7 @@ export const askResultSchema = z.object({
     header: z.string(),
     value: answerValue,        // null: an optional question left blank
     custom: z.string().optional(),   // the user's own text, when it isn't one of the options
+    review: z.array(reviewOutcome).optional(),   // a review's every item, in order; `value` is the approved labels
   })).optional(),
   note: z.string().optional(),       // free text the user added for the agent, with an answer or a skip
 })
@@ -109,6 +166,7 @@ export const askResultSchema = z.object({
 export type AskResult = z.infer<typeof askResultSchema>
 export type Answer = NonNullable<AskResult['answers']>[string]
 export type AnswerValue = Answer['value']
+export type ReviewOutcome = z.infer<typeof reviewOutcome>
 
 export type AskOutcome =
   | { status: 'answered'; data: unknown; note?: string }
@@ -208,6 +266,29 @@ function compileQuestion(q: Question): JsonSchema {
         ...(extensions?.length && { 'x-extensions': extensions }),
       }
     }
+    case 'review': {
+      const items = q.items ?? []
+      const fallback = q.defaultDecision ?? 'approve'
+      return {
+        'x-widget': 'review', ...base,
+        type: 'array',
+        items: items.map((item): ReviewItemSchema => ({
+          type: 'object',
+          title: item.label,
+          ...(item.detail && { description: item.detail }),
+          ...(item.preview && { 'x-preview': item.preview }),
+          properties: {
+            decision: { type: 'string', enum: [...REVIEW_DECISIONS] },
+            comment: { type: 'string' },
+          },
+          ...(fallback === 'none' && { required: ['decision'] as ['decision'] }),
+        })),
+        minItems: items.length,
+        maxItems: items.length,
+        additionalItems: false,
+        'x-default-decision': fallback satisfies DefaultDecision,
+      }
+    }
   }
 }
 
@@ -240,7 +321,7 @@ export function shapeAnswer(input: AskInput, outcome: AskOutcome): { structured:
     const id = ids[i]!
     const answer = readAnswer(q, data[id])
     answers[id] = answer
-    lines.push(describe(answer, new Set(q.options?.map((o) => o.label))))
+    lines.push(answer.review ? describeReview(answer.header, answer.review) : describe(answer, new Set(q.options?.map((o) => o.label))))
   })
   if (note) lines.push('', 'They also left a note:', quote(note))
   return text('answered', lines.join('\n'), answers)
@@ -276,6 +357,23 @@ function readAnswer(q: Question, raw: unknown): Answer {
       if (!values.length) return blank
       return { header, value: q.multiple ? values : values[0]! }
     }
+    case 'review': {
+      // The app always sends a complete array (the renderer writes the
+      // defaults, or the form requires every decision), so only an optional
+      // review can be blank. Missing entries, from fake-hub or partial data,
+      // fall back to the default; under 'none' that's a reject, so nothing is
+      // approved that the user didn't approve.
+      if (!Array.isArray(raw) && q.required === false) return blank
+      const entries = Array.isArray(raw) ? raw : []
+      const fallback: ReviewDecision = q.defaultDecision === 'reject' || q.defaultDecision === 'none' ? 'reject' : 'approve'
+      const review = (q.items ?? []).map(({ label }, i): ReviewOutcome => {
+        const entry = isRecord(entries[i]) ? entries[i] : {}
+        const decision = entry.decision === 'approve' || entry.decision === 'reject' ? entry.decision : fallback
+        const comment = isFilled(entry.comment) ? entry.comment.trim() : undefined
+        return { label, decision, ...(comment && { comment }) }
+      })
+      return { header, value: review.filter((r) => r.decision === 'approve').map((r) => r.label), review }
+    }
   }
 }
 
@@ -293,6 +391,23 @@ function describe({ header, value, custom }: Answer, labels: Set<string>): strin
   if (custom !== undefined) return `- ${header}: "${value}" ${OWN_ANSWER}`
   if (value.includes('\n')) return `- ${header}:\n${value.replace(/^/gm, '  ')}`
   return `- ${header}: ${value}`
+}
+
+// The majority decision leads, and the text lists only the exceptions: the
+// minority decisions, and majority ones that came with a comment.
+function describeReview(header: string, review: ReviewOutcome[]): string {
+  const approved = review.filter((r) => r.decision === 'approve').length
+  const lead: ReviewDecision = approved >= review.length - approved ? 'approve' : 'reject'
+  const count = lead === 'approve' ? approved : review.length - approved
+  const verb = lead === 'approve' ? 'approved' : 'rejected'
+  const exceptions = review.filter((r) => r.decision !== lead || r.comment !== undefined)
+  const lines = [`- ${header}: ${verb} ${count === review.length ? `all ${count}` : `${count} of ${review.length}`}`]
+  for (const r of exceptions) {
+    const name = r.decision === 'approve' ? 'Approved' : 'Rejected'
+    const kind = r.decision === lead ? `${name}, with a comment` : name
+    lines.push(`  - ${kind}: ${r.label}${r.comment !== undefined ? ` (${JSON.stringify(r.comment)})` : ''}`)
+  }
+  return lines.join('\n')
 }
 
 function duration(seconds: number): string {

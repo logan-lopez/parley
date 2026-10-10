@@ -3,6 +3,7 @@ import BooleanRenderer from './renderers/BooleanRenderer.vue'
 import ChoiceRenderer from './renderers/ChoiceRenderer.vue'
 import NumberRenderer from './renderers/NumberRenderer.vue'
 import PathRenderer from './renderers/PathRenderer.vue'
+import ReviewRenderer from './renderers/ReviewRenderer.vue'
 import TextRenderer from './renderers/TextRenderer.vue'
 import { widgetTester } from './renderers/useQuestion'
 
@@ -15,4 +16,5 @@ export const renderers = Object.freeze([
   { tester: widgetTester('number'), renderer: NumberRenderer },
   { tester: widgetTester('boolean'), renderer: BooleanRenderer },
   { tester: widgetTester('path'), renderer: PathRenderer },
+  { tester: widgetTester('review'), renderer: ReviewRenderer },
 ])

@@ -7,6 +7,11 @@
 // - `[data-primary]` is where focus lands when the question becomes active.
 // - `[data-advance-on-pick]` on the root moves focus to the next question
 //   after a number-key pick (single choice, boolean).
+//
+// The card claims digits, Enter, Tab and Cmd chords; the window claims Esc
+// (hide). Other plain keys are the renderer's own, handled on its elements
+// (the review renderer's j/k/a/r/c). A renderer that needs Esc for itself, like
+// leaving a review comment, stops its propagation so the window stays up.
 
 export const QUESTION = '[data-question]'
 

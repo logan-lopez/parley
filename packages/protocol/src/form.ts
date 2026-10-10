@@ -15,10 +15,19 @@
 // - `boolean`: `type: boolean` with no default, so nothing is picked at first.
 // - `path`: `type: string`, or an array of strings when several are allowed.
 //   `x-path-kind: 'file' | 'directory'`, `x-extensions: ['ts', 'json']`.
+// - `review`: approve or reject each of a list of items. A tuple array, one
+//   `{ type: object, title, description?, 'x-preview'?, properties: { decision, comment } }`
+//   per item, index-aligned with the data, with `minItems`, `maxItems` and
+//   `additionalItems: false` pinning the length. `decision` is
+//   `'approve' | 'reject'`. `x-default-decision: 'approve' | 'reject' | 'none'`:
+//   the renderer writes the default into every entry when it mounts; under
+//   `'none'` each item has `required: ['decision']` instead. There's no
+//   elicitation downgrade for this one: elicitation forms are flat, with no
+//   arrays of objects.
 //
 // Markdown in `description` and `x-preview` is rendered without raw HTML.
 
-export const WIDGETS = ['choice', 'text', 'number', 'boolean', 'path'] as const
+export const WIDGETS = ['choice', 'text', 'number', 'boolean', 'path', 'review'] as const
 export type Widget = (typeof WIDGETS)[number]
 
 export type PathKind = 'file' | 'directory'
@@ -31,6 +40,29 @@ export interface ChoiceOptionSchema {
   title: string
   description?: string
   'x-preview'?: string
+}
+
+export const REVIEW_DECISIONS = ['approve', 'reject'] as const
+export type ReviewDecision = (typeof REVIEW_DECISIONS)[number]
+export type DefaultDecision = ReviewDecision | 'none'
+
+// One entry of a review's tuple `items`.
+export interface ReviewItemSchema {
+  type: 'object'
+  title: string
+  description?: string
+  'x-preview'?: string
+  properties: {
+    decision: { type: 'string'; enum: ReviewDecision[] }
+    comment: { type: 'string' }
+  }
+  required?: ['decision']
+}
+
+// A review's data entry, at the item's index.
+export interface ReviewEntry {
+  decision?: ReviewDecision
+  comment?: string
 }
 
 // The free-text branch of an `anyOf` choice.
