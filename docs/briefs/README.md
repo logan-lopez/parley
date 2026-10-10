@@ -12,13 +12,12 @@ and move to `archive/` when they're done. Ideas that aren't scheduled yet are in
   harness, history, and the `review` type (briefs 1–5).
 - The MCP Apps spike (brief 6) says go for Claude Desktop, as "show, then wait". Its code is on
   `spike/mcp-apps` (`fc40ffb`) as reference, and that branch stays unmerged.
-- Next: brief 7, the real build of inline cards in Desktop.
-- Loose end for Logan: `apps/server/dist/` is still the spike build, which Claude Desktop runs.
-  Rebuild from main (or finish brief 7) to replace it.
+- Brief 7 (inline cards in Desktop) is built on `feat/inline-cards`, awaiting Logan's checks in
+  Claude Desktop. `apps/server/dist/` is now that branch's build, which Desktop runs.
 
 ## Open
 
-7. [`07-inline-cards.md`](07-inline-cards.md): the ask card inline in Claude Desktop chat (show,
+7. [`07-inline-cards.md`](07-inline-cards.md) (done, awaiting review): the ask card inline in Claude Desktop chat (show,
    then wait), racing the window, with inline answers recorded in history.
 
 ## Done
@@ -57,6 +56,7 @@ Don't relitigate these. If one turns out to be wrong in practice, stop and say s
 | Platform | macOS only for the MVP | Other platforms fail clearly. Don't silently half-work there. |
 | Inline asks in MCP Apps clients | "Show, then wait": `ask` returns an `askId` at once, and `ask_wait` blocks in 200 s slices. Registered only for clients that advertise MCP Apps. | Desktop mounts a view only after its call returns, and cuts local calls at 240 s (brief 6). Claude Code's tool list stays as it is. |
 | Inline answers and the window | The window races the card quietly (no notification). The server sends an inline answer to the app (`resolved`), and history records it as answered in the chat. | The user already sees the card. History stays complete (2026-10-10). |
+| History when the window and the card both answer | The server's first-in answer wins, and `resolved` overwrites the window's answered or skipped record | History matches what the agent got (brief 7, 2026-10-10). |
 
 ## Not built
 

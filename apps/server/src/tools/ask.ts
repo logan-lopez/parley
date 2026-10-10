@@ -9,7 +9,7 @@ import {
 import { runAsk } from '../ask-lifecycle.ts'
 
 // About the input shape. When to ask lives in the server instructions.
-const description = `
+export const description = `
 Ask the user 1–4 questions in a form and wait for their answers.
 
 Each question has a \`header\` (a chip of 12 characters or fewer), the \`question\` (markdown) and a \`type\`:

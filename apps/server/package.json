@@ -11,16 +11,19 @@
     "fake-ask": "tsx scripts/fake-session.ts",
     "fake-hub": "tsx scripts/fake-hub.ts",
     "trial": "tsx scripts/trial.ts",
-    "build": "tsdown",
+    "build": "pnpm --filter @parley/desktop build:mcp-app && tsdown",
     "start": "node dist/index.mjs",
-    "typecheck": "tsc"
+    "typecheck": "tsc",
+    "fake-host": "tsx scripts/fake-host.ts"
   },
   "dependencies": {
+    "@modelcontextprotocol/ext-apps": "^2.0.3",
     "@modelcontextprotocol/server": "^2.3.1",
     "@parley/protocol": "workspace:*",
     "zod": "^4.6.5"
   },
   "devDependencies": {
+    "@modelcontextprotocol/client": "^2.3.1",
     "@types/node": "^24.19.2",
     "tsdown": "^0.23.0",
     "tsx": "^4.23.15",

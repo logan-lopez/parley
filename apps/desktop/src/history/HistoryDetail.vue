@@ -15,6 +15,10 @@ const answered = computed(() => props.record.status === 'answered')
 
 const sent = computed(() => {
   const r = props.record
+  if (r.answeredIn === 'chat') {
+    const line = r.status === 'answered' ? 'Answered in the chat' : 'Skipped in the chat'
+    return `${line}${r.note ? ', with a note' : ''}.`
+  }
   if (r.status === 'answered') return r.note ? 'Sent with a note.' : 'Sent.'
   const draft = r.draft?.data !== undefined ? ' This is what you had typed.' : ''
   if (r.status === 'dismissed') return (r.note ? 'Only the note was sent.' : 'Nothing was sent.') + draft

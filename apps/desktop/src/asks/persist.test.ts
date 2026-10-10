@@ -79,6 +79,11 @@ describe('fold', () => {
     expect(bad).toBe(4)
   })
 
+  it('keeps the inline fields', () => {
+    const text = snap('i', { inline: true, answeredIn: 'chat', status: 'dismissed', note: 'from the chat' })
+    expect(fold(text, NOW).records[0]).toMatchObject({ inline: true, answeredIn: 'chat', status: 'dismissed', note: 'from the chat' })
+  })
+
   it('handles an empty file', () => {
     expect(fold('', NOW)).toEqual({ records: [], bad: 0 })
   })

@@ -18,7 +18,9 @@ const props = defineProps<{
   position?: number   // 1-based place in the queue
   total?: number
   withdrawn?: string  // why it ended under the user; the card goes read-only
+  withdrawnHint?: string  // the footer line then; "Nothing was sent." by default
   readonly?: boolean  // history: no Send or Skip, no keys, a `footer` slot instead
+  embedded?: boolean  // in a host's page (the MCP Apps card): no focus on mount, no esc hint
   initialData?: unknown
   initialNote?: string
 }>()
@@ -227,6 +229,8 @@ onMounted(() => {
   window.addEventListener('focus', onWindowFocus)
   document.addEventListener('focusin', onFocusIn)
   void nextTick(() => {
+    // Never pull focus out of the host's own input.
+    if (props.embedded) return
     // Read-only: focus the body, so the arrow keys scroll it.
     if (props.readonly) body.value?.focus({ preventScroll: true })
     else focusQuestion(questions()[0])
@@ -299,7 +303,7 @@ onBeforeUnmount(() => {
     <footer class="actions">
       <slot v-if="readonly" name="footer" />
       <template v-else-if="withdrawn">
-        <span class="hints">Nothing was sent.</span>
+        <span class="hints">{{ withdrawnHint ?? 'Nothing was sent.' }}</span>
         <button type="button" class="button primary" @click="emit('continue')">
           Continue <kbd class="key">↵</kbd>
         </button>
@@ -310,7 +314,7 @@ onBeforeUnmount(() => {
         </p>
         <div class="buttons">
           <span class="hints">
-            <kbd>1</kbd>–<kbd>9</kbd> pick · <kbd>⇥</kbd> next<template v-if="(total ?? 0) > 1"> · <kbd>⌘[</kbd> <kbd>⌘]</kbd> queue</template> · <kbd>esc</kbd> hide
+            <kbd>1</kbd>–<kbd>9</kbd> pick · <kbd>⇥</kbd> next<template v-if="(total ?? 0) > 1"> · <kbd>⌘[</kbd> <kbd>⌘]</kbd> queue</template><template v-if="!embedded"> · <kbd>esc</kbd> hide</template>
           </span>
           <button type="button" class="button" @click="skip">
             Skip <kbd class="key">⌘.</kbd>

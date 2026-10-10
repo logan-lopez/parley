@@ -1,6 +1,7 @@
 // What renderers may ask of the host. Renderers import this, never
-// `@tauri-apps/*`, so they can run in an MCP Apps iframe later. Outside
-// Tauri (the gallery in a plain browser) it falls back to browser APIs.
+// `@tauri-apps/*`, so they also run in the MCP Apps card, which overrides
+// what it needs with `setPlatform`. Outside Tauri (the gallery in a plain
+// browser) it falls back to browser APIs.
 
 import { isTauri } from '@tauri-apps/api/core'
 import { open } from '@tauri-apps/plugin-dialog'
@@ -34,6 +35,18 @@ export async function pickPaths(opts: PickOptions): Promise<string[]> {
 // Opens a link in the default browser. Anything but http(s) and mailto is ignored.
 export async function openExternal(url: string): Promise<void> {
   if (!/^(https?|mailto):/i.test(url)) return
-  if (isTauri()) await openUrl(url)
+  if (overrides.openExternal) await overrides.openExternal(url)
+  else if (isTauri()) await openUrl(url)
   else window.open(url, '_blank', 'noopener')
+}
+
+// A host that isn't Tauri or a plain browser (the MCP Apps card) swaps in its own.
+interface Overrides {
+  openExternal?: (url: string) => Promise<void>
+}
+
+const overrides: Overrides = {}
+
+export function setPlatform(next: Overrides) {
+  Object.assign(overrides, next)
 }

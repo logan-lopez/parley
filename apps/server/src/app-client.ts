@@ -14,6 +14,7 @@ import {
   SOCKET_FILENAME,
   type AppToServer,
   type FormSpec,
+  type InlineOutcome,
   type ServerToApp,
   type SessionInfo,
 } from '@parley/protocol'
@@ -23,9 +24,19 @@ export type { AskOutcome }
 
 export interface AskOptions {
   timeoutMs: number
+  // Aborting withdraws the ask as cancelled. Abort with an `InlineOutcome` as
+  // the reason when the user answered in the chat instead: the app then
+  // records that answer, and `ask` resolves with it.
   signal: AbortSignal
   // Who's asking, for the hello. The latest non-null value wins.
   client?: SessionInfo['client']
+  // The client also shows this ask inline (MCP Apps), so the app doesn't notify.
+  inline?: boolean
+}
+
+export function isInlineOutcome(value: unknown): value is InlineOutcome {
+  const status = (value as { status?: unknown } | null | undefined)?.status
+  return status === 'answered' || status === 'dismissed'
 }
 
 export interface AppClient {
@@ -37,6 +48,8 @@ const LAUNCH_POLL_MS = 250
 const RECONNECT_WINDOW_MS = 30_000
 const NOT_RUNNING = "Parley isn't running. Start the app and try again."
 const CLOSED = 'Parley closed before the user answered.'
+// How long to listen for an app too old to know `resolved`.
+const RESOLVED_FALLBACK_MS = 30_000
 
 const log = (...args: unknown[]) => console.error('[parley]', ...args)
 
@@ -67,6 +80,8 @@ class SocketAppClient implements AppClient {
   private readonly pending = new Map<string, Pending>()
   private socket: Socket | null = null
   private connecting = false
+  // Ids just sent as `resolved`, in case the app rejects the message (see receive).
+  private readonly resolving = new Set<string>()
 
   ask(form: FormSpec, opts: AskOptions): Promise<AskOutcome> {
     if (opts.client) this.client = opts.client
@@ -79,6 +94,7 @@ class SocketAppClient implements AppClient {
       form,
       createdAt,
       expiresAt: createdAt + opts.timeoutMs,
+      ...(opts.inline && { inline: true }),
     }
 
     return new Promise<AskOutcome>((resolve, reject) => {
@@ -93,7 +109,13 @@ class SocketAppClient implements AppClient {
         this.write({ type: 'cancel', id: message.id, reason })
         resolve(outcome)
       }
-      const onAbort = () => cancel('client_cancelled', { status: 'cancelled' })
+      const onAbort = () => {
+        const reason: unknown = opts.signal.reason
+        if (!isInlineOutcome(reason)) return cancel('client_cancelled', { status: 'cancelled' })
+        end()
+        this.sendResolved(message.id, reason)
+        resolve(reason)
+      }
       const timer = setTimeout(() => cancel('timed_out', { status: 'timed_out' }), opts.timeoutMs)
       opts.signal.addEventListener('abort', onAbort, { once: true })
 
@@ -218,6 +240,11 @@ class SocketAppClient implements AppClient {
         return
       case 'error':
         log(`app error (${message.code}${message.id ? ` for ${message.id}` : ''}): ${message.message}`)
+        if (message.id && this.resolving.delete(message.id) && message.code === 'invalid_message') {
+          // An app older than this server: at least withdraw its card.
+          log('the app doesn\'t know `resolved`; withdrawing its card instead. Update Parley.')
+          this.write({ type: 'cancel', id: message.id, reason: 'client_cancelled' })
+        }
         if (message.code === 'version_mismatch') {
           // The app closes the connection after this; don't let `close` start a reconnect.
           const socket = this.socket
@@ -229,6 +256,12 @@ class SocketAppClient implements AppClient {
       default:
         log('unknown message from app:', line.slice(0, 200))
     }
+  }
+
+  private sendResolved(id: string, outcome: InlineOutcome) {
+    this.resolving.add(id)
+    setTimeout(() => this.resolving.delete(id), RESOLVED_FALLBACK_MS).unref()
+    this.write({ type: 'resolved', id, outcome })
   }
 
   private write(message: ServerToApp) {

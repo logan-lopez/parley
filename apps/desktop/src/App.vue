@@ -31,7 +31,16 @@ const WITHDRAWN: Partial<Record<AskRecord['status'], string>> = {
   timed_out: 'Withdrawn: this question timed out.',
   orphaned: 'The agent disconnected. If it reconnects, this question comes back.',
 }
-const withdrawn = computed(() => (shown.value ? WITHDRAWN[shown.value.status] : undefined))
+// Answered or skipped in the chat's inline card, which won the race.
+const IN_CHAT: Partial<Record<AskRecord['status'], string>> = {
+  answered: 'Answered in the chat.',
+  dismissed: 'Skipped in the chat.',
+}
+const withdrawn = computed(() => {
+  const record = shown.value
+  if (!record) return undefined
+  return record.answeredIn === 'chat' ? IN_CHAT[record.status] : WITHDRAWN[record.status]
+})
 
 // Ended while shown. If nobody's looking, move on without the note.
 watch(() => shown.value?.status, async (status, before) => {
@@ -93,6 +102,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKey))
     :position="position || undefined"
     :total="queue.length"
     :withdrawn="withdrawn"
+    :withdrawn-hint="shown.answeredIn === 'chat' ? 'Nothing was sent from here.' : undefined"
     :initial-data="shown.draft?.data"
     :initial-note="shown.draft?.note"
     @change="setDraft(shown.id, { data: $event })"

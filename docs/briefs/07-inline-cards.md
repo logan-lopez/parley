@@ -268,5 +268,175 @@ Logan checks by hand, in Claude Desktop chat, after a relaunch (ask first) and
 11. One ask in Desktop's agent mode: does the card render? Record it either way.
 12. The window and the gallery look the same as on main.
 
-Append a `## Report` with what was built, how each acceptance item went, and anything that moved
-from this brief. Then stop. Ask Logan before merging anything, and leave `spike/mcp-apps` alone.
+Append a `## Report
+
+Built 2026-10-10 on `feat/inline-cards` (from main at `3a0f4a0`), uncommitted. `spike/mcp-apps` untouched.
+
+### Built
+
+- **Wire** (`packages/protocol/src/wire.ts`): `inline?: boolean` on `ask`, a `resolved` message and
+  `InlineOutcome`, as pinned. Still protocol v1. `hasPathQuestion(form)` in `form.ts`, shared by the
+  server and the card.
+- **App** (`apps/desktop`):
+  - `src/hub/client.ts` validates `resolved` (an answered outcome needs `data`; anything else is
+    `invalid_message`) and passes `inline` through. An unknown or other-connection id gets
+    `unknown_ask`.
+  - `src/asks/store.ts`: `AskRecord` gains `inline` and `answeredIn: 'chat'`. Inline asks queue
+    without `notifyNewAsk` (the tray count still includes them). `resolved` ends a pending or
+    orphaned record as answered or skipped, with the data and the trimmed note.
+  - `App.vue`: a shown card that ends in the chat gets the withdrawn-style banner "Answered in the
+    chat." or "Skipped in the chat.", with "Nothing was sent from here." in the footer (a new
+    `withdrawnHint` prop on `AskCard`; the default is still "Nothing was sent.").
+  - History: these records list as Answered or Skipped and filter with the window's own. The
+    detail line reads "Answered in the chat." or "Skipped in the chat." (with ", with a note").
+  - `src/platform.ts`: `setPlatform({ openExternal })`.
+  - Tests: `src/asks/store.test.ts` (new, the real hub client and store with Tauri mocked) and a
+    fold case in `persist.test.ts`.
+- **Server** (`apps/server`):
+  - `src/client-capabilities.ts`: `peekFirstMessage` (from the spike's `peekInitialize`, both
+    handshakes) and `supportsMcpApps`, commented as stdio- and first-message-only.
+  - `src/index.ts`: peek, build `McpServer` with the right instructions, register one surface,
+    connect on the replayed stream. One stderr line: `initialize from claude-ai 0.1.0; inline
+    cards on`. The inline instructions swap the one sentence (1,421 characters; main's are 1,258).
+  - `src/tools/ask.ts`: unchanged apart from exporting `description`.
+  - `src/tools/inline.ts`: `ask` (main's schema and description plus the two-step paragraph,
+    output `{ askId, message }`), `ask_wait`, and the app-only `parley_submit` / `parley_status`
+    (both return `open | ended (+ via, outcome) | unknown` as `structuredContent`, plus `accepted`
+    on submit). The resource `ui://parley/card.html`.
+  - `src/ask-lifecycle.ts`: `runAsk` behaves as on main (its keep-alive moved into `keepAlive`).
+    `showAsk`, `waitAsk`, `askStatus`, `awaitStatus` (the long-poll), `answerInline`, keyed by
+    `askId`, with ended asks dropped an hour after they end.
+  - `src/app-client.ts`: `AskOptions.inline`. Aborting with an `InlineOutcome` as the reason sends
+    `resolved` and resolves with that outcome. A `resolved` answered by `invalid_message` is
+    followed by `cancel` with `client_cancelled`.
+  - `src/card.ts`: resolves `dist/card.html`, falling back to `apps/desktop/dist-mcp-app/`, and
+    reads it per request. A missing card is an error on `resources/read`.
+  - Build: `build` runs `pnpm --filter @parley/desktop build:mcp-app` first, and `tsdown.config.ts`
+    copies the card to `dist/card.html` (`copy` with `rename`). `noExternal` became
+    `deps.alwaysBundle`, which clears tsdown's deprecation warning.
+  - `scripts/fake-host.ts` (new), and `fake-hub --old-app`.
+- **Card** (`apps/desktop`): `mcp-app.html`, `src/mcp-app/main.ts`, `McpApp.vue`, `theme.ts`,
+  `vite.mcp-app.config.ts`, `build:mcp-app`. 706.5 kB, 217.7 kB gzipped. `dist-mcp-app` is now in
+  `.gitignore`. `AskCard` gains `embedded`: no esc hint, and no focus on mount, so a card that
+  mounts in the chat can't take focus from the chat box.
+- **Styles** (`src/styles.css`): tokens restructured as the brief says, plus `html.inline`
+  (content height, no inner scroll, `max-width: 640px`, host fonts via `--font-sans` /
+  `--font-mono`).
+- **Docs**: `CLAUDE.md` (the card entry and build, `fake-host`, both tool surfaces, `resolved` and
+  `inline`, a "Claude Desktop and inline cards" section). The Obsidian project doc: the Rough
+  architecture tools line, the MCP Apps bullet ("Built"), and the v2 line.
+
+### Deviations
+
+- **Host colors are mapped in `src/mcp-app/theme.ts`, not in CSS.** The brief's
+  `--bg: var(--color-background-primary, …)` needs a fallback that changes with the theme, and a
+  custom property can't fall back to its own value (`--bg: var(--host, var(--bg))` is a cycle).
+  Doing it in CSS would take a second tier of palette tokens under every token. Instead the card
+  sets `--bg: var(--color-background-primary)` on `<html>` only when the host sends that
+  variable, so our token is the fallback. The window never runs that code. Fonts stay in CSS as
+  the brief describes. Same eight mappings as the spike.
+- **`resolved` also replaces a window answer that lost the race.** If the user sends from the
+  window while the card's answer is already in flight, the server keeps the card's (first in) and
+  sends `resolved`. The app now overwrites its own answered or skipped record with it, so history
+  matches what the agent got. The brief only covered pending and orphaned records.
+- **`ask` (inline) uses `registerAppTool`**, which also writes the old flat `ui/resourceUri` key
+  beside `_meta.ui.resourceUri`. The spike's Desktop runs had both. Only MCP Apps clients see it.
+- **A path ask with no window ends as an error.** With Parley not running, a normal inline ask
+  keeps going card-only, as in the spike. A path ask can't be answered in the card, so `ask_wait`
+  returns the window's error ("Parley isn't running…") instead of waiting out the timeout.
+- **The review list's `50vh` cap is off in inline mode.** In an iframe sized to its content,
+  viewport-relative heights fight the auto-resize.
+- **`fake-host` runs its own `fake-hub` per scenario** rather than pairing with one you start, so
+  each scenario gets the reply policy it needs and can read the hub's log. It has two scenarios
+  beyond the brief's six: `path` (sent without `inline`) and `old-app` (the fallback).
+
+### Defaults taken
+
+- How the card learns the window answered: `parley_status`, a 25 s long-poll. In the harness a
+  window answer reached the card at once, with no polling interval.
+- The card's width: `max-width: 640px`, left-aligned, inline only.
+- Pruning: an ended ask is kept for an hour after it ends.
+- App older than the server: `invalid_message` on `resolved` → `cancel` with `client_cancelled`.
+  Verified by `fake-host old-app`.
+
+### Acceptance
+
+1. **Pass.** `pnpm typecheck` passes for all three packages. `@parley/protocol` test: 47 passed.
+   `@parley/desktop` test: 31 passed. New tests: `resolved` ending a pending record as answered
+   and as skipped with `answeredIn: 'chat'`, an orphaned one too, a window answer replaced, an
+   unknown id and another connection's id answered with `unknown_ask`, malformed outcomes as
+   `invalid_message`, inline asks not notifying (and others still notifying), the fold keeping
+   `inline` and `answeredIn`. The notify test fails when the `inline` check is removed, and the
+   `card-wins` check fails when `resolved` is swapped for `cancel` (both mutations reverted).
+2. **Pass.** `pnpm --filter @parley/server build` produces `dist/index.mjs` (25 kB) and
+   `dist/card.html` (707 kB).
+3. **Pass.** All 8 scenarios, against `src/` and against `dist/`. `card-wins`: the hub log has
+   `ask` with `inline: true`, then `resolved` with the data and note, and no `cancel`. The held
+   `parley_status` returns ended in the chat. `window-wins`: `parley_submit` returns
+   `accepted: false`, "That ask already ended: answered in Parley." `plain`: the tool list is `ask`
+   alone, `_meta` is `{"anthropic/alwaysLoad":true}`, no resources capability, and a raw
+   `resources/list` is method not found. With both card files hidden, `resources/read` returns
+   "Parley's inline card isn't built. Run `pnpm --filter @parley/server build` …" and the rest of
+   `card-wins` still passes.
+4. **Pass, same as main.** `trial --client claude --prompt date-library --runs 1`: asked, valid
+   first call, used, `toolLoaded: true` (`2026-10-10T21-16-17-997Z`). A second run with `--keep`
+   (`2026-10-10T21-17-20-439Z`) for the transcript: the init event's tools have
+   `mcp__parley__ask` and no `ask_wait`, `parley_submit`, `parley_status`,
+   `ListMcpResourcesTool` or `ReadMcpResourceTool`. The hub saw `claude-code 2.1.296` and an
+   `ask` with no `inline` key. That matches main and brief 6's baseline.
+
+Before Desktop, the card itself, in headless Chromium (a scratch harness, not committed): an
+ext-apps `AppBridge` host page mounting `resources/read`'s HTML in a sandboxed iframe, its tool
+calls forwarded to a real MCP client on the real server, with `fake-hub` as the window. 14 checks
+passed: answer and skip in the card (the app got `resolved`), the window winning (the card switches
+to "Answered in Parley." with the window's picks), review-diff in light and dark (the iframe grew to
+569 px), the path notice then "Answered in Parley.", a markdown link going to the host's
+`openLink`, an unknown `askId`, and host theme, variables and fonts applied. The gallery: all 12
+fixtures in light and dark from main (a worktree) and from the branch, 24 shots, pixel-identical
+at threshold 0.
+
+5–12: Logan's, below. Not run.
+
+### Spot checks for Logan
+
+First, `pnpm install:desktop`, then quit Parley from the tray and reopen it. `apps/server/dist/` is
+already this branch's build, which Claude Desktop runs. Relaunch Claude Desktop, since it caches the
+card per server process. (I haven't touched Desktop or its config.)
+
+5. In a Desktop chat, have the model ask a choice question and answer in the card. The card should
+   be up within a few seconds, and the model should call `ask_wait` without being told. The
+   window's card says "Answered in the chat." (open it with ⌘⌃P), and history (⌘Y) shows it
+   Answered, with "Answered in the chat." in the detail and the answers.
+6. The same, answered in the window: the card switches to "Answered in Parley." within a second or
+   so. Neither ask should raise a system notification.
+7. A review ask (the `review-diff` fixture's shape) in the card, once in light and once in dark
+   Desktop themes. The card should follow the theme. Also judge whether the mapped host surfaces
+   (Desktop's `background-secondary` behind the options) look right next to the chat.
+8. A path ask: a read-only card with "This one has a file picker. Answer it in Parley (⌘⌃P).", a
+   notification from Parley, and the answer through the window. The notice is in the footer's
+   small hint style. Say if it's too quiet.
+9. A wait past 4 minutes: a "still waiting" result, the model calls `ask_wait` again, and an answer
+   in the card lands on the next wait.
+10. A question with a markdown link: clicking it in the card opens the browser.
+11. One ask in Desktop's agent mode (`local-agent-mode-parley`): does the card render? Record it
+    either way.
+12. The window and gallery look as on main. Already pixel-checked in Chromium; this is the WebKit
+    window.
+
+Also: while the card is open, Desktop calls `parley_status` about twice a minute. If those calls
+show up anywhere in the chat UI, tell me (the brief asks to know).
+
+### Follow-ups
+
+- **`resolved` written while the socket is down is lost.** If the card wins during an app
+  restart, the server drops the window's ask from its pending list and writes `resolved` into a
+  dead socket, so the app's record stays orphaned. Rare, and the agent still gets the answer.
+  Fix: queue `resolved` (and `cancel`) for the next connect.
+- **The card harness** (headless Chromium, `AppBridge`, the real server) lives in this session's
+  scratchpad. Worth committing as a `pnpm` script if the card changes often, at the cost of a
+  `playwright-core` dev dependency.
+- **The two dark token blocks** have to be kept in step by hand. `light-dark()` with
+  `color-scheme` would make it one block, if WKWebView's support is confirmed.
+- **Trial prompts for the two-step flow** (brief 6 outline item 1): scoring whether a model calls
+  `ask_wait`, re-calls after "still waiting", and doesn't continue in between. Needs a
+  Desktop-like trial client. Not in this brief's scope.

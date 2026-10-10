@@ -22,8 +22,15 @@ export type CancelReason = 'client_cancelled' | 'timed_out'
 export type ServerToApp =
   | { type: 'hello'; protocol: number; session: SessionInfo }
   // Idempotent by id: re-sending the same id updates the record (reconnect relies on it).
-  | { type: 'ask'; id: string; form: FormSpec; createdAt: number; expiresAt?: number }
+  // `inline`: the client also shows this ask in the chat. The app queues it but doesn't notify.
+  | { type: 'ask'; id: string; form: FormSpec; createdAt: number; expiresAt?: number; inline?: boolean }
   | { type: 'cancel'; id: string; reason: CancelReason }
+  // The user answered or skipped in the chat. The app ends the record with this outcome.
+  | { type: 'resolved'; id: string; outcome: InlineOutcome }
+
+export type InlineOutcome =
+  | { status: 'answered'; data: unknown; note?: string }
+  | { status: 'dismissed'; note?: string }
 
 export type AppToServer =
   | { type: 'welcome'; protocol: number; appVersion: string }

@@ -2,7 +2,7 @@
 // answers on a script. For testing how models use the tool without anyone
 // at the keyboard.
 //
-//   pnpm --filter @parley/server fake-hub <socket> [--log <file.jsonl>] [--reply <policy>]...
+//   pnpm --filter @parley/server fake-hub <socket> [--log <file.jsonl>] [--reply <policy>]... [--old-app]
 //
 // Point the server at it with PARLEY_SOCKET=<socket> (and PARLEY_NO_LAUNCH=1).
 // Each ask takes the next --reply; the last one repeats. Policies:
@@ -15,6 +15,9 @@
 //   skip                    dismiss
 //   none                    never answer (let it time out or be cancelled)
 //   delay:<s>:<policy>      wait, then apply the policy
+//
+// `--old-app` answers `resolved` with `invalid_message`, as an app older than
+// inline cards does.
 
 import { createServer, type Socket } from 'node:net'
 import { appendFileSync, existsSync, unlinkSync } from 'node:fs'
@@ -26,6 +29,7 @@ const { values, positionals } = parseArgs({
   options: {
     log: { type: 'string' },
     reply: { type: 'string', multiple: true, default: ['first'] },
+    'old-app': { type: 'boolean', default: false },
   },
 })
 
@@ -59,6 +63,9 @@ function serve(socket: Socket) {
   function receive(message: ServerToApp) {
     log({ at: new Date().toISOString(), ...message })
     if (message.type === 'hello') return send({ type: 'welcome', protocol: PROTOCOL_VERSION, appVersion: 'fake-hub' })
+    if (message.type === 'resolved' && values['old-app']) {
+      return send({ type: 'error', id: message.id, code: 'invalid_message', message: 'unknown message type resolved' })
+    }
     if (message.type !== 'ask') return
     const policy = replies[Math.min(asked++, replies.length - 1)]!
     void reply(message.id, message.form, policy)

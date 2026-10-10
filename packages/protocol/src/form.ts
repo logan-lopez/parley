@@ -77,3 +77,10 @@ export interface FormSpec {
   description?: string
   schema: JsonSchema
 }
+
+// A form with a file picker can't be answered in an MCP Apps card (no picker
+// in the host's iframe), so it goes to the window, which notifies.
+export function hasPathQuestion(form: FormSpec): boolean {
+  const properties = (form.schema.properties ?? {}) as Record<string, { 'x-widget'?: unknown }>
+  return Object.values(properties).some((p) => p?.['x-widget'] === 'path')
+}

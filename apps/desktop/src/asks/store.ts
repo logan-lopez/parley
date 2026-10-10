@@ -23,12 +23,14 @@ export interface AskRecord {
   form: FormSpec
   createdAt: number
   expiresAt?: number
+  inline?: boolean        // also shown in the chat (MCP Apps), so it didn't notify
   status: AskStatus
   endedAt?: number
   endedReason?: CancelReason | 'disconnected'
   data?: unknown
   note?: string   // the user's note for the agent, sent with the answer or skip
   draft?: Draft   // unsent input; dropped on answer, kept on a skip or withdrawal
+  answeredIn?: 'chat'   // answered or skipped in the chat's inline card, not here
 }
 
 const records = reactive(new Map<string, AskRecord>())
@@ -130,7 +132,8 @@ export const hubHandlers: HubHandlers = {
       records.set(ask.id, { ...ask, conn, session, status: 'pending' })
       const record = records.get(ask.id)!
       save(record)
-      void notifyNewAsk(record)
+      // An inline ask is already in front of the user, in the chat.
+      if (!record.inline) void notifyNewAsk(record)
       return
     }
 
@@ -154,6 +157,24 @@ export const hubHandlers: HubHandlers = {
     if (!record || record.conn !== conn) return false
     if (record.status === 'pending' || record.status === 'orphaned') {
       end(record, { status: reason === 'timed_out' ? 'timed_out' : 'cancelled', endedReason: reason })
+    }
+    return true
+  },
+
+  // The chat's card won. The server's word is what the agent got, so it also
+  // replaces an answer or skip sent from here that lost the race.
+  resolved(conn, id, outcome) {
+    const record = records.get(id)
+    if (!record || record.conn !== conn) return false
+    if (!['pending', 'orphaned', 'answered', 'dismissed'].includes(record.status)) return true
+    delete record.endedReason
+    delete record.data
+    delete record.note
+    if (outcome.status === 'answered') {
+      delete record.draft
+      end(record, { status: 'answered', answeredIn: 'chat', data: outcome.data, ...withNote(outcome.note) })
+    } else {
+      end(record, { status: 'dismissed', answeredIn: 'chat', ...withNote(outcome.note) })
     }
     return true
   },

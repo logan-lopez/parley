@@ -1,4 +1,7 @@
-/* Designed for a 440 px wide window. Light and dark follow the system. */
+/* Designed for a 440 px wide window. One set of tokens: light on :root, dark
+   below. The window has no data-theme, so it follows the system. The MCP Apps
+   card sets data-theme from the host (applyDocumentTheme) and adds the
+   `inline` class: see the end of this file. */
 
 :root {
   --bg: #f6f6f4;
@@ -31,8 +34,9 @@
   -webkit-font-smoothing: antialiased;
 }
 
+/* The window, following the system. */
 @media (prefers-color-scheme: dark) {
-  :root {
+  :root:not([data-theme='light']) {
     --bg: #1b1b1d;
     --surface: #242427;
     --surface-2: #2c2c30;
@@ -52,6 +56,29 @@
     --code-bg: #2e2e33;
   }
 }
+
+/* The card, following the host. Keep in step with the block above. */
+:root[data-theme='dark'] {
+  --bg: #1b1b1d;
+  --surface: #242427;
+  --surface-2: #2c2c30;
+  --text: #ececea;
+  --muted: #a3a29e;
+  --faint: #75746f;
+  --border: #38383c;
+  --border-strong: #4a4a50;
+  --accent: #7d9cf5;
+  --accent-text: #10131c;
+  --accent-soft: #263152;
+  --warn: #f0a35e;
+  --warn-soft: #3a2a1b;
+  --danger: #f07a7f;
+  --danger-soft: #3a2224;
+  --success: #7ccf8f;
+  --code-bg: #2e2e33;
+  color-scheme: dark;
+}
+:root[data-theme='light'] { color-scheme: light; }
 
 * { box-sizing: border-box; }
 html, body { margin: 0; height: 100%; }
@@ -672,3 +699,19 @@ textarea.text-input { resize: vertical; min-height: 60px; line-height: 1.4; }
 .card .body:focus-visible { box-shadow: none; }
 
 .note-text { margin: 0; white-space: pre-wrap; overflow-wrap: anywhere; user-select: text; }
+
+/* Inline: the card in an MCP Apps host's iframe (src/mcp-app/). The host sizes
+   the iframe to the content, so height follows it and nothing scrolls inside.
+   Host colors are mapped onto the tokens in src/mcp-app/theme.ts, where the
+   host sends them. */
+
+html.inline {
+  font-family: var(--font-sans, system-ui, -apple-system, sans-serif);
+  --mono: var(--font-mono, ui-monospace, 'SF Mono', Menlo, monospace);
+}
+html.inline, html.inline body, html.inline #app { height: auto; }
+html.inline .card { height: auto; max-width: 640px; }
+html.inline .card .body { flex: none; overflow: visible; }
+html.inline .review-list.bounded { max-height: none; }
+html.inline .inline-message { margin: 0; padding: 10px 16px; color: var(--muted); }
+html.inline .inline-message.danger { color: var(--danger); }

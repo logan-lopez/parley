@@ -18,7 +18,9 @@ and finished ones move to `archive/`.
 pnpm workspace, Node 24.
 
 - `apps/server`: the MCP server (stdio). Thin: validates the form spec, relays it to the app.
-- `apps/desktop`: Tauri 2 shell (`src-tauri/`) + Vue 3 webview (`src/`).
+- `apps/desktop`: Tauri 2 shell (`src-tauri/`) + Vue 3 webview (`src/`). `src/mcp-app/` is a second
+  entry: the ask card as an MCP Apps view, inline in Claude Desktop's chat (`mcp-app.html`,
+  `vite.mcp-app.config.ts`, one self-contained HTML file in `dist-mcp-app/`).
 - `packages/protocol`: the form spec and server ↔ app wire messages. Source-only, so consumers import
   the `.ts` directly, with no build step. `@parley/protocol/ask` is a separate entry (the `ask`
   tool's Zod schema, `compileQuestions`, `shapeAnswer`), so the app bundle doesn't pull in Zod.
@@ -36,12 +38,17 @@ From the root:
   socket).
 - `pnpm server`: run the MCP server from source (tsx)
 - `pnpm typecheck` / `pnpm build`: all packages
-- `pnpm --filter @parley/server build`: bundles to `apps/server/dist/index.mjs`, which is what an MCP
-  client config points at (`node .../dist/index.mjs`). `.mcp.json` at the root registers it for
-  Claude Code in this repo. Needs Node 24: tsdown loads its `.ts` config through native type
-  stripping, and Node 22.17 fails with "Failed to import module unrun".
+- `pnpm --filter @parley/server build`: builds the card (`pnpm --filter @parley/desktop
+  build:mcp-app`), then bundles to `apps/server/dist/index.mjs` with the card copied beside it as
+  `dist/card.html`. The bundle is what an MCP client config points at (`node .../dist/index.mjs`).
+  `.mcp.json` at the root registers it for Claude Code in this repo. Under tsx the server reads the
+  card from `apps/desktop/dist-mcp-app/` instead. Either way it's read on every request, and a
+  missing card is an error on `resources/read`, not at startup. Needs Node 24: tsdown loads its
+  `.ts` config through native type stripping, and Node 22.17 fails with "Failed to import module
+  unrun".
 - `pnpm --filter @parley/protocol test`: vitest for the compiler and answer shaper.
-- `pnpm --filter @parley/desktop test`: vitest for the history file's startup fold, and every
+- `pnpm --filter @parley/desktop test`: vitest for the history file's startup fold, the store's
+  hub handlers (`resolved`, `inline`) through the real hub client with Tauri mocked, and every
   fixture's compiled schema under JSON Forms' AJV settings and strict mode.
 - `pnpm --filter @parley/server fake-ask <file.json | fixture> [--timeout <s>]`: acts as one session
   without an MCP client. It connects to the hub, sends the form, and prints the outcome. Takes `ask`
@@ -53,6 +60,12 @@ From the root:
   for the app on a socket and answers on a script (`first`, `second`, `other:<text>`, `skip`,
   `none`). Pair with `PARLEY_SOCKET` to test how models use the tool with nobody at the keyboard.
   macOS caps socket paths at 104 bytes, so put the socket under `$TMPDIR`, not a deep scratch dir.
+- `pnpm --filter @parley/server fake-host [scenario...] [--server dist]`: stands in for an MCP Apps
+  host (Claude Desktop) without one. It advertises the extension, spawns the server and a
+  `fake-hub` per scenario, plays the model and the card, and prints pass/fail per scenario
+  (`card-wins`, `window-wins`, `skip`, `slice`, `unknown-id`, `path`, `old-app`, `plain`). Run it
+  after touching the tool surfaces, the lifecycle or `AppClient`. `fake-hub --old-app` rejects
+  `resolved`, as an app from before inline cards does.
 - `pnpm --filter @parley/server trial [--client claude|codex|all] [--runs N] [--prompt <name>]...`:
   the model-uptake harness. Runs `apps/server/trials/prompts/` through real clients against
   `fake-hub` and scores whether they asked, validly, and used the answer. Rerun it after changing
@@ -106,11 +119,32 @@ From the root:
   Yes/No). Page zoom (`src/zoom.ts`): Cmd+= / Cmd+- or the control in the meta
   row, default 110%, kept in localStorage. Cmd+0 belongs to AeroSpace, so reset is a click on the
   percentage.
+- Two tool surfaces, picked per process from the client's first message
+  (`src/client-capabilities.ts`, stdio-only). Clients that advertise MCP Apps
+  (`io.modelcontextprotocol/ui` with `text/html;profile=mcp-app`) get `src/tools/inline.ts`: `ask`
+  shows the form and returns an `askId`, `ask_wait` blocks in 200 s slices
+  (`PARLEY_WAIT_SLICE_MS` for tests), the app-only `parley_submit` and `parley_status` (a 25 s
+  long-poll) serve the card, and `ui://parley/card.html` is the card. The instructions swap one
+  sentence for the two-step flow. Everyone else gets `src/tools/ask.ts`, the blocking `ask`, and
+  no resources capability. The two `ask`s share the input schema and description.
+- Inline asks race the window (`showAsk` in `ask-lifecycle.ts`), keyed by `askId`, and an ended
+  ask is kept for an hour. The `ask` message carries `inline: true`, and the app queues it without
+  a notification. An ask with a `path` question is never inline: the card shows it read-only and
+  points at the window. When the card wins, the server aborts the window's ask with the
+  `InlineOutcome` as the signal's reason, and `AppClient` sends `resolved` instead of `cancel`.
+  The app records it as answered (or skipped) with `answeredIn: 'chat'`. An app too old for
+  `resolved` answers `invalid_message`, and the server falls back to `cancel`.
 - Every card has an optional note for the agent. It travels as `note` on the `answer` and
   `dismissed` wire messages (additive, still protocol v1) and comes back as `note` in the result,
   quoted in the text.
 - Renderers import `src/platform.ts` (`pickPaths`, `openExternal`), never `@tauri-apps/*`, so they
-  can run in an MCP Apps iframe later. Outside Tauri it falls back to browser APIs.
+  run in the MCP Apps card too. The card overrides `openExternal` with the host's `openLink` via
+  `setPlatform`. Outside Tauri it falls back to browser APIs.
+- Styles: one set of tokens in `src/styles.css`. Light on `:root`, dark under the system media
+  query (`:root:not([data-theme='light'])`) and again under `:root[data-theme='dark']`, which the
+  card sets from the host. Keep the two dark blocks in step. `html.inline` (set by the card) is
+  content height, no inner scroll, `max-width: 640px`. Host colors are mapped onto the tokens in
+  `src/mcp-app/theme.ts` where the host sends them. The window has neither, so it looks as it did.
 - CSP: `tauri dev` on macOS loads the Vite server directly, so the CSP in `tauri.conf.json` only
   applies to bundled assets. `vite.config.ts` serves the same policy as a header in dev; keep the two
   in sync. `script-src` needs `'unsafe-eval'` because AJV (JSON Forms validation) compiles
@@ -125,6 +159,22 @@ From the root:
   `tauri dev` binary reports `NULL-APP-BUNDLE-ID` with app name `parley`, so the rule matches on both.
 - Notification clicks can't open the window: `tauri-plugin-notification` only shows title, body,
   icon and sound on desktop (`onAction` is mobile-only). The hotkey and tray are the way in.
+
+## Claude Desktop and inline cards
+
+Checked against Claude Desktop 2.31226.1 (2026-10-10, brief 6):
+
+- Desktop opens with `initialize` and advertises MCP Apps in `params.capabilities.extensions`.
+  It starts two Parley servers, `claude-ai` (chat) and `local-agent-mode-parley` (agent mode).
+- It mounts a tool's view only after the call returns, which is why `ask` returns at once.
+- It cuts a local tool call at exactly 240 s and sends no `progressToken`, so nothing extends it.
+  That's the reason for the 200 s `ask_wait` slices.
+- It shows the model a result's text content, not `structuredContent` (the reverse of Claude
+  Code). Results carry the same message in both.
+- `hostContext.toolInfo.id` is a content-block id, not the `tools/call` id. Key by `askId`.
+- It reads `ui://…` once per server process and caches it: restart Desktop to pick up a new card.
+- The iframe allows `'unsafe-eval'` (AJV works), drops `window.prompt` (no `allow-modals`), and
+  has no file picker. `postMessage` can't clone a Vue proxy: JSON-copy before `callServerTool`.
 
 ## Claude Code and long asks
 

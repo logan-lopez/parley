@@ -10,6 +10,7 @@ import {
   type AppToServer,
   type CancelReason,
   type FormSpec,
+  type InlineOutcome,
   type SessionInfo,
 } from '@parley/protocol'
 
@@ -18,11 +19,13 @@ export interface IncomingAsk {
   form: FormSpec
   createdAt: number
   expiresAt?: number
+  inline?: boolean   // also shown in the chat, so it doesn't notify
 }
 
 export interface HubHandlers {
   ask(conn: number, session: SessionInfo, ask: IncomingAsk): void
   cancel(conn: number, id: string, reason: CancelReason): boolean // false if unknown
+  resolved(conn: number, id: string, outcome: InlineOutcome): boolean // false if unknown
   disconnected(conn: number): void
 }
 
@@ -81,6 +84,7 @@ export async function startHub(handlers: HubHandlers) {
           form: form as unknown as FormSpec,
           createdAt: message.createdAt,
           ...(typeof message.expiresAt === 'number' && { expiresAt: message.expiresAt }),
+          ...(message.inline === true && { inline: true }),
         })
         return
       }
@@ -90,6 +94,14 @@ export async function startHub(handlers: HubHandlers) {
           return void fail(conn, 'invalid_message', 'cancel needs `id` and a known `reason`', id)
         }
         if (!handlers.cancel(conn, id, reason)) void fail(conn, 'unknown_ask', `no pending ask ${id}`, id)
+        return
+      }
+      case 'resolved': {
+        const outcome = inlineOutcome(message.outcome)
+        if (!id || !outcome) {
+          return void fail(conn, 'invalid_message', 'resolved needs `id` and an `outcome` that is answered (with `data`) or dismissed', id)
+        }
+        if (!handlers.resolved(conn, id, outcome)) void fail(conn, 'unknown_ask', `no pending ask ${id}`, id)
         return
       }
       default:
@@ -108,6 +120,15 @@ export async function startHub(handlers: HubHandlers) {
 
 function isObject(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value)
+}
+
+// Undefined when it isn't one. A note that isn't a string is dropped, as on `answer`.
+function inlineOutcome(value: unknown): InlineOutcome | undefined {
+  if (!isObject(value)) return undefined
+  const note = typeof value.note === 'string' ? { note: value.note } : {}
+  if (value.status === 'answered' && 'data' in value) return { status: 'answered', data: value.data, ...note }
+  if (value.status === 'dismissed') return { status: 'dismissed', ...note }
+  return undefined
 }
 
 function isSession(value: unknown): value is SessionInfo {
