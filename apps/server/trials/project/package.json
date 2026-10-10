@@ -1,0 +1,16 @@
+{
+  "name": "tally",
+  "version": "0.3.1",
+  "private": true,
+  "type": "module",
+  "description": "Small CLI for totting up expenses from a CSV export.",
+  "bin": { "tally": "./src/index.ts" },
+  "scripts": {
+    "start": "node src/index.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.0",
+    "typescript": "~6.0.3"
+  }
+}

@@ -1,0 +1,13 @@
+{
+  "prompt": "zz-invalid",
+  "client": "claude",
+  "run": 1,
+  "expect": "ask",
+  "reply": "first",
+  "model": "claude-opus-5-5",
+  "clientVersion": "2.1.296 (Claude Code)",
+  "startedAt": "2026-10-10T06:49:15.149Z",
+  "durationMs": 5803,
+  "exitCode": 0,
+  "timedOut": false
+}

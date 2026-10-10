@@ -1,0 +1,13 @@
+{
+  "prompt": "zz-invalid",
+  "client": "codex",
+  "run": 1,
+  "expect": "ask",
+  "reply": "first",
+  "model": "gpt-6-astra",
+  "clientVersion": "codex-cli 0.153.0",
+  "startedAt": "2026-10-10T06:49:21.970Z",
+  "durationMs": 13327,
+  "exitCode": 0,
+  "timedOut": false
+}
