@@ -249,6 +249,31 @@ describe('shapeAnswer', () => {
     })
   })
 
+  it('carries a note with an answer or a skip', () => {
+    const answered = shapeAnswer(fixture('boolean'), { status: 'answered', data: { migrate: true }, note: 'Run it after 6pm.\nStaging only.' })
+    expect(answered.structured.note).toBe('Run it after 6pm.\nStaging only.')
+    expect(answered.text).toBe([
+      'The user answered:',
+      '- Migrate: Yes',
+      '- Notify: (left blank)',
+      '',
+      'They also left a note:',
+      '> Run it after 6pm.',
+      '> Staging only.',
+    ].join('\n'))
+    expect(answered.structured.message).toBe(answered.text)
+
+    const skipped = shapeAnswer(fixture('choice'), { status: 'dismissed', note: 'Ask me in chat instead.' })
+    expect(skipped.structured).toEqual({ status: 'dismissed', message: skipped.text, note: 'Ask me in chat instead.' })
+    expect(skipped.text).toBe(
+      'The user skipped this without answering, and left a note:\n> Ask me in chat instead.\n\n'
+      + "Don't ask it again unless the note says to. Continue with your best judgment and say what you assumed.",
+    )
+
+    // A blank note is no note.
+    expect(shapeAnswer(fixture('choice'), { status: 'dismissed', note: '  ' }).structured).not.toHaveProperty('note')
+  })
+
   it('treats junk data as blanks', () => {
     const { structured } = shapeAnswer(fixture('number'), { status: 'answered', data: { retries: '3', budget: Number.NaN } })
     expect(structured.answers).toEqual({

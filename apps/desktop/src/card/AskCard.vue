@@ -19,12 +19,14 @@ const props = defineProps<{
   total?: number
   withdrawn?: string  // why it ended under the user; the card goes read-only
   initialData?: unknown
+  initialNote?: string
 }>()
 
 const emit = defineEmits<{
   change: [data: unknown]
-  submit: [data: unknown]
-  skip: []
+  note: [note: string]
+  submit: [data: unknown, note: string]
+  skip: [note: string]
   prev: []
   next: []
   continue: []
@@ -35,6 +37,22 @@ const body = ref<HTMLElement>()
 const data = shallowRef<unknown>(props.initialData ?? {})
 const errors = shallowRef<ErrorObject[]>([])
 const nudge = ref(false)
+
+// A note for the agent, sent with an answer or a skip. Collapsed until wanted.
+const note = ref(props.initialNote ?? '')
+const noteOpen = ref(!!note.value)
+const noteInput = ref<HTMLTextAreaElement>()
+
+async function openNote() {
+  noteOpen.value = true
+  await nextTick()
+  noteInput.value?.focus()
+}
+
+function onNoteInput(event: Event) {
+  note.value = (event.target as HTMLTextAreaElement).value
+  emit('note', note.value)
+}
 
 function onChange(event: JsonFormsChangeEvent) {
   data.value = event.data
@@ -73,7 +91,11 @@ function submit() {
     setTimeout(() => (nudge.value = false), 600)
     return
   }
-  emit('submit', data.value)
+  emit('submit', data.value, note.value)
+}
+
+function skip() {
+  if (!props.withdrawn) emit('skip', note.value)
 }
 
 // Time.
@@ -120,7 +142,8 @@ function pick(n: number) {
   if (target instanceof HTMLInputElement) return target.focus()
   target.click()
   if (question.hasAttribute('data-advance-on-pick')) {
-    const all = questions()
+    // Never onto the note: Enter there would open it instead of sending.
+    const all = questions().filter((q) => !q.hasAttribute('data-note'))
     const next = all[all.indexOf(question) + 1]
     if (next) return focusQuestion(next)
   }
@@ -147,8 +170,9 @@ function onKey(event: KeyboardEvent) {
   }
 
   if (event.metaKey && event.key === 'Enter') return void (event.preventDefault(), submit())
-  // In a text field, Cmd+Backspace keeps its usual meaning (delete to line start).
-  if (event.metaKey && event.key === 'Backspace' && !isTyping(target)) return void (event.preventDefault(), emit('skip'))
+  if (event.metaKey && event.key.toLowerCase() === 'n' && !event.shiftKey) return void (event.preventDefault(), openNote())
+  // Cmd+. is macOS's cancel, and unlike Cmd+Backspace it isn't an editing key, so it works from text fields.
+  if (event.metaKey && event.key === '.') return void (event.preventDefault(), skip())
 
   if (event.key === 'Tab' && !mod) {
     event.preventDefault()
@@ -212,7 +236,10 @@ onBeforeUnmount(() => {
         <span class="sep">·</span>
         <span :class="{ urgent: remaining < 60_000 }">expires in {{ clock(remaining) }}</span>
       </template>
-      <span v-if="position && total" class="position">{{ position }} of {{ total }}</span>
+      <span class="meta-end">
+        <slot name="meta" />
+        <span v-if="position && total" class="position">{{ position }} of {{ total }}</span>
+      </span>
     </header>
 
     <div v-if="withdrawn" class="banner" role="status">{{ withdrawn }}</div>
@@ -227,6 +254,28 @@ onBeforeUnmount(() => {
         validation-mode="ValidateAndHide"
         @change="onChange"
       />
+
+      <!-- A stop for Tab like a question, but number-key advance skips it. -->
+      <section v-if="!withdrawn || note" class="note" data-question data-note>
+        <button v-if="!noteOpen" type="button" class="note-toggle" data-primary @click="openNote">
+          Add a note for the agent <kbd class="key">⌘N</kbd>
+        </button>
+        <template v-else>
+          <label class="note-label" for="agent-note">Note for the agent</label>
+          <textarea
+            id="agent-note"
+            ref="noteInput"
+            class="text-input"
+            rows="2"
+            maxlength="2000"
+            placeholder="Context, a correction, or why you're skipping"
+            :value="note"
+            :disabled="!!withdrawn"
+            data-primary
+            @input="onNoteInput"
+          />
+        </template>
+      </section>
     </div>
 
     <footer class="actions">
@@ -244,8 +293,8 @@ onBeforeUnmount(() => {
           <span class="hints">
             <kbd>1</kbd>–<kbd>9</kbd> pick · <kbd>⇥</kbd> next<template v-if="(total ?? 0) > 1"> · <kbd>⌘[</kbd> <kbd>⌘]</kbd> queue</template> · <kbd>esc</kbd> hide
           </span>
-          <button type="button" class="button" @click="emit('skip')">
-            Skip <kbd class="key">⌘⌫</kbd>
+          <button type="button" class="button" @click="skip">
+            Skip <kbd class="key">⌘.</kbd>
           </button>
           <button type="button" class="button primary" :disabled="!valid" @click="submit">
             Send <kbd class="key">↵</kbd>

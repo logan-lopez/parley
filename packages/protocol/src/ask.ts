@@ -103,6 +103,7 @@ export const askResultSchema = z.object({
     value: answerValue,        // null: an optional question left blank
     custom: z.string().optional(),   // the user's own text, when it isn't one of the options
   })).optional(),
+  note: z.string().optional(),       // free text the user added for the agent, with an answer or a skip
 })
 
 export type AskResult = z.infer<typeof askResultSchema>
@@ -110,8 +111,8 @@ export type Answer = NonNullable<AskResult['answers']>[string]
 export type AnswerValue = Answer['value']
 
 export type AskOutcome =
-  | { status: 'answered'; data: unknown }
-  | { status: 'dismissed' }
+  | { status: 'answered'; data: unknown; note?: string }
+  | { status: 'dismissed'; note?: string }
   | { status: 'cancelled' }   // the MCP client cancelled the call
   | { status: 'timed_out' }
 
@@ -211,13 +212,17 @@ function compileQuestion(q: Question): JsonSchema {
 }
 
 export function shapeAnswer(input: AskInput, outcome: AskOutcome): { structured: AskResult; text: string } {
+  const note = 'note' in outcome ? outcome.note?.trim() || undefined : undefined
   const text = (status: AskResult['status'], message: string, answers?: AskResult['answers']) => ({
-    structured: { status, message, ...(answers && { answers }) },
+    structured: { status, message, ...(answers && { answers }), ...(note && { note }) },
     text: message,
   })
   switch (outcome.status) {
     case 'dismissed':
-      return text('dismissed', "The user skipped this without answering. Don't ask it again. Continue with your best judgment and say what you assumed.")
+      return text('dismissed', note
+        ? `The user skipped this without answering, and left a note:\n${quote(note)}\n\n`
+          + "Don't ask it again unless the note says to. Continue with your best judgment and say what you assumed."
+        : "The user skipped this without answering. Don't ask it again. Continue with your best judgment and say what you assumed.")
     case 'timed_out':
       return text('timed_out', `No answer after ${duration(input.timeoutSeconds ?? DEFAULT_TIMEOUT_SECONDS)}, so the question was withdrawn. `
         + 'Continue with your best judgment and say what you assumed, or ask in chat.')
@@ -237,7 +242,12 @@ export function shapeAnswer(input: AskInput, outcome: AskOutcome): { structured:
     answers[id] = answer
     lines.push(describe(answer, new Set(q.options?.map((o) => o.label))))
   })
+  if (note) lines.push('', 'They also left a note:', quote(note))
   return text('answered', lines.join('\n'), answers)
+}
+
+function quote(text: string): string {
+  return text.replace(/^/gm, '> ')
 }
 
 function readAnswer(q: Question, raw: unknown): Answer {

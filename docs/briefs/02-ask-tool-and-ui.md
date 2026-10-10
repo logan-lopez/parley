@@ -182,7 +182,8 @@ Replace brief 1's crude `App.vue`. Window is 440 px wide, so design for that.
   - Tab and Shift+Tab move between questions.
   - Enter submits when the form is valid and focus isn't in a multiline input. Cmd+Enter always
     submits.
-  - Cmd+Backspace skips.
+  - Cmd+. skips. (Was Cmd+Backspace, but that's delete-to-line-start in a text field, so it couldn't
+    skip from one. Cmd+. is macOS's cancel.)
   - Cmd+[ and Cmd+] move through the queue.
   - Esc hides the window (from brief 1).
   - Show the hints quietly in the UI.

@@ -4,6 +4,7 @@
 import { computed, ref, watch } from 'vue'
 import { askInputSchema, compileQuestions, shapeAnswer, DEFAULT_TIMEOUT_SECONDS, type AskOutcome } from '@parley/protocol/ask'
 import AskCard from '../card/AskCard.vue'
+import ZoomControl from '../ZoomControl.vue'
 
 const modules = import.meta.glob<{ default: unknown }>('../../../../packages/protocol/fixtures/*.json', { eager: true })
 const fixtures = Object.fromEntries(
@@ -66,9 +67,11 @@ function finish(outcome: AskOutcome) {
         :expires-at="loadedAt + (input?.timeoutSeconds ?? DEFAULT_TIMEOUT_SECONDS) * 1000"
         :position="1"
         :total="1"
-        @submit="finish({ status: 'answered', data: $event })"
-        @skip="finish({ status: 'dismissed' })"
-      />
+        @submit="(data, note) => finish({ status: 'answered', data, note })"
+        @skip="(note) => finish({ status: 'dismissed', note })"
+      >
+        <template #meta><ZoomControl /></template>
+      </AskCard>
     </div>
   </div>
 </template>

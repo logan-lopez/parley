@@ -211,10 +211,10 @@ class SocketAppClient implements AppClient {
         log(`connected to Parley ${message.appVersion}`)
         return
       case 'answer':
-        this.pending.get(message.id)?.settle({ status: 'answered', data: message.data })
+        this.pending.get(message.id)?.settle({ status: 'answered', data: message.data, ...note(message.note) })
         return
       case 'dismissed':
-        this.pending.get(message.id)?.settle({ status: 'dismissed' })
+        this.pending.get(message.id)?.settle({ status: 'dismissed', ...note(message.note) })
         return
       case 'error':
         log(`app error (${message.code}${message.id ? ` for ${message.id}` : ''}): ${message.message}`)
@@ -244,6 +244,10 @@ class SocketAppClient implements AppClient {
     if (this.pending.size > 0) this.socket?.ref()
     else this.socket?.unref()
   }
+}
+
+function note(value: unknown): { note?: string } {
+  return typeof value === 'string' && value.trim() ? { note: value } : {}
 }
 
 function tryConnect(path: string): Promise<Socket> {

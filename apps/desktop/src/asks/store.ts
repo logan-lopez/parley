@@ -19,6 +19,7 @@ export interface AskRecord {
   status: AskStatus
   endedReason?: CancelReason | 'disconnected'
   data?: unknown
+  note?: string   // the user's note for the agent, sent with the answer or skip
 }
 
 const records = reactive(new Map<string, AskRecord>())
@@ -33,18 +34,22 @@ export function getRecord(id: string): AskRecord | undefined {
 
 watch(() => queue.value.length, (n) => void invoke('set_pending_count', { n }), { immediate: true })
 
-export function answer(id: string, data: unknown) {
+export function answer(id: string, data: unknown, note?: string) {
   const record = records.get(id)
   if (record?.status !== 'pending') return
-  Object.assign(record, { status: 'answered', data })
-  void send(record.conn, { type: 'answer', id, data })
+  Object.assign(record, { status: 'answered', data, ...withNote(note) })
+  void send(record.conn, { type: 'answer', id, data, ...withNote(note) })
 }
 
-export function dismiss(id: string) {
+export function dismiss(id: string, note?: string) {
   const record = records.get(id)
   if (record?.status !== 'pending') return
-  record.status = 'dismissed'
-  void send(record.conn, { type: 'dismissed', id })
+  Object.assign(record, { status: 'dismissed', ...withNote(note) })
+  void send(record.conn, { type: 'dismissed', id, ...withNote(note) })
+}
+
+function withNote(note: string | undefined): { note?: string } {
+  return note?.trim() ? { note: note.trim() } : {}
 }
 
 export const hubHandlers: HubHandlers = {
@@ -63,9 +68,9 @@ export const hubHandlers: HubHandlers = {
       delete existing.endedReason
     } else if (existing.status === 'answered') {
       // The answer was sent into a connection that had just died.
-      void send(conn, { type: 'answer', id: ask.id, data: existing.data })
+      void send(conn, { type: 'answer', id: ask.id, data: existing.data, ...withNote(existing.note) })
     } else if (existing.status === 'dismissed') {
-      void send(conn, { type: 'dismissed', id: ask.id })
+      void send(conn, { type: 'dismissed', id: ask.id, ...withNote(existing.note) })
     }
   },
 

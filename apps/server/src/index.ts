@@ -21,6 +21,7 @@ Parley shows the user a form in a desktop window and returns their answers. Use 
 - Don't ask what the conversation, the code, or sensible defaults already answer.
 - Never ask for passwords, API keys, or other secrets.
 - If the user skips a question, don't ask it again. Proceed and say what you assumed.
+- The user can add a note to any answer or skip. Read it: it can change what they want.
 `.trim()
 
 const server = new McpServer(

@@ -6,6 +6,7 @@
 import { computed, ref, watch } from 'vue'
 import { getCurrentWindow } from '@tauri-apps/api/window'
 import AskCard from './card/AskCard.vue'
+import ZoomControl from './ZoomControl.vue'
 import { sourceLabel } from './asks/source'
 import { answer, dismiss, getRecord, queue, type AskRecord } from './asks/store'
 
@@ -14,7 +15,11 @@ const shown = computed(() => (selectedId.value ? getRecord(selectedId.value) : u
 const position = computed(() => queue.value.findIndex((r) => r.id === selectedId.value) + 1)
 
 // Unsent input per ask, so moving through the queue doesn't lose it.
-const drafts = new Map<string, unknown>()
+const drafts = new Map<string, { data?: unknown; note?: string }>()
+
+function draft(id: string, patch: { data?: unknown; note?: string }) {
+  drafts.set(id, { ...drafts.get(id), ...patch })
+}
 
 watch(
   () => queue.value.map((r) => r.id).join(),
@@ -52,18 +57,18 @@ function step(by: number) {
   if (next) selectedId.value = next.id
 }
 
-function send(data: unknown) {
+function send(data: unknown, note: string) {
   const id = selectedId.value!
   advanceFrom(id)
   drafts.delete(id)
-  answer(id, data)
+  answer(id, data, note)
 }
 
-function skip() {
+function skip(note: string) {
   const id = selectedId.value!
   advanceFrom(id)
   drafts.delete(id)
-  dismiss(id)
+  dismiss(id, note)
 }
 </script>
 
@@ -78,15 +83,20 @@ function skip() {
     :position="position || undefined"
     :total="queue.length"
     :withdrawn="withdrawn"
-    :initial-data="drafts.get(shown.id)"
-    @change="drafts.set(shown.id, $event)"
+    :initial-data="drafts.get(shown.id)?.data"
+    :initial-note="drafts.get(shown.id)?.note"
+    @change="draft(shown.id, { data: $event })"
+    @note="draft(shown.id, { note: $event })"
     @submit="send"
     @skip="skip"
     @prev="step(-1)"
     @next="step(1)"
     @continue="advanceFrom(shown.id)"
-  />
+  >
+    <template #meta><ZoomControl /></template>
+  </AskCard>
   <main v-else class="empty-state">
+    <ZoomControl class="corner" />
     <p>Nothing is waiting.</p>
     <p class="hints"><kbd>esc</kbd> hide</p>
   </main>

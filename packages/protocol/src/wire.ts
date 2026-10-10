@@ -27,6 +27,7 @@ export type ServerToApp =
 
 export type AppToServer =
   | { type: 'welcome'; protocol: number; appVersion: string }
-  | { type: 'answer'; id: string; data: unknown }
-  | { type: 'dismissed'; id: string }
+  // `note`: optional free text the user added for the agent, with an answer or a skip.
+  | { type: 'answer'; id: string; data: unknown; note?: string }
+  | { type: 'dismissed'; id: string; note?: string }
   | { type: 'error'; id?: string; code: 'version_mismatch' | 'invalid_message' | 'unknown_ask'; message: string }

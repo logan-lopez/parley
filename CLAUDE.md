@@ -81,8 +81,14 @@ From the root:
   belongs in the webview.
 - Global hotkey is `Cmd+Ctrl+P` (`src-tauri/src/shortcut.rs`). Check `~/.config/keymap/keymap.md`
   before changing it. In-window keys live in `src/card/AskCard.vue`. Renderers talk to the card only
-  through the DOM contract in `src/forms/keyboard.ts`. Cmd+0 belongs to AeroSpace, so page zoom
-  (`src/zoom.ts`, Cmd+= / Cmd+-) has no reset key.
+  through the DOM contract in `src/forms/keyboard.ts`. Cmd+. skips (macOS's cancel; Cmd+Backspace is an
+  editing key in text fields). Cmd+N opens the note for the agent (plain `n` is No on a focused
+  Yes/No). Page zoom (`src/zoom.ts`): Cmd+= / Cmd+- or the control in the meta
+  row, default 110%, kept in localStorage. Cmd+0 belongs to AeroSpace, so reset is a click on the
+  percentage.
+- Every card has an optional note for the agent. It travels as `note` on the `answer` and
+  `dismissed` wire messages (additive, still protocol v1) and comes back as `note` in the result,
+  quoted in the text.
 - Renderers import `src/platform.ts` (`pickPaths`, `openExternal`), never `@tauri-apps/*`, so they
   can run in an MCP Apps iframe later. Outside Tauri it falls back to browser APIs.
 - CSP: `tauri dev` on macOS loads the Vite server directly, so the CSP in `tauri.conf.json` only

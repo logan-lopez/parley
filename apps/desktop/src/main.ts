@@ -9,6 +9,7 @@ document.addEventListener('click', (event) => {
 
 if (import.meta.env.DEV && new URLSearchParams(location.search).has('gallery')) {
   const { default: Gallery } = await import('./gallery/Gallery.vue')
+  initZoom()
   createApp(Gallery).mount('#app')
 } else {
   await startApp()
