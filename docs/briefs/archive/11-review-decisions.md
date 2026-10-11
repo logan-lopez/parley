@@ -1,8 +1,8 @@
 # Brief 11: Review with its own decisions
 
-Read `CLAUDE.md`, [`README.md`](README.md), [the form spec](../architecture/form-spec.md),
-[the card](../architecture/card-ui.md), [testing](../architecture/testing.md) and brief 5
-([`archive/05-review-question.md`](archive/05-review-question.md)) first. That brief built the
+Read `CLAUDE.md`, [`README.md`](../README.md), [the form spec](../../architecture/form-spec.md),
+[the card](../../architecture/card-ui.md), [testing](../../architecture/testing.md) and brief 5
+([`archive/05-review-question.md`](05-review-question.md)) first. That brief built the
 `review` type this one extends, and its pinned shapes are where this starts. Brief 10 should be
 merged first: both edit `ask.ts`, the tool description, `fake-hub` and `trial-score.ts`.
 

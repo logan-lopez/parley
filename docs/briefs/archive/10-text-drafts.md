@@ -1,8 +1,8 @@
 # Brief 10: Drafts you edit in place
 
-Read `CLAUDE.md`, [`README.md`](README.md), [the form spec](../architecture/form-spec.md),
-[the card](../architecture/card-ui.md) and [testing](../architecture/testing.md) first. Brief 5
-([`archive/05-review-question.md`](archive/05-review-question.md)) is the model for adding to a
+Read `CLAUDE.md`, [`README.md`](../README.md), [the form spec](../../architecture/form-spec.md),
+[the card](../../architecture/card-ui.md) and [testing](../../architecture/testing.md) first. Brief 5
+([`archive/05-review-question.md`](05-review-question.md)) is the model for adding to a
 question type end to end. No prerequisites.
 
 ## Goal

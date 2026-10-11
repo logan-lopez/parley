@@ -7,7 +7,7 @@ for the answer.
 
 **Sources:** `apps/server/src/tools/inline.ts`, `apps/server/src/ask-lifecycle.ts`, `apps/server/src/card.ts`, `apps/server/tsdown.config.ts`, `apps/desktop/src/mcp-app/`, `apps/desktop/mcp-app.html`, `apps/desktop/vite.mcp-app.config.ts`
 
-**History:** [brief 6](../briefs/archive/06-mcp-apps-spike.md) (the spike), [brief 7](../briefs/archive/07-inline-cards.md), [brief 12](../briefs/12-capture-question.md) (image captures, `clipboardWrite`)
+**History:** [brief 6](../briefs/archive/06-mcp-apps-spike.md) (the spike), [brief 7](../briefs/archive/07-inline-cards.md), [brief 12](../briefs/archive/12-capture-question.md) (image captures, `clipboardWrite`)
 
 `tools/inline.ts` registers the surface. `ask-lifecycle.ts` holds `showAsk`, `waitAsk`,
 `awaitStatus` and `answerInline`. `card.ts` serves the card's HTML. `src/mcp-app/` in the desktop

@@ -6,7 +6,7 @@ when a new ask notifies.
 
 **Sources:** `apps/desktop/src/asks/`, `apps/desktop/src/history/`, `apps/desktop/src/main.ts`
 
-**History:** [brief 1](../briefs/archive/01-hub-and-lifecycle.md), [brief 4](../briefs/archive/04-history-and-inbox.md), [brief 7](../briefs/archive/07-inline-cards.md) (`resolved`, `answeredIn`), [brief 12](../briefs/12-capture-question.md) (screenshot cleanup)
+**History:** [brief 1](../briefs/archive/01-hub-and-lifecycle.md), [brief 4](../briefs/archive/04-history-and-inbox.md), [brief 7](../briefs/archive/07-inline-cards.md) (`resolved`, `answeredIn`), [brief 12](../briefs/archive/12-capture-question.md) (screenshot cleanup)
 
 `asks/store.ts` is the store and the hub's handlers. `asks/persist.ts` is its disk.
 `asks/notifications.ts` sends the system notification, and `asks/source.ts` makes the

@@ -58,6 +58,11 @@ Checked against Claude Code 2.1.296 (2026-10-09), in the docs and by logging the
   task id instead of blocking. Confirmed live: the call shows as an "MCP Task", the card keeps
   waiting, and the model resumes with the answer when it arrives. Print mode (`claude -p`) doesn't
   background; the call blocks until it ends.
+- A backgrounded call's result reaches the model HTML-escaped: `<` and `>` in an answer arrive as
+  `&lt;` and `&gt;`. A result returned inline, inside the 2 min, arrives raw. Parley escapes
+  nothing (checked 2026-10-11 through `history.jsonl`, `fake-ask` with `fake-hub`, and an inline
+  probe), so the model can read them back as `<` and `>`. It matters for drafts with angle
+  brackets, like a `Co-Authored-By` line.
 - Esc during a call sends `notifications/cancelled`. `ctx.mcpReq.signal` aborts, and the card is
   withdrawn as `cancelled`.
 - When a tool declares an `outputSchema`, Claude Code shows the model only `structuredContent`

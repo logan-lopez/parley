@@ -1,9 +1,9 @@
 # Brief 12: Capture, and copy buttons on code
 
-Read `CLAUDE.md`, [`README.md`](README.md), [the form spec](../architecture/form-spec.md),
-[the card](../architecture/card-ui.md), [inline cards](../architecture/inline-cards.md),
-[the desktop shell](../architecture/desktop-shell.md), [asks and history](../architecture/asks-and-history.md)
-and [testing](../architecture/testing.md) first. Briefs 10 and 11 must be merged: this brief runs
+Read `CLAUDE.md`, [`README.md`](../README.md), [the form spec](../../architecture/form-spec.md),
+[the card](../../architecture/card-ui.md), [inline cards](../../architecture/inline-cards.md),
+[the desktop shell](../../architecture/desktop-shell.md), [asks and history](../../architecture/asks-and-history.md)
+and [testing](../../architecture/testing.md) first. Briefs 10 and 11 must be merged: this brief runs
 the full trial pass for all three, and it edits the same files they do (`ask.ts`, the tool
 description, `fake-hub`, `trial-score.ts`).
 
@@ -30,7 +30,7 @@ is the one place Parley is used for debugging rather than deciding, and it's the
 
 - **Scope:** copy buttons, pasted text and pasted images, in one brief. (Logan, 2026-10-10.)
 - **Images go back as file paths, not as MCP image content.** Claude Code shows the model only
-  `structuredContent` when a tool has an `outputSchema` ([the ask tool](../architecture/ask-tool.md#claude-code-and-long-asks)),
+  `structuredContent` when a tool has an `outputSchema` ([the ask tool](../../architecture/ask-tool.md#claude-code-and-long-asks)),
   so image content blocks would probably be dropped, and a path is something the model can open
   with its own file-reading tool. (2026-10-10, from the ideate write-up.)
 - **Images are window-only,** like `path`: a form with an image-accepting capture isn't sent

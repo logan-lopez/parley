@@ -6,29 +6,27 @@ and move to `archive/` when they're done. Ideas that aren't scheduled yet are in
 
 ## Where things stand
 
-*Updated 2026-10-10.*
+*Updated 2026-10-11.*
 
-- Built: the hub, `ask` with six question types, the trial harness, history and the `review` type
-  (briefs 1–5), inline cards in Claude Desktop (briefs 6–7), and the window as a non-activating
-  panel with Parley menu-bar only (briefs 8–9). Under AeroSpace, Cmd+Ctrl+P shows Parley on the
-  workspace you're on.
-- In flight: nothing.
-- Next: briefs 10–12, three new inputs drawn from the real asks in the transcripts and history:
-  drafts you edit in place, review with its own decisions, and a capture question with copy
-  buttons on code. Do them in order; 12 runs the full trial pass for all three. "Hands-on runs",
-  which builds on them, is in [`FUTURE.md`](FUTURE.md).
-- Loose ends: brief 9's hands-on checks were waived (Logan used the installed build and tried a
-  few paths), so the two-monitor check and the Dock flash at launch were never written down. Say
-  so if either bothers you.
+- Built: the hub, `ask`, the trial harness, history and `review` (briefs 1–5), inline cards in
+  Claude Desktop (6–7), the window as a non-activating panel, menu-bar only (8–9), and three
+  inputs drawn from real asks (10–12): drafts you edit in place, review with the agent's own
+  decisions, and `capture` for pasted output and screenshots, with copy buttons on code. Seven
+  question types.
+- In flight: nothing. No brief is written.
+- Next: pick a direction (`ideate`) or brief one from [`FUTURE.md`](FUTURE.md). The live
+  candidates: "Hands-on runs", which builds on 10–12, and the trial tune-ups, led by
+  `crash-output` never asking (0/3): agents hand over a command in chat instead of asking with
+  `capture`, and the lever is the server instructions.
+- Loose ends waiting on Logan: the hand checks from briefs 10–12 (a draft and a copy button in
+  Desktop's inline card, a screenshot pasted into the installed build, whether a real debugging
+  session reaches for `capture`, the draft box's height, four long decision labels in the 440 px
+  window). Brief 9's waived checks (two monitors, the Dock flash at launch) were never written
+  down either. Say so if any of them bothers you.
 
 ## Open
 
-10. [`10-text-drafts.md`](10-text-drafts.md) (done, awaiting review): `text` takes a `draft` the user edits in place
-    (commit messages, PR bodies); the answer says whether they changed it.
-11. [`11-review-decisions.md`](11-review-decisions.md) (done, awaiting review): `review` takes 2–4 `decisions` of its own
-    (Port / TODO / Skip, Pass / Fail) instead of approve and reject.
-12. [`12-capture-question.md`](12-capture-question.md) (done, awaiting review): copy buttons on code blocks, a `capture`
-    question for pasted output and screenshots, and the full trial pass for briefs 10–12.
+Nothing open.
 
 ## Done
 
@@ -51,6 +49,12 @@ pull Logan to the workspace it last lived on. On macOS the window is now a non-a
 he's in. Parley left the Dock and Cmd+Tab, and the dotfiles' `parley-follow.sh` workaround went
 with it.
 
+Briefs 10–12 (done 2026-10-11) added three inputs mined from the real asks in the session
+transcripts and `history.jsonl`: a draft to edit in place instead of a "commit as written?"
+round trip, a review with the agent's own decisions instead of multi-select plus Other, and a
+capture box with copy buttons for debugging, where Logan used to copy snippets by hand and paste
+dumps into a one-line box. The full trial pass kept uptake on the old prompts within noise.
+
 1. [`01-hub-and-lifecycle.md`](archive/01-hub-and-lifecycle.md): the unix socket hub, wire protocol
    v1, the ask lifecycle (timeout, cancel, disconnect), and notify-only window behavior.
 2. [`02-ask-tool-and-ui.md`](archive/02-ask-tool-and-ui.md): the questions-array `ask` tool, its
@@ -72,6 +76,15 @@ with it.
 9. [`09-panel-window.md`](archive/09-panel-window.md): the panel for real. `tauri-nspanel` pinned
    to a rev and registered on macOS only, one Rust `hide`, and menu-bar only (Accessory at runtime,
    `LSUIElement` in the bundle). Hands-on checks waived by Logan after daily use.
+
+10. [`10-text-drafts.md`](archive/10-text-drafts.md): `text` takes a `draft` the user edits in
+    place (commit messages, PR bodies); the answer is the final text and whether it changed.
+11. [`11-review-decisions.md`](archive/11-review-decisions.md): `review` takes 2–4 `decisions` of
+    its own (Port / TODO / Skip, Pass / Fail), as a labelled segmented control per row with digit
+    keys.
+12. [`12-capture-question.md`](archive/12-capture-question.md): copy buttons on every fenced
+    code block, a `capture` question for pasted text and screenshots (saved as PNGs, returned as
+    paths, window-only), and the full trial pass for 10–12, now the baseline.
 
 ## Decisions already made
 
@@ -111,7 +124,8 @@ Don't relitigate these. If one turns out to be wrong in practice, stop and say s
 
 `ask_async`/`collect`, `notify`, raw-schema `ask_form`, rank/slider/A-B/annotate widgets, native
 elicitation, MCP Apps outside Claude Desktop (they need a remote server), the panel following the
-active screen, and remote/headless channels. `FUTURE.md` says where most of these stand. Anything that collects secrets stays out for
+active screen, remote/headless channels, and for captures: dragging image files in, thumbnails in
+history, screen capture started from Parley, and images as MCP image content. `FUTURE.md` says where most of these stand. Anything that collects secrets stays out for
 good.
 
 ## Future direction new work must not block

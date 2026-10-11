@@ -24,6 +24,10 @@ After two minutes, Claude Code moves a still-waiting call into the background: i
 Task", the agent's turn goes on, and the answer reaches the agent when you send it. Nothing changes
 on your side. In print mode (`claude -p`) the call just blocks until it ends.
 
+One side effect: an answer that arrives in the background reaches the agent with `<` and `>`
+written as `&lt;` and `&gt;`. Your answer itself is unchanged, in history too. If an agent echoes
+`&lt;` back in a commit message you wrote with angle brackets, that's why.
+
 ## Cancelling
 
 Pressing Esc in Claude Code while an ask is waiting cancels it: the card shows "Withdrawn by the

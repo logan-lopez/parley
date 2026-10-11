@@ -64,7 +64,7 @@ end. The inn composer-gap debugging went through five `text` cards in a row, eac
 to copy and a DOM dump to paste back. (From `ideate`, 2026-10-10, mining the session transcripts
 and `history.jsonl`.)
 
-**Likely shape:** builds on briefs 10–12. A `steps` question, each step `{ do, expect?, command? }`,
+**Likely shape:** builds on briefs 10–12, all landed 2026-10-11. A `steps` question, each step `{ do, expect?, command? }`,
 answered with brief 11's custom decisions (Pass / Fail / Didn't try) and brief 12's capture for
 evidence. The desktop side adds a pinned state, where Esc doesn't hide the panel and it floats over
 the app being tested; the non-activating panel (brief 9) is what makes that possible without
@@ -74,6 +74,54 @@ stealing focus. A run probably wants the full 3600 s timeout by default. Pinning
 **Kill criteria:** briefs 11 and 12 used together (a review with Pass / Fail decisions, plus a
 capture question) cover the real cases. Then the pin is the only new thing, and it's only worth
 it if Logan finds himself reopening the panel mid-test.
+
+## Trial tune-ups after the 10–12 pass
+
+The full pass on 2026-10-11 (baseline in `apps/server/trials/README.md`) left a handful of
+harness and model-facing questions. Together they're one brief with a trial pass at the end.
+
+- **`crash-output` never asked (0/3).** Every run reproduced a crash from the code, then ended its
+  turn with an `awk` command for the user to run and report back in chat. That's the moment
+  `capture` is for. The lever is the server instructions (a line like "you need something only
+  the user can get, such as command output"), which briefs 10–12 left alone on purpose. Check a
+  real debugging session first: if agents do reach for `capture` there, the prompt is just too
+  answerable from the code.
+- **`changelog-draft` asks about a fix that isn't there.** All runs, in brief 10 and in the full
+  pass, added a `choice` about the unfixed `fromCents` bug beside the draft. Rewording the prompt
+  ("I've fixed…", with the fix applied in the trial project) would make the draft the only
+  question. A changed prompt resets its comparison.
+- **fake-hub answers a plain `text` with 'as you see fit' under `other:`,** so a model that asks
+  with `text` where `capture` was meant can't score `used`. Changing it moves `export-sentinel`'s
+  baseline.
+- **`used` is a string match.** It misses an answer acted on without being echoed
+  (`prune-unused` kept `format-old.ts` as asked but didn't say "zephyr"). A diff-based check for
+  "keep this" replies would be steadier.
+- **Decision order.** In brief 11's trial one run put the destructive decision last, against
+  "the most cautious one last". It only matters for gaps, which the app never sends.
+- **Untested policies:** fake-hub's `second` and `other:` with custom decisions; no trial replies
+  that way.
+- **No Codex baseline.** Run `--client codex --runs 1` before the next model-facing change.
+
+**Kill criteria:** real use shows agents reaching for `capture` and drafts on their own; then only
+the harness items are worth doing, as they come up.
+
+## Small fixes
+
+Each is too small for a brief alone; pick them up with a brief in the same code.
+
+- **A cleared draft comes back after a restart.** Empty an agent's draft box, restart Parley before
+  sending, and the renderer writes the draft back in (the saved form has no value). Harmless; you'd
+  see it. (`TextRenderer.vue`, brief 10.)
+- **"Draft" means two things in the guide:** your unsent answers kept across a restart
+  (`answering.md`, the README's keyboard line) and the agent's text to edit (`question-types.md`).
+  One may want another word.
+- **`defaultDecision` on a non-review question** is accepted and ignored since brief 11 made it a
+  string. It could get an "only applies to review" message like `accept` and `draft` have.
+- **Removing a screenshot from a capture doesn't delete its file;** it goes with its day folder
+  after 30 days. Deleting at once needs one more platform call.
+- **One global fs scope,** so `remove` and `write-file` also cover `history.jsonl`. Per-permission
+  scopes in `capabilities/default.json` would tighten it. It's all the app's own data dir either
+  way.
 
 ## Parked
 
