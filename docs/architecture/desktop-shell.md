@@ -7,7 +7,7 @@ webview.
 
 **Sources:** `apps/desktop/src-tauri/src/lib.rs`, `apps/desktop/src-tauri/src/window.rs`, `apps/desktop/src-tauri/src/tray.rs`, `apps/desktop/src-tauri/src/shortcut.rs`, `apps/desktop/src-tauri/tauri.conf.json`, `apps/desktop/src-tauri/capabilities/`, `apps/desktop/src-tauri/Cargo.toml`, `apps/desktop/src-tauri/Info.plist`, `apps/desktop/src-tauri/build.rs`, `apps/desktop/vite.config.ts`, `apps/desktop/scripts/install.sh`
 
-**History:** [brief 1](../briefs/archive/01-hub-and-lifecycle.md), [brief 8](../briefs/08-nspanel-spike.md) (the panel), [brief 9](../briefs/09-panel-window.md) (menu-bar only)
+**History:** [brief 1](../briefs/archive/01-hub-and-lifecycle.md), [brief 8](../briefs/archive/08-nspanel-spike.md) (the panel), [brief 9](../briefs/archive/09-panel-window.md) (menu-bar only)
 
 `lib.rs` builds the app: plugins, setup, the close handler and the commands. `window.rs` is the
 panel and `show`/`hide`/`toggle`. `tray.rs` is the tray icon, its menu and the pending count.
@@ -96,4 +96,4 @@ panel and `show`/`hide`/`toggle`. `tray.rs` is the tray icon, its menu and the p
   lived on, because AeroSpace restores a hidden window to its old workspace. The brief 8 spike
   showed AeroSpace ignores a non-activating panel completely; all nine of its checks passed
   (typing, clipboard keys, the file picker, links, the tray, window state). The evidence is in
-  [brief 8's report](../briefs/08-nspanel-spike.md#report).
+  [brief 8's report](../briefs/archive/08-nspanel-spike.md#report).

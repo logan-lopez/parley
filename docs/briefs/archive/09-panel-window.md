@@ -1,6 +1,6 @@
 # Brief 9: The panel window, for real
 
-Read `CLAUDE.md`, [`README.md`](README.md) and
+Read `CLAUDE.md`, [`README.md`](../README.md) and
 [`08-nspanel-spike.md`](08-nspanel-spike.md) first, especially its `## Report`. Brief 8 is merged
 to main (`9b8eb93`): its spike code is the starting point, not something to redo.
 
@@ -83,11 +83,11 @@ All app changes are in `apps/desktop/src-tauri/`.
 - **`App.vue`:** leave the two `getCurrentWindow().hide()` calls alone. They work on the panel
   (brief 8, check 5), and routing them through a Rust command buys nothing.
 - **Docs, same change:**
-  - [`docs/architecture/desktop-shell.md`](../architecture/desktop-shell.md): say that the
+  - [`docs/architecture/desktop-shell.md`](../../architecture/desktop-shell.md): say that the
     `tauri-nspanel` crate is pinned to a rev, that Parley is menu-bar only (Accessory), and
     whatever else this brief changes about the panel. The page already describes the panel and
     AeroSpace.
-  - [`FUTURE.md`](FUTURE.md): remove the `tauri-nspanel` bullet under Parked, which also carries
+  - [`FUTURE.md`](../FUTURE.md): remove the `tauri-nspanel` bullet under Parked, which also carries
     the AeroSpace float-rule note, and record the dotfiles note below wherever it still applies.
   - `docs/briefs/README.md`: take `tauri-nspanel` out of Not built.
   - The decisions table in `docs/briefs/README.md` already records the go and menu-bar only
@@ -242,7 +242,7 @@ Then review the dotfiles draft (`cd ~/Dev/dotfiles && git diff`) and apply it.
 
 ### Docs updated
 
-- [`desktop-shell.md`](../architecture/desktop-shell.md): `Info.plist` in Sources and the file
+- [`desktop-shell.md`](../../architecture/desktop-shell.md): `Info.plist` in Sources and the file
   map, brief 9 in History, `hide` in `window.rs`, the plugin registered on macOS only (the
   "only builds on macOS" clause is gone), Accessory in startup, a **Menu-bar only** bullet (plist
   plus runtime policy, and why both), **Hiding** (Rust hides go through `window::hide`; the
@@ -250,10 +250,10 @@ Then review the dotfiles draft (`cd ~/Dev/dotfiles && git diff`) and apply it.
   updates), and the dotfiles float rule kept as insurance.
 - `AGENTS.md` Areas row and `.claude/rules/desktop-shell.md`: `apps/desktop/src-tauri/Info.plist`
   added.
-- [`FUTURE.md`](FUTURE.md): the `tauri-nspanel` bullet under Parked removed. The dotfiles note now
+- [`FUTURE.md`](../FUTURE.md): the `tauri-nspanel` bullet under Parked removed. The dotfiles note now
   lives on the desktop-shell page (Window managers).
 - `docs/briefs/README.md`: `tauri-nspanel` out of Not built. The decisions table is unchanged.
-- Guide, [`the-app.md`](../guide/the-app.md): "Parley also has a Dock icon and a Cmd+Tab entry for
+- Guide, [`the-app.md`](../../guide/the-app.md): "Parley also has a Dock icon and a Cmd+Tab entry for
   now" is replaced with no Dock icon, not in Cmd+Tab, and the hotkey and the tray as the ways in.
   The root README's feature line says the same.
 

@@ -80,6 +80,10 @@ in brief 7. Rare enough to wait for a brief that touches `AppClient` anyway.
   icon and sound on desktop; `onAction` is mobile-only, so a click can't open the window. The
   hotkey and the tray are the way in. Revisit if the plugin gains desktop actions, or if a native
   notification (a small Rust bridge) becomes worth it.
+- **The panel on the active screen:** the panel shows at its remembered position, on whichever
+  monitor that is (decided 2026-10-10). Following the focused screen or the cursor was left out as
+  the bigger change. Brief 9's two-monitor check, which would have said whether that's a problem
+  on the laptop plus the ultrawide, was waived. Revisit if Logan finds himself hunting for it.
 - **Parley inside inn:** the card could later live as a component in inn, Logan's chat app, which
   is an MCP host. Nothing to do until inn wants model → user questions of its own.
 - **One dark token block:** `src/styles.css` keeps two identical dark blocks in step by hand.

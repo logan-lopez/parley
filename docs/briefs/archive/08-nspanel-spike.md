@@ -1,6 +1,6 @@
 # Brief 8: NSPanel spike (AeroSpace workspace jump)
 
-Read `CLAUDE.md` and [`README.md`](README.md) first. Briefs 1–7 are merged.
+Read `CLAUDE.md` and [`README.md`](../README.md) first. Briefs 1–7 are merged.
 
 This is a spike. It ends in go or no-go, not a merge. Work on a `spike/nspanel` branch. The code
 is there to get the answers and may be thrown away. Budget half a day, and stop early if a kill
@@ -165,8 +165,8 @@ Then stop. Don't merge the branch. Ask Logan before deleting it.
 
 *2026-10-10.* **Go.** AeroSpace ignores a non-activating panel completely. It shows on the
 workspace you're on, focus never leaves the app you were in, and nothing the brief listed broke.
-Both kill criteria are clear. Logs: [`assets/08/baseline.txt`](assets/08/baseline.txt) (installed
-build) and [`assets/08/panel.txt`](assets/08/panel.txt) (spike).
+Both kill criteria are clear. Logs: [`assets/08/baseline.txt`](../assets/08/baseline.txt) (installed
+build) and [`assets/08/panel.txt`](../assets/08/panel.txt) (spike).
 
 ### Built (on `spike/nspanel`, uncommitted)
 

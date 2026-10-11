@@ -9,24 +9,20 @@ and move to `archive/` when they're done. Ideas that aren't scheduled yet are in
 *Updated 2026-10-10.*
 
 - Built: the hub, `ask` with six question types, the trial harness, history and the `review` type
-  (briefs 1–5), and inline cards in Claude Desktop (briefs 6–7, merged to main as `aaef062`).
-- In flight: brief 8 is done, awaiting review: the spike says go. AeroSpace ignores a
-  non-activating panel, so it shows where you are. Its code is merged to main (`9b8eb93`).
-- Next: brief 9 makes the panel real (pinned crate, menu-bar only, checks on the installed
-  build), then the dotfiles cleanup it drafts. After that,
-  [`FUTURE.md`](FUTURE.md)'s three sections: the reconnect fix is the smallest,
-  and trial prompts for show-then-wait tell us whether the Desktop flow holds up with real models.
-- Loose ends: brief 7's check 11 (does the card render in Desktop's agent mode?) and whether
-  `parley_status` polls show in the chat UI weren't written down. Record them if either surprised
-  Logan.
+  (briefs 1–5), inline cards in Claude Desktop (briefs 6–7), and the window as a non-activating
+  panel with Parley menu-bar only (briefs 8–9). Under AeroSpace, Cmd+Ctrl+P shows Parley on the
+  workspace you're on.
+- In flight: nothing.
+- Next: nothing is briefed. [`FUTURE.md`](FUTURE.md) has three candidates: the reconnect fix is
+  the smallest, and trial prompts for show-then-wait would tell us whether the Desktop flow holds
+  up with real models. Pick one with `brief`, or `ideate` for something new.
+- Loose ends: brief 9's hands-on checks were waived (Logan used the installed build and tried a
+  few paths), so the two-monitor check and the Dock flash at launch were never written down. Say
+  so if either bothers you.
 
 ## Open
 
-8. [`08-nspanel-spike.md`](08-nspanel-spike.md) (done, awaiting review): spike, **go**. A
-   non-activating `NSPanel` stops AeroSpace switching workspaces when Parley shows.
-9. [`09-panel-window.md`](09-panel-window.md) (done, awaiting review): the panel for real. Pins
-   `tauri-nspanel` and makes Parley menu-bar only. The hands-on checks on the dev and installed
-   builds haven't been run yet; the dotfiles cleanup waits on them.
+Nothing open. New briefs go here.
 
 ## Done
 
@@ -42,6 +38,12 @@ Briefs 6–7 (done 2026-10-10) put the ask card inline in Claude Desktop's chat.
 that Desktop mounts a view only after the call returns, so MCP Apps clients get "show, then wait":
 `ask` returns an `askId` and `ask_wait` blocks. The card races the window, and history records
 answers given in the chat. Claude Code and every other client see the blocking `ask`, unchanged.
+
+Briefs 8–9 (done 2026-10-10) fixed the AeroSpace workspace jump. Showing the hidden window used to
+pull Logan to the workspace it last lived on. On macOS the window is now a non-activating
+`NSPanel`, which AeroSpace doesn't manage, so it shows where he is and focus never leaves the app
+he's in. Parley left the Dock and Cmd+Tab, and the dotfiles' `parley-follow.sh` workaround went
+with it.
 
 1. [`01-hub-and-lifecycle.md`](archive/01-hub-and-lifecycle.md): the unix socket hub, wire protocol
    v1, the ask lifecycle (timeout, cancel, disconnect), and notify-only window behavior.
@@ -59,6 +61,11 @@ answers given in the chat. Claude Code and every other client see the blocking `
 7. [`07-inline-cards.md`](archive/07-inline-cards.md): the card inline in Desktop chat as a
    single-file MCP Apps view, `ask_wait` in 200 s slices, the `resolved` wire message, quiet
    inline asks in the window, chat answers in history, and `fake-host`.
+8. [`08-nspanel-spike.md`](archive/08-nspanel-spike.md): spike, go. AeroSpace ignores a
+   non-activating `NSPanel` completely; all nine hands-on checks passed on the dev build.
+9. [`09-panel-window.md`](archive/09-panel-window.md): the panel for real. `tauri-nspanel` pinned
+   to a rev and registered on macOS only, one Rust `hide`, and menu-bar only (Accessory at runtime,
+   `LSUIElement` in the bundle). Hands-on checks waived by Logan after daily use.
 
 ## Decisions already made
 
@@ -75,7 +82,7 @@ Don't relitigate these. If one turns out to be wrong in practice, stop and say s
 | MCP Apps hosts | Claude Desktop only. claude.ai and ChatGPT need a remote (HTTP) server. | Desktop is the host that runs local stdio servers, and Logan is fine with it being the only one (brief 7, 2026-10-10). |
 | AeroSpace workspace jump | On macOS the main window is a non-activating `NSPanel` (`tauri-nspanel`). Brief 8's spike said go; no hooks or park mode. Window-manager commands live in Logan's dotfiles; Parley never calls `aerospace`. | AeroSpace ignores the panel completely, so it shows on the current workspace and focus never moves (brief 8, 2026-10-10). *Was:* spike first, with hooks + park mode as the fallback. |
 | Dock and Cmd+Tab | Menu-bar only (`ActivationPolicy::Accessory`). The hotkey and tray are the ways in. | Both activate the app, which the panel exists to avoid, and nothing used them (Logan, 2026-10-10). |
-| Panel on more than one monitor | Shows at its remembered position. No following the cursor or the focused screen. | Smallest change. Revisit if the two-monitor check in brief 9 says it's a problem (Logan, 2026-10-10). |
+| Panel on more than one monitor | Shows at its remembered position. No following the cursor or the focused screen. | Smallest change. Brief 9's two-monitor check was waived; revisit if it bothers Logan in use (Logan, 2026-10-10). |
 | Inline answers and the window | The window races the card quietly (no notification). The server sends an inline answer to the app (`resolved`), and history records it as answered in the chat. | The user already sees the card. History stays complete (2026-10-10). |
 | History when the window and the card both answer | The server's first-in answer wins, and `resolved` overwrites the window's answered or skipped record | History matches what the agent got (brief 7, 2026-10-10). |
 | Shell | Tauri 2, with capabilities-based permissions (not the Tauri 1 allowlist). The Rust side stays small: tray, hotkey, window, socket hub. | Official plugins cover the tray, hotkey, notifications and file dialog, and the UI is web tech, so the same card ships as an MCP Apps view ([desktop shell](../architecture/desktop-shell.md)). |
@@ -94,8 +101,8 @@ Don't relitigate these. If one turns out to be wrong in practice, stop and say s
 ## Not built
 
 `ask_async`/`collect`, `notify`, raw-schema `ask_form`, rank/slider/A-B/annotate widgets, native
-elicitation, MCP Apps outside Claude Desktop (they need a remote server), and remote/headless
-channels. `FUTURE.md` says where most of these stand. Anything that collects secrets stays out for
+elicitation, MCP Apps outside Claude Desktop (they need a remote server), the panel following the
+active screen, and remote/headless channels. `FUTURE.md` says where most of these stand. Anything that collects secrets stays out for
 good.
 
 ## Future direction new work must not block
