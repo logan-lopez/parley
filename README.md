@@ -8,6 +8,33 @@ structured data with a plain-language summary.
 It's built for daily use with coding agents: Claude Code, Claude Desktop, Codex, any MCP client.
 macOS only, for now.
 
+![The Parley window with three asks queued](docs/guide/images/app.png)
+
+<table>
+  <tr>
+    <td width="50%"><picture>
+      <source media="(prefers-color-scheme: dark)" srcset="docs/guide/images/cards/choice-dark.png">
+      <img alt="Two choice questions" src="docs/guide/images/cards/choice-light.png">
+    </picture></td>
+    <td width="50%"><picture>
+      <source media="(prefers-color-scheme: dark)" srcset="docs/guide/images/cards/review-decisions-dark.png">
+      <img alt="A review with the agent's own decisions: Port, TODO, Skip" src="docs/guide/images/cards/review-decisions-light.png">
+    </picture></td>
+  </tr>
+  <tr>
+    <td><picture>
+      <source media="(prefers-color-scheme: dark)" srcset="docs/guide/images/cards/colors-dark.png">
+      <img alt="Color chips and a palette in a choice" src="docs/guide/images/cards/colors-light.png">
+    </picture></td>
+    <td><picture>
+      <source media="(prefers-color-scheme: dark)" srcset="docs/guide/images/cards/capture-dark.png">
+      <img alt="A capture question: a command to copy and a box for its output" src="docs/guide/images/cards/capture-light.png">
+    </picture></td>
+  </tr>
+</table>
+
+Every question type, in light and dark: [What it looks like](docs/guide/screenshots.md).
+
 ## What it's built around
 
 - **The model decides to ask.** Parley is a tool the model calls, not a server prompting the user.

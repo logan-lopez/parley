@@ -4,7 +4,7 @@ How Parley is checked without a person at the keyboard or a real client: unit te
 parts, stand-ins for each side of the socket and for an MCP Apps host, and a harness that runs real
 models against a fake app.
 
-**Sources:** `apps/server/scripts/`, `apps/server/trials/`, `apps/server/fixtures/`, `packages/protocol/src/ask.test.ts`, `apps/desktop/src/asks/persist.test.ts`, `apps/desktop/src/asks/store.test.ts`, `apps/desktop/src/forms/schemas.test.ts`, `apps/desktop/src/forms/markdown.test.ts`
+**Sources:** `apps/server/scripts/`, `apps/desktop/scripts/screenshots.ts`, `apps/server/trials/`, `apps/server/fixtures/`, `packages/protocol/src/ask.test.ts`, `apps/desktop/src/asks/persist.test.ts`, `apps/desktop/src/asks/store.test.ts`, `apps/desktop/src/forms/schemas.test.ts`, `apps/desktop/src/forms/markdown.test.ts`
 
 **History:** [brief 1](../briefs/archive/01-hub-and-lifecycle.md) (`fake-ask`), [brief 3](../briefs/archive/03-trial-harness.md) (`fake-hub`, trials), [brief 7](../briefs/archive/07-inline-cards.md) (`fake-host`), [brief 12](../briefs/archive/12-capture-question.md) (the `capture` scenario)
 
@@ -45,6 +45,13 @@ and when to reach for it.
   inline), `old-app`, `plain`.
 - **The gallery** renders every fixture through the real card without the hub
   ([the card](card-ui.md#how-it-works)).
+- **`screenshots`** (`apps/desktop/scripts/screenshots.ts`) draws the gallery headless for
+  [What it looks like](../guide/screenshots.md) and the README: Vite on its own port (1430 up,
+  no HMR), Playwright's WebKit (the window is WKWebView), each fixture in light and dark at 2x,
+  clipped to the gallery's 440 x 600 frame, into `docs/guide/images/cards/`. Fixture names narrow
+  it. Playwright is pinned exactly, since each release wants its own browser build
+  (`pnpm exec playwright install webkit` if it's missing). The window shot
+  (`docs/guide/images/app.png`) is taken by hand.
 
 ## The trial harness
 
@@ -70,6 +77,9 @@ does, the prompts, the scoring and the baseline.
   run real clients and cost time and tokens.
 - **Socket paths:** macOS caps them at 104 bytes, so put a `fake-hub` socket under `$TMPDIR`.
 - **A new question shape gets a fixture** in `packages/protocol/fixtures/`: the gallery,
-  `fake-ask` and `schemas.test.ts` pick it up from there.
+  `fake-ask`, `schemas.test.ts` and `screenshots` pick it up from there. Give it a section on
+  [What it looks like](../guide/screenshots.md).
+- **Rerun `screenshots`** after a visible change to the card or a fixture, and commit the PNGs
+  with it.
 - **Native behavior is checked by hand.** Nothing automated drives the real window, the panel,
   notifications or the hotkey; briefs list those as hands-on checks for Logan.

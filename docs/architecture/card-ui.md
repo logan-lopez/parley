@@ -103,7 +103,9 @@ keyboard contract and markdown. `platform.ts` is the one way renderers reach the
   the percentage resets it. The inline card has no zoom.
 - **The gallery** (dev only): `pnpm --filter @parley/desktop dev`, then
   `http://localhost:1420/?gallery`. It renders every fixture through `compileQuestions` and the
-  real card without the hub; submitting shows `shapeAnswer`'s output. `&fixture=<name>` picks one.
+  real card without the hub; submitting shows `shapeAnswer`'s output. `&fixture=<name>` picks one,
+  and `&source=<label>` replaces the meta row's `gallery · fixtures` (the screenshots use
+  `claude-code · parley`).
 
 ## Rules worth keeping
 

@@ -15,5 +15,6 @@ Start with [The app](the-app.md): everything else happens in its window or besid
 - [From Claude Desktop](claude-desktop.md): the inline card in the chat, and how it races the
   window.
 - [History](history.md): every ended ask, filters, the detail view, drafts and clearing.
+- [What it looks like](screenshots.md): the window, and every kind of card in light and dark.
 - [Installing and setting up](installing.md): the app, the server, and registering it in Claude
   Code, Claude Desktop and Codex.

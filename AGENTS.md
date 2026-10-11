@@ -43,7 +43,8 @@ From the root:
 | `pnpm --filter @parley/server fake-hub <socket> [--log f.jsonl] [--reply <policy>]... [--old-app]` | Stands in for the app and answers on a script. Pair with `PARLEY_SOCKET`. |
 | `pnpm --filter @parley/server fake-host [scenario...] [--server dist]` | Stands in for Claude Desktop and prints pass/fail per scenario. Run it after touching the tool surfaces, the lifecycle or `AppClient`. |
 | `pnpm --filter @parley/server trial [--client claude\|codex\|all] [--runs N] [--prompt <name>]...` | The model-uptake harness. Rerun it after changing anything model-facing (tool schema or description, server instructions, result text), and only then: it runs real clients and costs time and tokens. The baseline is in `apps/server/trials/README.md`. |
-| `pnpm --filter @parley/desktop dev`, then `http://localhost:1420/?gallery` | The gallery (dev only): every fixture through the real card, without the hub. `&fixture=<name>` picks one. |
+| `pnpm --filter @parley/desktop dev`, then `http://localhost:1420/?gallery` | The gallery (dev only): every fixture through the real card, without the hub. `&fixture=<name>` picks one, `&source=<label>` sets who's asking. |
+| `pnpm --filter @parley/desktop screenshots [fixture...]` | Headless WebKit shots of the gallery, light and dark, into `docs/guide/images/cards/` for the guide and the README. Rerun after a visible card change. |
 
 What each test tool covers is on [the testing page](docs/architecture/testing.md). `.mcp.json` at
 the root (gitignored) registers the built server for Claude Code in this repo.
@@ -96,4 +97,4 @@ is the same map for every agent).
 | `packages/protocol/src/ask.ts`, `packages/protocol/src/form.ts`, `packages/protocol/fixtures/**` | [The form spec](docs/architecture/form-spec.md) |
 | `packages/protocol/src/wire.ts`, `apps/desktop/src-tauri/src/hub.rs`, `apps/desktop/src/hub/**`, `apps/server/src/app-client.ts` | [The hub and the wire protocol](docs/architecture/hub.md) |
 | `apps/server/src/tools/inline.ts`, `apps/server/src/ask-lifecycle.ts`, `apps/server/src/card.ts`, `apps/server/tsdown.config.ts`, `apps/desktop/src/mcp-app/**`, `apps/desktop/mcp-app.html`, `apps/desktop/vite.mcp-app.config.ts` | [Inline cards (show, then wait)](docs/architecture/inline-cards.md) |
-| `apps/server/scripts/**`, `apps/server/trials/**`, `apps/server/fixtures/**`, `packages/protocol/src/ask.test.ts`, `apps/desktop/src/asks/persist.test.ts`, `apps/desktop/src/asks/store.test.ts`, `apps/desktop/src/forms/schemas.test.ts`, `apps/desktop/src/forms/markdown.test.ts` | [Testing](docs/architecture/testing.md) |
+| `apps/server/scripts/**`, `apps/desktop/scripts/screenshots.ts`, `apps/server/trials/**`, `apps/server/fixtures/**`, `packages/protocol/src/ask.test.ts`, `apps/desktop/src/asks/persist.test.ts`, `apps/desktop/src/asks/store.test.ts`, `apps/desktop/src/forms/schemas.test.ts`, `apps/desktop/src/forms/markdown.test.ts` | [Testing](docs/architecture/testing.md) |

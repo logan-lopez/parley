@@ -12,7 +12,10 @@ const fixtures = Object.fromEntries(
 )
 const names = Object.keys(fixtures)
 
-const initial = new URLSearchParams(location.search).get('fixture')
+const params = new URLSearchParams(location.search)
+const initial = params.get('fixture')
+// What the meta row says is asking; screenshots set a realistic one.
+const source = params.get('source') ?? 'gallery · fixtures'
 const name = ref(initial && initial in fixtures ? initial : names[0]!)
 const loadedAt = ref(Date.now())
 const result = ref<ReturnType<typeof shapeAnswer>>()
@@ -62,7 +65,7 @@ function finish(outcome: AskOutcome) {
         v-else-if="form"
         :key="`${name}-${run}`"
         :form="form"
-        source="gallery · fixtures"
+        :source="source"
         :created-at="loadedAt"
         :expires-at="loadedAt + (input?.timeoutSeconds ?? DEFAULT_TIMEOUT_SECONDS) * 1000"
         :position="1"
