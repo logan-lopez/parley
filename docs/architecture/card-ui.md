@@ -6,7 +6,7 @@ Claude Desktop, and in the dev gallery.
 
 **Sources:** `apps/desktop/src/card/`, `apps/desktop/src/forms/`, `apps/desktop/src/platform.ts`, `apps/desktop/src/styles.css`, `apps/desktop/src/zoom.ts`, `apps/desktop/src/ZoomControl.vue`, `apps/desktop/src/App.vue`, `apps/desktop/src/main.ts`, `apps/desktop/src/gallery/`
 
-**History:** [brief 2](../briefs/archive/02-ask-tool-and-ui.md), [brief 5](../briefs/archive/05-review-question.md) (the review renderer), [brief 7](../briefs/archive/07-inline-cards.md) (the platform adapter, `html.inline`), [brief 11](../briefs/11-review-decisions.md) (labelled review decisions)
+**History:** [brief 2](../briefs/archive/02-ask-tool-and-ui.md), [brief 5](../briefs/archive/05-review-question.md) (the review renderer), [brief 7](../briefs/archive/07-inline-cards.md) (the platform adapter, `html.inline`), [brief 11](../briefs/11-review-decisions.md) (labelled review decisions), [brief 12](../briefs/12-capture-question.md) (copy buttons, the capture renderer)
 
 `card/AskCard.vue` is the card. It knows nothing about the hub or Tauri. `App.vue` is the window
 around it: the queue, Send and Skip, history. `forms/` holds the renderers, their registration, the
@@ -24,7 +24,8 @@ keyboard contract and markdown. `platform.ts` is the one way renderers reach the
   `expiresAt`, orange under a minute, the meta slot with zoom and history), the title, JSON
   Forms with `ValidateAndHide`, the note for the agent, and the actions. Send is blocked while the
   form has errors, and the footer lists what's missing by header ("Still needs an answer", "n items
-  undecided"). Props switch it to `readonly` (history) or `embedded` (the inline card: no focus on
+  undecided"). A required error inside a question's object (a capture) counts against that
+  question. Props switch it to `readonly` (history) or `embedded` (the inline card: no focus on
   mount, no Esc hint), and `withdrawn` makes it read-only with a banner.
 - **The note for the agent:** a collapsed textarea (2,000 characters) opened with `Cmd+N`, sent
   with an answer or a skip, and kept in the draft.
@@ -62,13 +63,31 @@ keyboard contract and markdown. `platform.ts` is the one way renderers reach the
     focused row, and Space cycles; `a`/`r` are off. The row handler prevents the digit, and the
     card skips a prevented event, so its `pick` never runs as well. Long labels wrap the control
     under the item (the label keeps 12rem) and cut with an ellipsis if they still don't fit.
+  - Capture: a monospace textarea (6 lines, growing to 14 with `field-sizing`, `maxlength`
+    50,000) that keeps the text verbatim and sets `{ text?, images? }`, or nothing when both are
+    empty, so `required` catches it at the top. A paste carrying an image file, anywhere in the
+    question, is taken over (`preventDefault`): a non-PNG is redrawn as a PNG on a canvas, one
+    over 10 MB or past the fifth is refused with a line under the box, and the rest go through
+    `saveImage`. Each gets a row with a `data:` thumbnail (drawn small on a canvas; the CSP allows
+    `img-src data:`, not `blob:`), its size and a remove button. Thumbnails are cached by path for
+    the session; one restored from a draft after a restart shows its name only, since nothing
+    reads the files back. An image-only capture's paste target is a text input that refuses
+    typing (`beforeinput`), because WebKit may not deliver a paste to a focusable `div`.
+    Read-only, it shows the text in a monospace block and the screenshots' file names.
 - **Markdown** (`forms/markdown.ts`, markdown-it) renders model text with no raw HTML and no
-  images. Links are linkified, and ```` ```diff ```` blocks color their lines. The webview never
-  navigates: a capture-phase click handler in `main.ts` stops every link, and links open through
-  `openExternal`.
+  images. Links are linkified, and ```` ```diff ```` blocks color their lines. Every fenced block
+  is wrapped in `.code-block` with a `[data-copy]` button that carries nothing: `Markdown.vue`'s
+  delegated click copies the block's `<code>` text (less its trailing newline) through `copyText`,
+  then says "Copied" for 1.5 s, or, when that fails, selects the code and says "Press ⌘C". The
+  button has `tabindex="-1"` and no key. The webview never navigates: a capture-phase click
+  handler in `main.ts` stops every link, and links open through `openExternal`.
 - **The platform adapter** (`platform.ts`): `pickPaths` (the Tauri dialog, or `window.prompt`
-  outside Tauri) and `openExternal` (http(s) and mailto only; the opener plugin in Tauri, the
-  host's `openLink` in the inline card through `setPlatform`, `window.open` in a plain browser).
+  outside Tauri), `openExternal` (http(s) and mailto only; the opener plugin in Tauri, the
+  host's `openLink` in the inline card through `setPlatform`, `window.open` in a plain browser),
+  `copyText` (`navigator.clipboard.writeText`, false on failure), and `saveImage`, which writes a
+  PNG to `$APPDATA/captures/<YYYY-MM-DD>/<8 hex>.png` with the fs plugin and returns the
+  absolute path (a made-up `/tmp/parley-capture-n.png` outside Tauri, so the gallery works). All
+  of them can be overridden through `setPlatform`.
 - **Styles** (`styles.css`): one set of tokens. Light on `:root`; dark under the system media
   query (`:root:not([data-theme='light'])`) and again under `:root[data-theme='dark']`, which the
   inline card sets from the host. The window sets neither, so it follows the system.

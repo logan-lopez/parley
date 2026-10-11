@@ -87,9 +87,10 @@ A changed prompt resets the comparison for that prompt.
 | config-format | ask | first | a single decision: should be a choice, not a `review` |
 | changelog-draft | ask | other:… | an edit-in-place draft: should be one `text` with a `draft` |
 | sort-helpers | ask | first | a per-item assignment: should be one `review` with `decisions` |
+| crash-output | ask | other:… | output only the user can get: should be one `capture` |
 
 The question types are in the `questions` field of each result, not scored. Check them by eye for
-`prune-unused`, `config-format`, `changelog-draft` and `sort-helpers`; a text question with a
+`prune-unused`, `config-format`, `changelog-draft`, `sort-helpers` and `crash-output`; a text question with a
 draft shows as `text+draft`, and a review with its own decisions as `review+decisions`.
 
 `project/` is `tally`, a small expense-CSV CLI with a planted sign bug in `fromCents`, unused
@@ -128,28 +129,43 @@ the answer. Trust it more on `export-sentinel`, where the string is distinctive.
 
 ## Baseline
 
-2026-10-10, Claude Code 2.1.296, `claude-opus-5-5`, `--runs 3`, with the `review` type in the tool
-description (8280b48). From `results/2026-10-10T16-03-18-435Z.jsonl`:
+2026-10-11, Claude Code 2.1.296, `claude-opus-5-5`, `--runs 3`: the first full pass with `draft`
+on text (brief 10), review `decisions` (brief 11), and `capture` and copy buttons (brief 12) in the
+tool description, on top of 8b8525b. From `results/2026-10-11T04-22-35-638Z.jsonl`:
 
-| prompt | expect | asked | first call valid | used | over-asked | re-asked after skip |
-| --- | --- | --- | --- | --- | --- | --- |
-| config-format | ask | 0/3 | – | – | – | – |
-| date-library | ask | 3/3 | 3/3 | 3/3 | – | – |
-| dead-code-cleanup | ask | 3/3 | 3/3 | 0/3 | – | – |
-| explain-by-category | no-ask | 0/3 | – | – | 0 | – |
-| export-sentinel | ask | 3/3 | 3/3 | 3/3 | – | – |
-| fix-negative-cents | no-ask | 0/3 | – | – | 0 | – |
-| json-flag | no-ask | 0/3 | – | – | 0 | – |
-| naming-skip | ask | 3/3 | 3/3 | – | – | 0 |
-| prune-unused | ask | 3/3 | 3/3 | 3/3 | – | – |
-| refactor-reports | ask | 3/3 | 3/3 | 0/3 | – | – |
+| prompt | expect | asked | first call valid | used | over-asked | re-asked after skip | was (2026-10-10) |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| changelog-draft | ask | 3/3 | 3/3 | 3/3 | – | – | new |
+| config-format | ask | 2/3 | 2/2 | 1/2 | – | – | asked 0/3 |
+| crash-output | ask | 0/3 | – | – | – | – | new |
+| date-library | ask | 3/3 | 3/3 | 3/3 | – | – | same |
+| dead-code-cleanup | ask | 3/3 | 3/3 | 0/3 | – | – | same |
+| explain-by-category | no-ask | 0/3 | – | – | 0 | – | same |
+| export-sentinel | ask | 3/3 | 3/3 | 3/3 | – | – | same |
+| fix-negative-cents | no-ask | 0/3 | – | – | 0 | – | same |
+| json-flag | no-ask | 0/3 | – | – | 0 | – | same |
+| naming-skip | ask | 3/3 | 3/3 | – | – | 0 | same |
+| prune-unused | ask | 3/3 | 3/3 | 2/3 | – | – | used 3/3 |
+| refactor-reports | ask | 3/3 | 3/3 | 0/3 | – | – | same |
+| sort-helpers | ask | 3/3 | 2/3 | 0/1 | – | – | new |
 
-- `config-format` is noisy. A rerun at `--runs 5` asked 4/5, every time with a `choice` and never a
-  `review`. Across both, 4 of 8.
-- `prune-unused` asked with a `review` question in all three runs. One `dead-code-cleanup` run used
-  a `review` too.
-- `used` 0/3 on `dead-code-cleanup` and `refactor-reports` is the generic-label problem above, not
+- **The old prompts are within run-to-run noise.** `config-format` asked 2/3 (0/3 last time,
+  4 of 8 across the earlier reruns), always with `choice`, never a `review`. `prune-unused` asked
+  with a plain `review` in all three runs (one run asked two); its one `used` miss is the
+  generic-label problem below. One `dead-code-cleanup` run led with a `review` again.
+- **`changelog-draft`:** a `text` with a `draft` in all three runs, beside a `choice`.
+- **`sort-helpers`:** a `review` with `decisions` in all three runs. Run 3's first call had a
+  13-character header and was rejected; it retried and asked three times in all. `used` is null
+  when the reply is `first` on a review, hence 0/1.
+- **`crash-output` never asked.** In all three runs the model reproduced a real crash path from
+  the code (`src/format.ts:5` reading `length` of an undefined category, from a short line),
+  then ended its turn with an `awk` command for the user to run and report back in chat. That's
+  the "run this and paste the output" moment `capture` is for, and the model treated it as the end
+  of the turn instead. The prompt is answerable enough from the code that a no-ask is defensible;
+  whether a real debugging session reaches for `capture` is a hands-on check. Note that fake-hub
+  answers a plain `text` question with 'as you see fit', so a model that asked with `text` instead
+  of `capture` would score `used` 0 here.
+- `used` 0/3 on `dead-code-cleanup` and `refactor-reports` is still the generic-label problem, not
   ignored answers.
-- Not recorded: a Codex baseline, and a full pass from before the `review` change. Run
-  `--client codex --runs 1` before the next model-facing change, so there's something to compare
-  Codex against.
+- Not recorded: a Codex baseline. Run `--client codex --runs 1` before the next model-facing
+  change, so there's something to compare Codex against.

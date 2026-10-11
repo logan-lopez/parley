@@ -17,7 +17,7 @@ panel and `show`/`hide`/`toggle`. `tray.rs` is the tray icon, its menu and the p
 
 ## How it works
 
-- **Plugins:** dialog (the file picker), fs (history only), notification, opener (links),
+- **Plugins:** dialog (the file picker), fs (history and pasted screenshots), notification, opener (links),
   `tauri-nspanel` (registered on macOS only), global shortcut and window state. Window state remembers position and size but
   never visibility (`StateFlags::all() - VISIBLE`).
 - **Startup** (`setup`): on macOS, set the activation policy to `Accessory` and turn the main
@@ -49,8 +49,11 @@ panel and `show`/`hide`/`toggle`. `tray.rs` is the tray icon, its menu and the p
   mobile-only, so a click can't open the window.
 - **Permissions** (`capabilities/default.json`, the `main` window only): core defaults, window
   hide, dialog, notification, opening URLs in the opener's default scope (http(s), mailto, tel),
-  the four app commands (`hub_ready`, `hub_send`, `hub_close`, `set_pending_count`), and fs read,
-  write and rename scoped to `$APPDATA/history.jsonl` and its `.tmp`.
+  the four app commands (`hub_ready`, `hub_send`, `hub_close`, `set_pending_count`), and fs:
+  read-text-file, write-text-file and rename for history, and write-file, mkdir, read-dir and
+  remove for screenshots. One `fs:scope` covers them all: `$APPDATA/history.jsonl`, its `.tmp`,
+  `$APPDATA/captures` and `$APPDATA/captures/**`. Nothing outside the app's data dir, and no
+  read of a screenshot's contents.
 - **CSP.** `tauri.conf.json` sets it for bundled assets. `tauri dev` on macOS loads the Vite server
   directly, where that CSP doesn't apply, so `vite.config.ts` serves the same policy as a header,
   plus inline styles and the HMR socket for Vite.

@@ -300,3 +300,163 @@ By hand, for Logan:
 - A real debugging session where the agent asks for console output: does it reach for `capture`?
 
 Then stop. Ask Logan before committing.
+
+## Report
+
+Built 2026-10-11 on `main`, uncommitted, on top of 8b8525b.
+
+### Built
+
+- **Protocol** (`packages/protocol/src/ask.ts`, `form.ts`). `capture` joins `QUESTION_TYPES` and
+  `WIDGETS`, with `accept` (`text` / `image` / `any`, default `any`) and `placeholder`. `accept` on
+  another type gets its own message; options, items, a draft or decisions on a capture get the
+  messages the other types already give. The compiled schema is the pinned one. `isWindowOnly`
+  replaces `hasPathQuestion` (path, or a capture whose `x-accept` isn't `text`), in
+  `tools/inline.ts` and `McpApp.vue`, whose read-only line now says "This question needs the
+  Parley window." The answer gains `images`; `value` is the verbatim text or null. `shapeAnswer`
+  fences the text with a fence longer than any backtick run in it, quotes one line of 120
+  characters or fewer, and lists screenshots as paths. `form.ts` exports the limits
+  (`CAPTURE_MAX_IMAGES` 5, `CAPTURE_MAX_IMAGE_BYTES` 10 MB, `CAPTURE_MAX_TEXT` 50,000) and
+  `CaptureValue`. Fixtures: `capture.json` (accept `any`, with a fenced JS snippet to copy) and
+  `capture-text.json` (two text-only captures, one optional).
+- **Copy buttons** (`forms/markdown.ts`, `forms/Markdown.vue`). The fence rule wraps each block
+  in `.code-block` with a payload-free `[data-copy]` button; the delegated click copies the
+  `<code>` text minus its trailing newline through `platform.copyText`, says "Copied" for 1.5 s,
+  or selects the code and says "Press ⌘C" for 3 s when copying fails. `tabindex="-1"`, no key.
+- **Platform** (`platform.ts`). `copyText` (`navigator.clipboard.writeText`) and `saveImage`
+  (`$APPDATA/captures/<YYYY-MM-DD>/<8 hex>.png` via plugin-fs, returning the absolute path; a fake
+  `/tmp/parley-capture-n.png` outside Tauri), both overridable through `setPlatform`.
+- **Renderer** (`forms/renderers/CaptureRenderer.vue`, registered in `renderers.ts`; styles in
+  `styles.css`). Monospace textarea, 6 lines growing to 14. Image pastes anywhere in the question
+  are taken over, converted to PNG through a canvas when they aren't already, size- and
+  count-checked, saved, and shown with a small `data:` thumbnail, size and remove button.
+  Image-only captures get a "Paste a screenshot (⌘V)" input that refuses typing. Read-only shows
+  the text in a monospace block and file names only.
+- **Card** (`card/AskCard.vue`). A required error inside a question's object now counts against
+  that question, so the footer says "Still needs an answer: Console", not "text".
+- **Cleanup** (`asks/persist.ts`, `asks/store.ts`). After `load`'s rewrite, day folders whose day
+  ended over 30 days ago are removed (`staleCaptureDays`, tested). **Clear…** runs
+  `clearCaptures`, which deletes every screenshot except those in a waiting ask's draft.
+- **Capabilities** (`capabilities/default.json`). `fs:allow-write-file`, `fs:allow-mkdir`,
+  `fs:allow-read-dir`, `fs:allow-remove` (all four confirmed in the generated schema), and
+  `$APPDATA/captures` plus `$APPDATA/captures/**` in the fs scope.
+- **Server** (`tools/inline.ts`, `tools/ask.ts`). The card's `resources/read` contents carry
+  `_meta.ui.permissions.clipboardWrite`. The tool description has the `capture` line from §7,
+  verbatim apart from the markdown escaping. Server instructions untouched.
+- **Test tools.** `fake-hub` fills a capture with the `other:` text or 'as you see fit'.
+  `fake-host` has a `capture` scenario (an image capture goes to the window without `inline`, a
+  text-only one goes inline and the card answers it), and `card-wins` checks the
+  `clipboardWrite` request. Trial prompt `trials/prompts/crash-output.md`, with its row in the
+  trials README.
+
+### Deviations
+
+- **Build order.** Step 0 ran after the build, together with acceptance 6, in one hands-on
+  session (Logan's call, 2026-10-11). Both web APIs worked in the panel, so
+  `tauri-plugin-clipboard-manager` wasn't added.
+- **`fs:allow-read-dir` added.** Removing day folders older than 30 days, and clearing all but a
+  waiting draft's screenshots, means listing `captures/`. It lists names only; nothing reads a
+  file's contents.
+- **Clear keeps screenshots in waiting drafts.** The brief said Clear deletes all of `captures/`.
+  That would leave a waiting ask's draft pointing at deleted files, so the agent would get dead
+  paths. Those few are kept; everything else goes.
+- **No shortcut in the hint line.** ⌘⌃⇧4 is AeroSpace's (send the window to workspace 4,
+  `keymap.md`), so the brief's own rule applied: the line reads "Paste output or a screenshot."
+  The guide says to copy a screenshot with ⌘⇧4 and ⌃ held while dragging.
+- **The `anyOf` branches repeat `type`** (`{ type: 'string', minLength: 1 }`,
+  `{ type: 'array', minItems: 1 }`), which strict AJV needs. Otherwise the schema is the pinned
+  one.
+- **The image-only paste target is an input, not a focusable line.** WebKit may not deliver a
+  paste to a non-editable element; an input that refuses typing (`beforeinput`) does get it. In
+  `any` mode the textarea takes image pastes too, so the line under it is a hint, not a focus
+  target.
+- **Thumbnails are `data:` URLs drawn small on a canvas,** so the CSP didn't change (no `blob:`).
+- **The trial reply.** `tally` has no `parseRow` or `parse.ts:41`; the reply names `parseLine`
+  at `src/parse.ts:17`, keeping `zephyr` as the match. Moot, as it turned out: no run asked.
+- **A paste carrying an image adds the image,** even if it carries text too (copying cells from
+  Numbers, say). Simple and predictable; noted in the guide.
+
+### Defaults taken
+
+- Image limits: 5 per capture, 10 MB each, refused with a line under the box.
+- Text limit: 50,000 characters (`maxlength`); reaching it shows a line under the box.
+
+### Acceptance
+
+1. `pnpm --filter @parley/protocol test`: **pass**, 84 tests, with new ones for each `accept`,
+   the validation messages, `isWindowOnly`, and `shapeAnswer` for text, a one-liner, a long single
+   line, images only, both, text with triple and quadruple backticks, and an optional capture
+   left blank or whitespace-only.
+2. `pnpm --filter @parley/desktop test`: **pass**, 39 tests. Both capture fixtures compile under
+   strict AJV with no warnings; new tests check what a required `any` capture and a text capture
+   accept, and `staleCaptureDays`.
+3. `pnpm typecheck` and `pnpm --filter @parley/server build`: **pass**.
+4. `fake-host`: **pass**, all 9 scenarios, from source and with `--server dist`, including the
+   new `capture` scenario and the `clipboardWrite` check.
+5. Gallery: **pass**, checked headless in Playwright's WebKit (no window on screen). Both capture
+   fixtures render in light and dark. `long-markdown`'s one fenced block has a copy button,
+   inline code has none; a click copied
+   `# what I'd run\ngit rm src/export/csv-v1.ts src/export/xml.ts scripts/seed-old.sh`, said
+   "Copied", and reset after 1.5 s; with the clipboard refused it said "Press ⌘C" and selected the
+   block. A synthetic image paste gave a thumbnail row, and Send gave the fenced text plus the
+   fake path. An empty or whitespace-only capture keeps Send disabled with "Still needs an answer:
+   Console". An image-only scratch fixture (deleted after) refused typing and stopped at five
+   screenshots with "At most 5 screenshots."
+6. Real app with step 0: **pass.** The dev app ran on a test socket beside the installed one (Logan's call),
+   and `fake-ask capture --timeout 3600` sent the card. Step 0's answers: in the panel,
+   `navigator.clipboard.writeText` works from a click (Copy said "Copied", and the paste
+   brought back the snippet), and a ⌘⇧4-with-⌃ screenshot pastes as an image file in
+   `clipboardData.files`. So no clipboard plugin. `fake-ask` printed the four pasted lines fenced
+   (no trailing newline, so the button's trim works) and
+   `.../captures/2026-10-11/2a9c60ea.png`, a valid 255×39 RGBA PNG that opens. The optional Preview
+   paste wasn't reported on separately: one image arrived, so the TIFF redraw path is checked only by
+   reading the code.
+7. Full trial pass: **done**, `results/2026-10-11T04-22-35-638Z.jsonl`, table and notes in
+   `apps/server/trials/README.md` (now the baseline). Old prompts within noise: `config-format`
+   2/3 (always `choice`, never `review`), `prune-unused` a plain `review` 3/3. `changelog-draft`
+   used `text`+`draft` 3/3, `sort-helpers` `review`+`decisions` 3/3 (one first call rejected for a
+   13-character header). **`crash-output` asked 0/3.** Each run reproduced a real crash path from
+   the code (`src/format.ts:5`), then ended its turn with an `awk` command for the user to run and
+   report back in chat: the moment `capture` is for, handled as the end of the turn.
+
+### Spot checks for Logan
+
+- **A copy button in Desktop's inline card.** Rebuild the server, quit and reopen Desktop, ask
+  something with a code block. Does it copy, or fall back to "Press ⌘C" with the code selected?
+  Either is fine; say which, and it goes on the inline cards page.
+- **A screenshot pasted straight into a real ask in the installed window** (after
+  `pnpm install:desktop` and a restart of Parley): ⌘⇧4 with ⌃ held, then ⌘V into a capture.
+- **A real debugging session where the agent needs console output.** Does it reach for
+  `capture`? The trial says it may hand you a command in chat instead.
+- **History detail of a capture**: the text in a monospace block and the screenshot file names.
+
+### Docs updated
+
+- Architecture: the form spec (`capture`, `isWindowOnly`, the answer and its text), the card (copy
+  buttons, the capture renderer, `copyText` and `saveImage`, the footer), the desktop shell (fs
+  permissions and scope), inline cards (window-only now covers image captures; the
+  `clipboardWrite` request, unverified), asks and history (screenshot cleanup, Clear, the fs
+  rule), testing (fake-hub's capture policy, the `capture` scenario, the new unit tests).
+- `AGENTS.md`: the fs scope rule includes `captures/`.
+- Guide: `question-types.md` (a Capture section, seven types, Covers adds asks and history),
+  `answering.md` (Code in a question), `claude-desktop.md` (questions that need the window, the
+  copy fallback), `history.md` (Clear and the captures folder), `README.md` (the index lines).
+- Root README: "Seven question types" with capture, a copy-buttons line, and the form-language
+  bullet.
+- `apps/server/trials/README.md`: the `crash-output` row and the new baseline.
+
+### Follow-ups
+
+- **`crash-output` and real uptake.** If Logan's hands-on check agrees that agents hand over
+  commands in chat instead of asking with `capture`, the lever is the server instructions ("you
+  need something only the user can get, like command output"), which this brief left alone on
+  purpose. That's a model-facing change with its own trial pass.
+- **fake-hub answers plain `text` with 'as you see fit' under `other:`,** so a prompt where the
+  model reasonably uses `text` can't score `used`. Changing it would move the baseline for
+  `export-sentinel` and the others; worth a deliberate decision.
+- **Removing a screenshot from the box doesn't delete its file;** it goes with its day folder.
+  Deleting at once would need one more platform call.
+- **The fs scope is one global scope,** so `remove` and `write-file` also apply to
+  `history.jsonl`. Per-permission scopes would tighten it; it's all the app's own data dir either
+  way.
+- A Codex baseline still isn't recorded.

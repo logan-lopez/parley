@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { fold, RETENTION_MS } from './persist'
+import { fold, RETENTION_MS, staleCaptureDays } from './persist'
 
 const NOW = Date.UTC(2026, 9, 10, 12)
 const DAY = 24 * 60 * 60 * 1000
@@ -86,5 +86,15 @@ describe('fold', () => {
 
   it('handles an empty file', () => {
     expect(fold('', NOW)).toEqual({ records: [], bad: 0 })
+  })
+})
+
+describe('staleCaptureDays', () => {
+  it('picks day folders whose day ended over the retention ago', () => {
+    const day = (offset: number) => {
+      const d = new Date(NOW - offset * DAY)
+      return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+    }
+    expect(staleCaptureDays([day(0), day(29), day(30), day(32), day(90), 'notes', '2026-1-1'], NOW)).toEqual([day(32), day(90)])
   })
 })

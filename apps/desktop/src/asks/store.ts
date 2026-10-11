@@ -7,7 +7,7 @@ import { invoke } from '@tauri-apps/api/core'
 import type { CancelReason, FormSpec, SessionInfo } from '@parley/protocol'
 import { send, type HubHandlers } from '../hub/client'
 import { notifyNewAsk } from './notifications'
-import { append, rewrite, type Snapshot } from './persist'
+import { append, clearCaptures, rewrite, type Snapshot } from './persist'
 
 export type AskStatus = 'pending' | 'answered' | 'dismissed' | 'cancelled' | 'timed_out' | 'orphaned'
 
@@ -59,10 +59,20 @@ export function hydrate(snapshots: Snapshot[]) {
   for (const snapshot of snapshots) records.set(snapshot.id, { ...snapshot, conn: 0 })
 }
 
-// Drops every ended record, on disk too. Pending asks stay.
+// Drops every ended record, on disk too, and the screenshots pasted into them.
+// Pending asks stay, with the screenshots in their drafts.
 export function clearHistory() {
   for (const record of history.value) records.delete(record.id)
   void rewrite(queue.value)
+  void clearCaptures(queue.value.flatMap((r) => imagesIn(r.draft?.data)))
+}
+
+// The paths in a capture's `images`, anywhere in a form's data.
+function imagesIn(value: unknown): string[] {
+  if (Array.isArray(value)) return value.flatMap(imagesIn)
+  if (typeof value !== 'object' || value === null) return []
+  return Object.entries(value).flatMap(([key, v]) =>
+    key === 'images' && Array.isArray(v) ? v.filter((p): p is string => typeof p === 'string') : imagesIn(v))
 }
 
 // Saving. A status change saves at once; a draft change waits for a pause.

@@ -7,7 +7,7 @@ question.
 
 **Sources:** `packages/protocol/src/ask.ts`, `packages/protocol/src/form.ts`, `packages/protocol/fixtures/`
 
-**History:** [brief 2](../briefs/archive/02-ask-tool-and-ui.md), [brief 5](../briefs/archive/05-review-question.md) (`review`), [brief 10](../briefs/10-text-drafts.md) (`draft`), [brief 11](../briefs/11-review-decisions.md) (review `decisions`)
+**History:** [brief 2](../briefs/archive/02-ask-tool-and-ui.md), [brief 5](../briefs/archive/05-review-question.md) (`review`), [brief 10](../briefs/10-text-drafts.md) (`draft`), [brief 11](../briefs/11-review-decisions.md) (review `decisions`), [brief 12](../briefs/12-capture-question.md) (`capture`)
 
 `ask.ts` is the `@parley/protocol/ask` entry: the tool's Zod input schema (`askInputSchema`), the
 result schema, `compileQuestions` and `shapeAnswer`. They're pure functions, shared by the server,
@@ -29,9 +29,10 @@ the app renders and holds its types.
     (2–4 labels of 12 characters or fewer, used instead of approve and reject, the most cautious
     last), and `defaultDecision`: `approve`, `reject` or `none`, or with `decisions` one of them
     or `none`, defaulting to the first.
+  - `capture`: `accept` (`text`, `image` or `any`, the default) and `placeholder`.
 - **Validation errors are written for the model.** The `superRefine` in `askInputSchema` catches
   the mistakes models make (options on a review, items on a choice, an "Other" option, a draft on
-  anything but text, decisions on anything but review, duplicate labels, decisions or ids, a
+  anything but text, decisions on anything but review, `accept` on anything but capture, duplicate labels, decisions or ids, a
   `defaultDecision` that isn't one of the decisions, `min` above `max`) and says what to do instead. The SDK rejects invalid input
   before the tool runs, so the model sees the message and retries.
 - **Answer keys.** An explicit `id` wins; otherwise a slug of the header, `_2`, `_3` on
@@ -59,6 +60,16 @@ the app renders and holds its types.
     `none`) tells the renderer what to write into every entry on mount; under `none` each item has
     `required: ['decision']` instead. Without `decisions` the schema is what it was before they
     existed.
+  - `capture`: an object, `properties: { text: string, images: string[] (maxItems 5) }` with
+    `additionalProperties: false`, `x-accept`, and `x-placeholder`. Under `accept: 'text'` or
+    `'image'` the other property is left out. When required, an `anyOf` asks for a non-empty
+    `text` or a non-empty `images`, or a plain `required` when only one is accepted; the
+    branches repeat `type`, which strict AJV needs. `images` hold absolute paths of PNGs the app
+    saved. A text-only capture would downgrade to a string field; images have no downgrade.
+- **Window-only forms** (`isWindowOnly` in `form.ts`): a form with a `path` question, or a
+  `capture` whose `x-accept` isn't `text`, can't be answered in an MCP Apps card (no file picker
+  in the host's iframe, and nowhere to save an image). The server doesn't send it `inline`, and
+  the card shows it read-only ([inline cards](inline-cards.md)).
 - **Markdown** in `description` and `x-preview` renders without raw HTML and without images
   (`apps/desktop/src/forms/markdown.ts`).
 - **The result** (`askResultSchema`): `status` (`answered`, `dismissed`, `timed_out`,
@@ -69,14 +80,18 @@ the app renders and holds its types.
   first decision (the approved ones, without `decisions`). A text question
   with a draft adds `edited`: whether the final text differs from the draft, both trimmed and with
   line endings normalised, so re-wrapping the end isn't an edit. A draft cleared to blank is
-  `value: null`, `edited: true`.
+  `value: null`, `edited: true`. A capture's `value` is the pasted text verbatim (null when
+  there's none, or only whitespace), and `images` its screenshots' paths.
 - **The text** (`shapeAnswer`) leads with "The user answered:" and one line per question. Own
   answers are quoted and marked as not one of the options. A draft reads "accepted the draft as
   written", or "edited the draft:" with the final text indented below, or "(cleared the
   draft)"; there's no diff. A review leads with the majority
   decision and lists only the exceptions and the comments. With its own decisions it leads with
   the counts, majority first ("Port 8, TODO 4, Skip 2 (of 14)", or "Port all 14"), then the
-  other decisions' items grouped by decision, then majority items with a comment. A note is quoted after the answers.
+  other decisions' items grouped by decision, then majority items with a comment. A capture fences its
+  text verbatim, indented under the line ("pasted 24 lines:"), with a fence longer than any run
+  of backticks in it; one line of 120 characters or fewer is quoted instead (`pasted "v2.1.296"`).
+  Screenshots follow as paths, one per line, introduced as PNG files the agent can read. A note is quoted after the answers.
   Skips and timeouts each get a sentence that tells the model what to do next (don't ask again,
   continue and say what you assumed); a cancel only says so. `message` is the same text.
 - **Fixtures** in `packages/protocol/fixtures/` are `ask` tool input, at least one per question type.

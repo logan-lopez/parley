@@ -49,6 +49,27 @@ describe('compiled schemas under AJV', () => {
     expect(validate({ changes: [...decided, { decision: 'approve' }] })).toBe(false)
   })
 
+  it('takes text, screenshots or both in a required capture, and nothing empty', () => {
+    const { validate } = compile(schemas.capture!, false)
+    const shot = '/tmp/parley-capture-1.png'
+    expect(validate({ console: { text: '[818, 57]' } })).toBe(true)
+    expect(validate({ console: { images: [shot] } })).toBe(true)
+    expect(validate({ console: { text: 'x', images: [shot] } })).toBe(true)
+    expect(validate({})).toBe(false)
+    expect(validate({ console: {} })).toBe(false)
+    expect(validate({ console: { text: '', images: [] } })).toBe(false)
+    expect(validate({ console: { images: Array(6).fill(shot) } })).toBe(false)
+    expect(validate({ console: { text: 'x', html: '<b>' } })).toBe(false)
+  })
+
+  it('takes only text in a text capture, and lets an optional one be blank', () => {
+    const { validate } = compile(schemas['capture-text']!, false)
+    expect(validate({ version: { text: 'v2.1.296' } })).toBe(true)
+    expect(validate({ version: { text: 'v2' }, trace: {} })).toBe(true)
+    expect(validate({ version: { text: '' } })).toBe(false)
+    expect(validate({ version: { text: 'v2', images: ['/tmp/a.png'] } })).toBe(false)
+  })
+
   it('lets a review with a default leave decisions out', () => {
     const { validate } = compile(schemas.review!, false)
     expect(validate({ cleanup: Array.from({ length: 12 }, () => ({})) })).toBe(true)

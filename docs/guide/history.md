@@ -37,11 +37,15 @@ had typed." for an ask that ended with a draft in it.
 
 ## Clearing it
 
-**Clear…** deletes every ended ask, from the file too. It asks you to confirm first. Waiting
-asks are untouched.
+**Clear…** deletes every ended ask, from the file too, and the screenshots pasted into captures.
+It asks you to confirm first. Waiting asks are untouched, and so are the screenshots in their
+drafts.
 
 ## Where it lives
 
 `~/Library/Application Support/com.loganlopez.parley/history.jsonl`, one line per change to an ask.
 Parley compacts it and drops asks older than 30 days each time it starts. If writing it fails, the
 top row says "not being saved"; asks still work.
+
+Pasted screenshots are beside it in `captures/`, one folder per day; a folder goes once it's 30
+days old ([Question types](question-types.md#capture)).

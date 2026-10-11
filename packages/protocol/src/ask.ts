@@ -4,6 +4,7 @@
 
 import * as z from 'zod/v4'
 import {
+  CAPTURE_MAX_IMAGES,
   REVIEW_DECISIONS,
   type ChoiceOptionSchema,
   type DefaultDecision,
@@ -12,11 +13,12 @@ import {
   type OtherOptionSchema,
   type ReviewDecision,
   type ReviewItemSchema,
+  type CaptureAccept,
   type Widget,
 } from './form.ts'
 
 export const DEFAULT_TIMEOUT_SECONDS = 1800
-export const QUESTION_TYPES = ['choice', 'text', 'number', 'boolean', 'path', 'review'] as const satisfies readonly Widget[]
+export const QUESTION_TYPES = ['choice', 'text', 'number', 'boolean', 'path', 'review', 'capture'] as const satisfies readonly Widget[]
 
 // Not `.describe()`d field by field: the tool description carries the shape
 // and an example, and per-field descriptions bloat every tools/list.
@@ -47,7 +49,7 @@ const question = z.object({
     .optional(),
   multiSelect: z.boolean().optional(),
   allowOther: z.boolean().optional(),
-  // text
+  // text (and capture, for placeholder)
   multiline: z.boolean().optional(),
   placeholder: z.string().optional(),
   draft: z.string().min(1).max(4000, 'a draft is 4,000 characters or fewer').optional(),
@@ -69,6 +71,8 @@ const question = z.object({
     .max(4, 'a review takes at most 4 decisions')
     .optional(),
   defaultDecision: z.string().optional(),
+  // capture
+  accept: z.enum(['text', 'image', 'any']).optional(),
 })
 
 export const askInputSchema = z.object({
@@ -160,6 +164,10 @@ export const askInputSchema = z.object({
       ctx.addIssue({ code: 'custom', path: at('draft'), message: `question ${n} has a draft but type '${q.type}'; drafts only apply to type 'text', so set type to 'text' or drop it` })
     }
 
+    if (q.accept !== undefined && q.type !== 'capture') {
+      ctx.addIssue({ code: 'custom', path: at('accept'), message: `question ${n} has accept but type '${q.type}'; accept only applies to type 'capture', so set type to 'capture' or drop it` })
+    }
+
     if (q.type === 'number' && q.min !== undefined && q.max !== undefined && q.min > q.max) {
       ctx.addIssue({ code: 'custom', path: at('min'), message: `question ${n} has min ${q.min} above max ${q.max}` })
     }
@@ -189,6 +197,7 @@ export const askResultSchema = z.object({
     custom: z.string().optional(),   // the user's own text, when it isn't one of the options
     review: z.array(reviewOutcome).optional(),   // a review's every item, in order; `value` is the labels given the first decision
     edited: z.boolean().optional(),  // a text question with a draft: whether the final text differs from it
+    images: z.array(z.string()).optional(),  // a capture's pasted screenshots: absolute paths of PNG files
   })).optional(),
   note: z.string().optional(),       // free text the user added for the agent, with an answer or a skip
 })
@@ -322,6 +331,35 @@ function compileQuestion(q: Question): JsonSchema {
         'x-default-decision': fallback satisfies DefaultDecision,
       }
     }
+    case 'capture': {
+      const accept = q.accept ?? 'any'
+      const text = accept !== 'image'
+      const images = accept !== 'text'
+      // When required, at least one of them filled: an anyOf when both are
+      // accepted, a plain `required` when only one is. The branches repeat
+      // `type` so strict AJV knows what minLength and minItems apply to.
+      const filled = !required ? {}
+        : text && images ? { anyOf: [
+          { required: ['text'], properties: { text: { type: 'string', minLength: 1 } } },
+          { required: ['images'], properties: { images: { type: 'array', minItems: 1 } } },
+        ] }
+        : { required: [text ? 'text' : 'images'] }
+      return {
+        'x-widget': 'capture', ...base,
+        type: 'object',
+        properties: {
+          ...(text && { text: { type: 'string', ...(required && !images && { minLength: 1 }) } }),
+          ...(images && { images: {
+            type: 'array', items: { type: 'string' }, maxItems: CAPTURE_MAX_IMAGES,
+            ...(required && !text && { minItems: 1 }),
+          } }),
+        },
+        additionalProperties: false,
+        'x-accept': accept satisfies CaptureAccept,
+        ...(q.placeholder && { 'x-placeholder': q.placeholder }),
+        ...filled,
+      }
+    }
   }
 }
 
@@ -361,6 +399,7 @@ export function shapeAnswer(input: AskInput, outcome: AskOutcome): { structured:
     answers[id] = answer
     lines.push(answer.review
       ? (q.decisions ? describeDecisions(answer.header, answer.review, q.decisions) : describeReview(answer.header, answer.review))
+      : q.type === 'capture' ? describeCapture(answer)
       : describe(answer, new Set(q.options?.map((o) => o.label))))
   })
   if (note) lines.push('', 'They also left a note:', quote(note))
@@ -426,6 +465,12 @@ function readAnswer(q: Question, raw: unknown): Answer {
       })
       return { header, value: review.filter((r) => r.decision === decisions[0]).map((r) => r.label), review }
     }
+    case 'capture': {
+      // The text verbatim, as long as it isn't all whitespace.
+      const entry = isRecord(raw) ? raw : {}
+      const images = (Array.isArray(entry.images) ? entry.images : []).filter(isFilled)
+      return { header, value: isFilled(entry.text) ? entry.text : null, ...(images.length && { images }) }
+    }
   }
 }
 
@@ -484,6 +529,24 @@ function describeDecisions(header: string, review: ReviewOutcome[], decisions: s
   if (commented.length) lines.push(`  - ${lead}, with ${commented.length === 1 ? 'a comment' : 'comments'}: ${commented.map(item).join(', ')}`)
   return lines.join('\n')
 }
+
+// Pasted text is fenced verbatim, unless it's one short line; screenshots are
+// listed as paths the agent can open with its own file-reading tool.
+function describeCapture({ header, value, images }: Answer): string {
+  const text = typeof value === 'string' ? value.replace(/\s+$/, '') : undefined
+  const shots = images?.length
+    ? `${images.length === 1 ? '1 screenshot (a PNG file you can read)' : `${images.length} screenshots (PNG files you can read)`}:\n${indent(images.join('\n'))}`
+    : undefined
+  if (text === undefined) return shots ? `- ${header}: pasted ${shots}` : `- ${header}: (left blank)`
+  if (!text.includes('\n') && text.length <= SHORT_PASTE) return `- ${header}: pasted "${text.trim()}"${shots ? ` and ${shots}` : ''}`
+  const lines = text.split('\n').length
+  const fence = '`'.repeat(Math.max(3, ...[...text.matchAll(/`+/g)].map((m) => m[0].length + 1)))
+  const block = indent(`${fence}\n${text}\n${fence}`)
+  return `- ${header}: pasted ${lines === 1 ? '1 line' : `${lines} lines`}:\n${block}${shots ? `\n  and ${shots}` : ''}`
+}
+
+// A pasted line this short or shorter is quoted in the text, not fenced.
+const SHORT_PASTE = 120
 
 function duration(seconds: number): string {
   if (seconds < 120) return `${seconds} seconds`

@@ -15,6 +15,12 @@ questions, and a button to add a note for the agent.
 Questions not marked Optional have to be answered before Send works. If something's missing, the
 footer says what ("Still needs an answer: Approach"), and pressing Enter nudges it.
 
+## Code in a question
+
+A code block in a question (a command to run, a snippet for the console) has a **Copy** button at
+its top right. Click it and it says "Copied" for a moment. Where the clipboard is off limits, it
+selects the code instead and says "Press ⌘C". It's for the mouse; there's no key for it.
+
 ## Keys
 
 | Key | What it does |

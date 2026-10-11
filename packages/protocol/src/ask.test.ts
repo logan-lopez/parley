@@ -2,6 +2,7 @@ import { readdirSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import { askInputSchema, askResultSchema, compileQuestions, questionIds, shapeAnswer, type AskInput } from './ask.ts'
+import { isWindowOnly } from './form.ts'
 
 const fixturesDir = join(import.meta.dirname, '../fixtures')
 const fixtures = Object.fromEntries(
@@ -25,7 +26,7 @@ describe('fixtures', () => {
   it('covers every question type, the maximum and previews', () => {
     const all = Object.values(fixtures).map(parse)
     const types = new Set(all.flatMap((f) => f.questions.map((q) => q.type)))
-    expect([...types].sort()).toEqual(['boolean', 'choice', 'number', 'path', 'review', 'text'])
+    expect([...types].sort()).toEqual(['boolean', 'capture', 'choice', 'number', 'path', 'review', 'text'])
     expect(all.some((f) => f.questions.length === 4)).toBe(true)
     expect(all.some((f) => f.questions.some((q) => q.options?.every((o) => o.preview)))).toBe(true)
   })
@@ -135,6 +136,32 @@ describe('draft validation', () => {
     expect(issues({ questions: [{ ...q, type: 'text', draft: '' }] })).toHaveLength(1)
     expect(issues({ questions: [{ ...q, type: 'text', draft: 'x'.repeat(4001) }] }))
       .toEqual([expect.stringContaining('4,000 characters or fewer')])
+  })
+})
+
+describe('capture validation', () => {
+  const q = { header: 'Console', question: 'Paste the output.', type: 'capture' }
+
+  it('accepts each accept, and a placeholder', () => {
+    for (const accept of ['text', 'image', 'any']) expect(issues({ questions: [{ ...q, accept }] })).toEqual([])
+    expect(issues({ questions: [{ ...q, placeholder: 'Paste here' }] })).toEqual([])
+    expect(issues({ questions: [{ ...q, accept: 'video' }] })).toHaveLength(1)
+  })
+
+  it('rejects the other types\' fields on a capture', () => {
+    expect(issues({ questions: [{ ...q, options: [{ label: 'A' }, { label: 'B' }] }] }))
+      .toEqual([expect.stringContaining("question 1 has type 'capture' but also has options")])
+    expect(issues({ questions: [{ ...q, items: [{ label: 'a.ts' }] }] }))
+      .toEqual([expect.stringContaining("question 1 has type 'capture' but also has items")])
+    expect(issues({ questions: [{ ...q, draft: 'npm test' }] }))
+      .toEqual([expect.stringContaining("question 1 has a draft but type 'capture'")])
+    expect(issues({ questions: [{ ...q, decisions: ['Keep', 'Drop'] }] }))
+      .toEqual([expect.stringContaining("question 1 has decisions but type 'capture'")])
+  })
+
+  it('points accept on another type at capture', () => {
+    expect(issues({ questions: [{ ...q, type: 'text', accept: 'text' }] }))
+      .toEqual(["question 1 has accept but type 'text'; accept only applies to type 'capture', so set type to 'capture' or drop it"])
   })
 })
 
@@ -338,6 +365,58 @@ describe('compileQuestions: review decisions', () => {
     const none = props(input({ defaultDecision: 'none' })).ports!
     expect(none['x-default-decision']).toBe('none')
     expect((none.items as Record<string, unknown>[]).every((i) => (i.required as string[])?.[0] === 'decision')).toBe(true)
+  })
+})
+
+describe('compileQuestions: capture', () => {
+  const capture = (extra: object) => props(parse({ questions: [{ header: 'Console', question: 'Paste it.', type: 'capture', ...extra }] })).console!
+  const text = { type: 'string' }
+  const images = { type: 'array', items: { type: 'string' }, maxItems: 5 }
+
+  it('compiles any (the default) as text and images, at least one filled when required', () => {
+    expect(capture({ placeholder: 'Paste here' })).toEqual({
+      'x-widget': 'capture', title: 'Console', description: 'Paste it.',
+      type: 'object',
+      properties: { text, images },
+      additionalProperties: false,
+      'x-accept': 'any',
+      'x-placeholder': 'Paste here',
+      anyOf: [
+        { required: ['text'], properties: { text: { type: 'string', minLength: 1 } } },
+        { required: ['images'], properties: { images: { type: 'array', minItems: 1 } } },
+      ],
+    })
+    expect(capture({ accept: 'any', required: false })).toEqual({
+      'x-widget': 'capture', title: 'Console', description: 'Paste it.',
+      type: 'object', properties: { text, images }, additionalProperties: false, 'x-accept': 'any',
+    })
+  })
+
+  it('compiles text and image alone, with a plain required', () => {
+    expect(capture({ accept: 'text' })).toMatchObject({
+      properties: { text: { type: 'string', minLength: 1 } }, required: ['text'], 'x-accept': 'text',
+    })
+    expect(capture({ accept: 'text' })).not.toHaveProperty('properties.images')
+    expect(capture({ accept: 'image' })).toMatchObject({
+      properties: { images: { ...images, minItems: 1 } }, required: ['images'], 'x-accept': 'image',
+    })
+    expect(capture({ accept: 'image' })).not.toHaveProperty('properties.text')
+    expect(capture({ accept: 'image', required: false })).not.toHaveProperty('required')
+    expect(capture({ accept: 'image', required: false }).properties).toEqual({ images })
+  })
+})
+
+describe('isWindowOnly', () => {
+  const form = (...questions: object[]) => compileQuestions(parse({ questions }))
+  const q = { header: 'Q', question: 'Q?' }
+
+  it('is true for a path or a capture that takes images, false otherwise', () => {
+    expect(isWindowOnly(compileQuestions(fixture('path')))).toBe(true)
+    expect(isWindowOnly(compileQuestions(fixture('capture')))).toBe(true)
+    expect(isWindowOnly(form({ ...q, type: 'capture', accept: 'image' }))).toBe(true)
+    expect(isWindowOnly(compileQuestions(fixture('capture-text')))).toBe(false)
+    expect(isWindowOnly(compileQuestions(fixture('four-questions')))).toBe(false)
+    expect(isWindowOnly(form({ ...q, type: 'text' }, { header: 'Shot', question: 'A screenshot?', type: 'capture' }))).toBe(true)
   })
 })
 
@@ -654,6 +733,89 @@ describe('shapeAnswer', () => {
       const { structured, text } = shapeAnswer(input, { status: 'answered', data: { commit, pr_title: '  ' } })
       expect(structured.answers!.pr_title).toEqual({ header: 'PR title', value: null, edited: true })
       expect(text).toContain('- PR title: (cleared the draft)')
+    })
+  })
+
+  describe('capture', () => {
+    const input = fixture('capture')
+    const shot = '/Users/logan/Library/Application Support/com.loganlopez.parley/captures/2026-10-11/k3x9.png'
+    const dump = ['[818, 818, 57, 57]', '0px', '  indented', ''].join('\n')
+
+    it('fences pasted text verbatim, with the line count', () => {
+      const { structured, text } = shapeAnswer(input, { status: 'answered', data: { console: { text: dump } } })
+      expect(structured.answers).toEqual({ console: { header: 'Console', value: dump } })
+      expect(text).toBe([
+        'The user answered:',
+        '- Console: pasted 3 lines:',
+        '  ```',
+        '  [818, 818, 57, 57]',
+        '  0px',
+        '    indented',
+        '  ```',
+      ].join('\n'))
+      expect(askResultSchema.parse(structured)).toEqual(structured)
+    })
+
+    it('quotes a short single line without a fence', () => {
+      const { text } = shapeAnswer(fixture('capture-text'), { status: 'answered', data: { version: { text: 'v2.1.296\n' } } })
+      expect(text).toBe('The user answered:\n- Version: pasted "v2.1.296"\n- Trace: (left blank)')
+    })
+
+    it('fences a long single line', () => {
+      const line = 'x'.repeat(121)
+      const { text } = shapeAnswer(input, { status: 'answered', data: { console: { text: line } } })
+      expect(text).toBe(`The user answered:\n- Console: pasted 1 line:\n  \`\`\`\n  ${line}\n  \`\`\``)
+    })
+
+    it('lists screenshots as paths to read', () => {
+      const { structured, text } = shapeAnswer(input, { status: 'answered', data: { console: { images: [shot] } } })
+      expect(structured.answers).toEqual({ console: { header: 'Console', value: null, images: [shot] } })
+      expect(text).toBe(`The user answered:\n- Console: pasted 1 screenshot (a PNG file you can read):\n  ${shot}`)
+      expect(askResultSchema.parse(structured)).toEqual(structured)
+    })
+
+    it('gives text and screenshots together', () => {
+      const other = shot.replace('k3x9', 'p2m7')
+      const { structured, text } = shapeAnswer(input, { status: 'answered', data: { console: { text: dump, images: [shot, other] } } })
+      expect(structured.answers!.console).toEqual({ header: 'Console', value: dump, images: [shot, other] })
+      expect(text).toBe([
+        'The user answered:',
+        '- Console: pasted 3 lines:',
+        '  ```',
+        '  [818, 818, 57, 57]',
+        '  0px',
+        '    indented',
+        '  ```',
+        '  and 2 screenshots (PNG files you can read):',
+        `  ${shot}`,
+        `  ${other}`,
+      ].join('\n'))
+      const short = shapeAnswer(input, { status: 'answered', data: { console: { text: '57', images: [shot] } } }).text
+      expect(short).toBe(`The user answered:\n- Console: pasted "57" and 1 screenshot (a PNG file you can read):\n  ${shot}`)
+    })
+
+    it('picks a fence longer than any run of backticks in the text', () => {
+      const md = 'Before\n```js\nrun()\n```\nand ````four````'
+      const { text } = shapeAnswer(input, { status: 'answered', data: { console: { text: md } } })
+      expect(text).toBe([
+        'The user answered:',
+        '- Console: pasted 5 lines:',
+        '  `````',
+        '  Before',
+        '  ```js',
+        '  run()',
+        '  ```',
+        '  and ````four````',
+        '  `````',
+      ].join('\n'))
+    })
+
+    it('leaves an optional capture blank, and treats whitespace as blank', () => {
+      const { structured, text } = shapeAnswer(fixture('capture-text'), { status: 'answered', data: { version: { text: '2' }, trace: { text: ' \n ' } } })
+      expect(structured.answers!.trace).toEqual({ header: 'Trace', value: null })
+      expect(text).toBe('The user answered:\n- Version: pasted "2"\n- Trace: (left blank)')
+      expect(shapeAnswer(fixture('capture-text'), { status: 'answered', data: { version: { text: '2' } } }).structured.answers!.trace)
+        .toEqual({ header: 'Trace', value: null })
     })
   })
 

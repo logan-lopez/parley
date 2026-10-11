@@ -67,7 +67,7 @@ the root (gitignored) registers the built server for Claude Code in this repo.
   them in step.
 - A new Tauri command needs its name in the app manifest in `src-tauri/build.rs` and its
   permission in `src-tauri/capabilities/default.json`. The fs scope
-  is the two history files only; `hub.sock` is in the same directory.
+  is the two history files and `captures/` only; `hub.sock` is in the same directory.
 - Before adding or changing a key chord (the global hotkey, card keys), check
   `~/.config/keymap/keymap.md`. `Cmd+0` belongs to AeroSpace.
 - The model-facing text (server instructions, tool descriptions, result text) is measured by the

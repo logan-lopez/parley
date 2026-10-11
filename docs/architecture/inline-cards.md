@@ -7,7 +7,7 @@ for the answer.
 
 **Sources:** `apps/server/src/tools/inline.ts`, `apps/server/src/ask-lifecycle.ts`, `apps/server/src/card.ts`, `apps/server/tsdown.config.ts`, `apps/desktop/src/mcp-app/`, `apps/desktop/mcp-app.html`, `apps/desktop/vite.mcp-app.config.ts`
 
-**History:** [brief 6](../briefs/archive/06-mcp-apps-spike.md) (the spike), [brief 7](../briefs/archive/07-inline-cards.md)
+**History:** [brief 6](../briefs/archive/06-mcp-apps-spike.md) (the spike), [brief 7](../briefs/archive/07-inline-cards.md), [brief 12](../briefs/12-capture-question.md) (image captures, `clipboardWrite`)
 
 `tools/inline.ts` registers the surface. `ask-lifecycle.ts` holds `showAsk`, `waitAsk`,
 `awaitStatus` and `answerInline`. `card.ts` serves the card's HTML. `src/mcp-app/` in the desktop
@@ -28,7 +28,9 @@ app is the card: `McpApp.vue` around the same `AskCard` the window uses, and `th
   - `parley_submit({ askId, kind, data?, note? })` and `parley_status({ askId })`: app-only
     (`visibility: ['app']`), called by the card, never the model. `parley_status` is a long-poll
     that holds up to 25 s while the ask is open.
-  - `ui://parley/card.html`: the card, one self-contained HTML file.
+  - `ui://parley/card.html`: the card, one self-contained HTML file. Its `resources/read`
+    contents carry `_meta.ui.permissions.clipboardWrite`, for the copy buttons on code. The host
+    may withhold it; the button then selects the code for ⌘C.
 - **The race** (`showAsk`). Every inline ask also goes to the window through `AppClient`, flagged
   `inline: true`, so the app queues it without a notification. The ask is keyed by `askId` and
   ends once:
@@ -39,9 +41,10 @@ app is the card: `McpApp.vue` around the same `AskCard` the window uses, and `th
     app records the ask as answered or skipped with `answeredIn: 'chat'`
     ([asks and history](asks-and-history.md)).
   - Ended asks are kept for an hour, so a late `ask_wait` or a remounted card still gets the result.
-- **Path questions are window-only.** An ask with a `path` question isn't sent as `inline`, so the
+- **Some forms are window-only.** An ask with a `path` question, or a `capture` that takes
+  screenshots, isn't sent as `inline` (`isWindowOnly`, [the form spec](form-spec.md)), so the
   window notifies for it, and the card shows it read-only and points at the window: the host's
-  iframe has no file picker.
+  iframe has no file picker and nowhere to save an image. A text-only capture works inline.
 - **No window.** If the app can't be reached, an inline ask goes on with the card alone and keeps
   its own timeout. A window-only ask fails, and `ask_wait` returns the error.
 - **The card** (`McpApp.vue`). The host sends the tool input (the questions), then the result (the
@@ -70,7 +73,7 @@ Checked against Claude Desktop 2.31226.1 (2026-10-10, brief 6):
 - `hostContext.toolInfo.id` is a content-block id, not the `tools/call` id. Key by `askId`.
 - It reads `ui://…` once per server process and caches it: restart Desktop to pick up a new card.
 - The iframe allows `'unsafe-eval'` (AJV works), drops `window.prompt` (no `allow-modals`), and
-  has no file picker.
+  has no file picker. Whether it honors the `clipboardWrite` request is unverified.
 - Native elicitation is out: Desktop's client supports URL mode only, no forms.
 
 ## Rules worth keeping

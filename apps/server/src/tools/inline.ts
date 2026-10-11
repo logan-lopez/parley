@@ -7,7 +7,7 @@
 
 import { registerAppResource, registerAppTool, RESOURCE_MIME_TYPE } from '@modelcontextprotocol/ext-apps/server'
 import type { McpServer } from '@modelcontextprotocol/server'
-import { hasPathQuestion, type InlineOutcome } from '@parley/protocol'
+import { isWindowOnly, type InlineOutcome } from '@parley/protocol'
 import { askInputSchema, compileQuestions, DEFAULT_TIMEOUT_SECONDS, shapeAnswer } from '@parley/protocol/ask'
 import * as z from 'zod'
 import { answerInline, awaitStatus, showAsk, shownInput, waitAsk, type AskStatus } from '../ask-lifecycle.ts'
@@ -29,7 +29,8 @@ const appOnly = { ui: { resourceUri: CARD_URI, visibility: ['app' as const] } }
 
 export function registerInline(server: McpServer) {
   registerAppResource(server, 'Parley card', CARD_URI, { description: 'The Parley question card.' }, async () => ({
-    contents: [{ uri: CARD_URI, mimeType: RESOURCE_MIME_TYPE, text: await readCard() }],
+    // The copy buttons on code blocks. A host may withhold it; the card then selects the block for ⌘C.
+    contents: [{ uri: CARD_URI, mimeType: RESOURCE_MIME_TYPE, text: await readCard(), _meta: { ui: { permissions: { clipboardWrite: {} } } } }],
   }))
 
   registerAppTool(
@@ -47,7 +48,7 @@ export function registerInline(server: McpServer) {
     async (input, ctx) => {
       const form = compileQuestions(input)
       const timeoutMs = (input.timeoutSeconds ?? DEFAULT_TIMEOUT_SECONDS) * 1000
-      const askId = showAsk(ctx, input, form, timeoutMs, { inline: !hasPathQuestion(form) })
+      const askId = showAsk(ctx, input, form, timeoutMs, { inline: !isWindowOnly(form) })
       const message = `The form is in front of the user. Now call \`ask_wait\` with {"askId": "${askId}"} to get their answers. Don't continue the task until it returns.`
       return {
         content: [{ type: 'text', text: message }],

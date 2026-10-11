@@ -1,0 +1,18 @@
+{
+  "questions": [
+    {
+      "header": "Version",
+      "question": "Which version does `claude --version` print?",
+      "type": "capture",
+      "accept": "text",
+      "placeholder": "Paste the output"
+    },
+    {
+      "header": "Trace",
+      "question": "If it crashed, paste the stack trace from the terminal. Leave it blank if it didn't.",
+      "type": "capture",
+      "accept": "text",
+      "required": false
+    }
+  ]
+}

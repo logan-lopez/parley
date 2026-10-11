@@ -1,17 +1,49 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import { openExternal } from '../platform'
+import { copyText, openExternal } from '../platform'
 import { renderMarkdown } from './markdown'
 
 const props = defineProps<{ source: string; inline?: boolean }>()
 const html = computed(() => renderMarkdown(props.source, props.inline))
 
-// Links open in the default browser; the webview never navigates.
+// Links open in the default browser; the webview never navigates. A code
+// block's button copies it.
 function onClick(event: MouseEvent) {
-  const link = (event.target as Element | null)?.closest('a[href]')
+  const target = event.target as Element | null
+  const button = target?.closest<HTMLButtonElement>('[data-copy]')
+  if (button) {
+    event.preventDefault()
+    if (event.type === 'click') void copyBlock(button)
+    return
+  }
+  const link = target?.closest('a[href]')
   if (!link) return
   event.preventDefault()
   void openExternal(link.getAttribute('href')!)
+}
+
+// "Copied" for a moment. When the host won't allow the clipboard (an MCP Apps
+// host can withhold it), the block's text is selected instead for ⌘C.
+const resets = new WeakMap<HTMLButtonElement, ReturnType<typeof setTimeout>>()
+
+async function copyBlock(button: HTMLButtonElement) {
+  const code = button.closest('.code-block')?.querySelector('code')
+  if (!code) return
+  const copied = await copyText((code.textContent ?? '').replace(/\n$/, ''))
+  if (!copied) {
+    const range = document.createRange()
+    range.selectNodeContents(code)
+    const selection = window.getSelection()
+    selection?.removeAllRanges()
+    selection?.addRange(range)
+  }
+  button.textContent = copied ? 'Copied' : 'Press ⌘C'
+  button.classList.toggle('done', copied)
+  clearTimeout(resets.get(button))
+  resets.set(button, setTimeout(() => {
+    button.textContent = 'Copy'
+    button.classList.remove('done')
+  }, copied ? 1500 : 3000))
 }
 </script>
 

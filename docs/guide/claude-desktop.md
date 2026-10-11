@@ -26,17 +26,21 @@ Behind the scenes the agent asks in two steps (it shows the card, then waits for
 stretches of a few minutes), so you may see several "waiting" calls in the chat during a long ask.
 That's normal.
 
-## Path questions
+## Questions that need the window
 
-The chat's card can't open a file picker. An ask with a path question shows in the chat read-only,
-with a pointer to the Parley window, and the window notifies for it as usual. Answer it there.
+The chat's card can't open a file picker or save a pasted screenshot. An ask with a path question,
+or a capture that takes screenshots, shows in the chat read-only, with a pointer to the Parley
+window, and the window notifies for it as usual. Answer it there. A capture that takes only text
+works in the chat.
 
 ## Things to know
 
 - Desktop caches the card when it starts Parley's server. After rebuilding Parley's server, quit
   and reopen Desktop to get the new card.
 - If Parley's window app isn't running and can't be launched, the chat's card still works on its
-  own (except for path questions).
+  own (except for the questions above, which need the window).
+- The **Copy** button on code may say "Press ⌘C" in the chat's card, with the code selected, if
+  Desktop doesn't let the card use the clipboard.
 - If the agent ends its turn without waiting for your answer, an answer you give in the card
   doesn't reach the chat. It's rare; if it happens, tell the agent in the chat.
 - Only Claude Desktop shows inline cards. claude.ai on the web and ChatGPT can't reach a server on

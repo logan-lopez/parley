@@ -3,11 +3,15 @@
 // and a half-written last line after a crash loses only that line. At startup
 // the file is folded to one line per id and rewritten.
 //
+// It also keeps `$APPDATA/captures/`, the screenshots pasted into capture
+// questions (platform.ts saves them), in one folder per day: day folders past
+// the retention go at startup, and clearing history empties it.
+//
 // Writes never block the UI or break the ask flow: a failed write is logged,
 // and `saveFailing` tells the history view to say so.
 
 import { ref } from 'vue'
-import { BaseDirectory, readTextFile, rename, writeTextFile } from '@tauri-apps/plugin-fs'
+import { BaseDirectory, readDir, readTextFile, remove, rename, writeTextFile } from '@tauri-apps/plugin-fs'
 import type { AskRecord } from './store'
 
 // `conn` is per-connection runtime state; it isn't saved.
@@ -85,7 +89,56 @@ export async function load(now = Date.now()): Promise<Snapshot[]> {
   const { records, bad } = fold(text, now)
   if (bad) console.warn(`history: skipped ${bad} unreadable line(s)`)
   await rewrite(records)
+  void pruneCaptures(now)
   return records
+}
+
+// Screenshots. Day folders are named YYYY-MM-DD in local time.
+const CAPTURES = 'captures'   // scoped in capabilities/default.json
+
+// The day folders whose whole day ended over the retention ago.
+export function staleCaptureDays(names: string[], now: number): string[] {
+  return names.filter((name) => {
+    const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(name)
+    if (!match) return false
+    const end = new Date(Number(match[1]), Number(match[2]) - 1, Number(match[3]) + 1).getTime()
+    return now - end > RETENTION_MS
+  })
+}
+
+async function captureDays(): Promise<string[]> {
+  try {
+    return (await readDir(CAPTURES, opts)).filter((e) => e.isDirectory).map((e) => e.name)
+  } catch {
+    return []   // no screenshot pasted yet
+  }
+}
+
+async function pruneCaptures(now: number) {
+  for (const day of staleCaptureDays(await captureDays(), now)) {
+    await remove(`${CAPTURES}/${day}`, { ...opts, recursive: true })
+      .catch((error: unknown) => console.warn(`captures: removing ${day} failed:`, error))
+  }
+}
+
+// Deletes every screenshot except `keep` (absolute paths still in a waiting
+// ask's draft, which the agent may yet get).
+export async function clearCaptures(keep: string[]) {
+  const kept = new Set(keep.map((path) => path.split('/').slice(-2).join('/')))
+  for (const day of await captureDays()) {
+    const dir = `${CAPTURES}/${day}`
+    try {
+      if (![...kept].some((k) => k.startsWith(`${day}/`))) {
+        await remove(dir, { ...opts, recursive: true })
+        continue
+      }
+      for (const entry of await readDir(dir, opts)) {
+        if (!kept.has(`${day}/${entry.name}`)) await remove(`${dir}/${entry.name}`, opts)
+      }
+    } catch (error) {
+      console.warn(`captures: clearing ${day} failed:`, error)
+    }
+  }
 }
 
 // Writes go one at a time, in order. Appends made while one is in flight are

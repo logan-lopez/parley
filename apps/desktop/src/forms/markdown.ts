@@ -10,6 +10,13 @@ const md = new MarkdownIt({
 })
 md.disable('image')
 
+// Every fenced block gets a copy button. It carries nothing: Markdown.vue's
+// click handler copies the block's `<code>` text.
+const fence = md.renderer.rules.fence!
+md.renderer.rules.fence = (tokens, idx, options, env, self) =>
+  `<div class="code-block">${fence(tokens, idx, options, env, self)}`
+  + '<button type="button" class="code-copy" data-copy tabindex="-1" aria-label="Copy the code">Copy</button></div>'
+
 function diff(source: string): string {
   return source.split('\n').map((line) => {
     const kind = /^(\+\+\+|---)( |$)/.test(line) ? 'meta'

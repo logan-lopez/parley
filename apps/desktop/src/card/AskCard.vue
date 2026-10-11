@@ -79,11 +79,12 @@ const problems = computed(() => {
       undecided.set(top, (undecided.get(top) ?? new Set()).add(item))
       continue
     }
-    const key = error.keyword === 'required' ? String(error.params.missingProperty) : top
+    // A required error at the root names the question; one inside a capture's object is about that question.
+    const key = error.keyword === 'required' && !top ? String(error.params.missingProperty) : top
     if (!key) continue
     const value = record[key]
     const title = properties[key]?.title ?? key
-    if (value === undefined || (Array.isArray(value) && !value.length)) missing.add(title)
+    if (isBlank(value)) missing.add(title)
     else if (!invalid.has(title)) invalid.set(title, error.message ?? 'is invalid')
   }
   const parts: string[] = []
@@ -94,6 +95,12 @@ const problems = computed(() => {
   for (const [title, message] of invalid) parts.push(`${title} ${message}`)
   return parts
 })
+
+function isBlank(value: unknown) {
+  if (value === undefined) return true
+  if (Array.isArray(value)) return !value.length
+  return typeof value === 'object' && value !== null && !Object.keys(value).length
+}
 
 function submit() {
   if (locked.value) return

@@ -1,0 +1,10 @@
+{
+  "title": "Composer gap",
+  "questions": [
+    {
+      "header": "Console",
+      "question": "The gap only shows on your machine. Open the page in Safari, run this in the console, and paste what it prints. A screenshot of the gap helps too.\n\n```js\nconst el = document.querySelector('.composer')\nconst box = el.getBoundingClientRect()\nconsole.log([box.top, box.bottom, el.offsetHeight, el.scrollHeight])\nconsole.log(getComputedStyle(el).paddingBottom)\n```",
+      "type": "capture"
+    }
+  ]
+}

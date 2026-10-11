@@ -6,7 +6,7 @@ when a new ask notifies.
 
 **Sources:** `apps/desktop/src/asks/`, `apps/desktop/src/history/`, `apps/desktop/src/main.ts`
 
-**History:** [brief 1](../briefs/archive/01-hub-and-lifecycle.md), [brief 4](../briefs/archive/04-history-and-inbox.md), [brief 7](../briefs/archive/07-inline-cards.md) (`resolved`, `answeredIn`)
+**History:** [brief 1](../briefs/archive/01-hub-and-lifecycle.md), [brief 4](../briefs/archive/04-history-and-inbox.md), [brief 7](../briefs/archive/07-inline-cards.md) (`resolved`, `answeredIn`), [brief 12](../briefs/12-capture-question.md) (screenshot cleanup)
 
 `asks/store.ts` is the store and the hub's handlers. `asks/persist.ts` is its disk.
 `asks/notifications.ts` sends the system notification, and `asks/source.ts` makes the
@@ -45,6 +45,12 @@ when a new ask notifies.
   the file through `history.jsonl.tmp` and a rename. Writes are serialized, and appends made during
   a write are batched into the next. A failed write is logged and sets `saveFailing`, which the
   history view shows as "not being saved"; it never breaks the ask flow.
+- **Screenshots** pasted into captures are in `$APPDATA/captures/<YYYY-MM-DD>/`
+  ([the card](card-ui.md) saves them). `persist.ts` keeps the folder: after `load`'s rewrite it
+  removes day folders whose day ended over 30 days ago (`staleCaptureDays`), and
+  `clearHistory` calls `clearCaptures`, which deletes every screenshot except those named in a
+  pending record's draft (an `images` array anywhere in its data). Neither waits or fails the
+  caller; errors are logged.
 - **Startup order** (`main.ts`): mount the app, load history and ask for notification permission,
   `hydrate` the store, then start the hub. Servers re-send their pending asks on connect, and
   those must find their records and drafts already there.
@@ -65,7 +71,7 @@ when a new ask notifies.
   final status, and the app never assumes the server is blocking. An `ask_async` later would be one
   more consumer of the same lifecycle.
 - **Load before `hub_ready`.** Otherwise a re-sent ask creates a fresh record and loses its draft.
-- **The fs capability covers exactly `history.jsonl` and `history.jsonl.tmp`.** `hub.sock` is in the
-  same directory.
+- **The fs capability covers exactly `history.jsonl`, `history.jsonl.tmp` and `captures/`.**
+  `hub.sock` is in the same directory.
 - **`resolved` is the server's word.** When the window and the card both answer, the server's
   first-in answer is what the agent got, and the record must say the same.

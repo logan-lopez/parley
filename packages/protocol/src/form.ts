@@ -30,13 +30,37 @@
 //   mounts; under `'none'` each item has `required: ['decision']` instead.
 //   There's no elicitation downgrade for this one: elicitation forms are flat,
 //   with no arrays of objects.
+// - `capture`: a box the user pastes into. `type: object` with
+//   `properties: { text: string, images: string[] }` and
+//   `additionalProperties: false`. `text` is pasted text, kept verbatim;
+//   `images` are absolute paths of PNGs the app saved from pasted screenshots
+//   (at most 5). `x-accept: 'text' | 'image' | 'any'` says which it takes, and
+//   the other property is left out. `x-placeholder` as for text. When
+//   required, at least one of them is filled: an `anyOf` of the two, or a
+//   plain `required` when only one is accepted. Elicitation downgrade: a
+//   text-only capture becomes a string field; images have none, since a form
+//   field can't carry a pasted file.
 //
 // Markdown in `description` and `x-preview` is rendered without raw HTML.
 
-export const WIDGETS = ['choice', 'text', 'number', 'boolean', 'path', 'review'] as const
+export const WIDGETS = ['choice', 'text', 'number', 'boolean', 'path', 'review', 'capture'] as const
 export type Widget = (typeof WIDGETS)[number]
 
 export type PathKind = 'file' | 'directory'
+
+export type CaptureAccept = 'text' | 'image' | 'any'
+
+// A capture's limits. Images over the size are refused in the box, before
+// they're saved.
+export const CAPTURE_MAX_IMAGES = 5
+export const CAPTURE_MAX_IMAGE_BYTES = 10 * 1024 * 1024
+export const CAPTURE_MAX_TEXT = 50_000
+
+// A capture's data.
+export interface CaptureValue {
+  text?: string
+  images?: string[]
+}
 
 // Loose on purpose: a raw-schema `ask_form` later passes schemas straight through.
 export type JsonSchema = Record<string, unknown>
@@ -87,9 +111,11 @@ export interface FormSpec {
   schema: JsonSchema
 }
 
-// A form with a file picker can't be answered in an MCP Apps card (no picker
-// in the host's iframe), so it goes to the window, which notifies.
-export function hasPathQuestion(form: FormSpec): boolean {
-  const properties = (form.schema.properties ?? {}) as Record<string, { 'x-widget'?: unknown }>
-  return Object.values(properties).some((p) => p?.['x-widget'] === 'path')
+// A form with a file picker or a pasted screenshot can't be answered in an MCP
+// Apps card (no picker in the host's iframe, and nowhere to save an image), so
+// it goes to the window, which notifies. A text-only capture works inline.
+export function isWindowOnly(form: FormSpec): boolean {
+  const properties = (form.schema.properties ?? {}) as Record<string, { 'x-widget'?: unknown; 'x-accept'?: unknown }>
+  return Object.values(properties).some((p) =>
+    p?.['x-widget'] === 'path' || (p?.['x-widget'] === 'capture' && p['x-accept'] !== 'text'))
 }

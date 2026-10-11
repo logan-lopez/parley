@@ -15,6 +15,8 @@
 // `other:<text>` does the same with <text> as its comment.
 // Text questions with a draft: `first` sends the draft unchanged, and
 // `other:<text>` appends <text> to it as its last line.
+// Capture questions get <text> as pasted text under `other:<text>`, and
+// 'as you see fit' otherwise. Never a screenshot.
 //   skip                    dismiss
 //   none                    never answer (let it time out or be cancelled)
 //   delay:<s>:<policy>      wait, then apply the policy
@@ -119,6 +121,11 @@ function fill(form: FormSpec, policy: string): Record<string, unknown> {
       case 'number': data[key] = prop.minimum ?? 1; break
       case 'boolean': data[key] = policy !== 'second'; break
       case 'path': data[key] = prop.type === 'array' ? ['/tmp/example'] : '/tmp/example'; break
+      case 'capture': {
+        const other = policy.startsWith('other:') ? policy.slice(6) : undefined
+        data[key] = { text: other ?? 'as you see fit' }
+        break
+      }
       case 'review': {
         // The decisions are the items' enum: approve and reject, or the question's own.
         const other = policy.startsWith('other:') ? policy.slice(6) : undefined

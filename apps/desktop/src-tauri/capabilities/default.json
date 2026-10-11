@@ -17,9 +17,18 @@
     "fs:allow-read-text-file",
     "fs:allow-write-text-file",
     "fs:allow-rename",
+    "fs:allow-write-file",
+    "fs:allow-mkdir",
+    "fs:allow-read-dir",
+    "fs:allow-remove",
     {
       "identifier": "fs:scope",
-      "allow": [{ "path": "$APPDATA/history.jsonl" }, { "path": "$APPDATA/history.jsonl.tmp" }]
+      "allow": [
+        { "path": "$APPDATA/history.jsonl" },
+        { "path": "$APPDATA/history.jsonl.tmp" },
+        { "path": "$APPDATA/captures" },
+        { "path": "$APPDATA/captures/**" }
+      ]
     }
   ]
 }

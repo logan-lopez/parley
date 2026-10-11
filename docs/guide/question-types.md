@@ -1,10 +1,10 @@
 # Question types
 
-The six kinds of question an agent can put on a card, as you see them. The agent picks the type;
+The seven kinds of question an agent can put on a card, as you see them. The agent picks the type;
 each question has a short header chip and the question itself, which can include formatting,
 links and code.
 
-**Covers:** [The form spec](../architecture/form-spec.md), [The card](../architecture/card-ui.md)
+**Covers:** [The form spec](../architecture/form-spec.md), [The card](../architecture/card-ui.md), [Asks and history](../architecture/asks-and-history.md)
 
 ## Choice
 
@@ -80,3 +80,29 @@ item. The line above the list counts each decision, plus any items still undecid
 
 `a` and `r` do nothing here, and there are no "all" links: Shift with a number does that. The
 agent gets each item's decision and your comments, grouped by decision.
+
+## Capture
+
+A box you paste into, for something only you can get: a command's output, a console dump, a stack
+trace, a screenshot. The agent usually puts what to run in the question, in a code block with a
+**Copy** button ([Answering a card](answering.md#code-in-a-question)).
+
+- **Text** stays exactly as you pasted it, in a monospace box that grows with it, up to 50,000
+  characters. Typing works too. Enter is a new line; send with Cmd+Enter.
+- **Screenshots.** Paste an image (⌘V) into the box and it shows below as a thumbnail with its
+  size and a remove button, up to five of them, 10 MB each. To copy a screenshot instead of saving
+  it to a file, press ⌘⇧4 and hold ⌃ while you drag. An image copied in another app works too. A
+  paste with an image in it adds the image, even if it carries text as well.
+- **Some captures take only one.** A text-only capture has no screenshots. An image-only one is a
+  single "Paste a screenshot (⌘V)" box that takes no typing.
+
+The agent gets your text as you pasted it, and each screenshot as the path of a PNG file it can
+open. Nothing else on your Mac is read.
+
+Screenshots are kept in `~/Library/Application Support/com.loganlopez.parley/captures/`, one folder
+per day, and deleted when the folder is 30 days old or when you clear history. One you removed from
+the box, or pasted into an ask you then skipped, stays until its folder ages out.
+
+A capture that takes screenshots can only be answered in the Parley window, not in Claude
+Desktop's inline card; a text-only one works in both. History shows the text and the screenshots'
+file names, without thumbnails.

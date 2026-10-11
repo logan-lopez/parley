@@ -6,7 +6,7 @@ models against a fake app.
 
 **Sources:** `apps/server/scripts/`, `apps/server/trials/`, `apps/server/fixtures/`, `packages/protocol/src/ask.test.ts`, `apps/desktop/src/asks/persist.test.ts`, `apps/desktop/src/asks/store.test.ts`, `apps/desktop/src/forms/schemas.test.ts`
 
-**History:** [brief 1](../briefs/archive/01-hub-and-lifecycle.md) (`fake-ask`), [brief 3](../briefs/archive/03-trial-harness.md) (`fake-hub`, trials), [brief 7](../briefs/archive/07-inline-cards.md) (`fake-host`)
+**History:** [brief 1](../briefs/archive/01-hub-and-lifecycle.md) (`fake-ask`), [brief 3](../briefs/archive/03-trial-harness.md) (`fake-hub`, trials), [brief 7](../briefs/archive/07-inline-cards.md) (`fake-host`), [brief 12](../briefs/12-capture-question.md) (the `capture` scenario)
 
 The commands are in [`AGENTS.md`](../../AGENTS.md#commands). This page is what each one covers
 and when to reach for it.
@@ -16,10 +16,11 @@ and when to reach for it.
 - **Unit tests** (vitest):
   - `packages/protocol`: input validation, the compiler and the answer shaper, and that the
     fixtures cover every question type (`ask.test.ts`).
-  - `apps/desktop`: the history file's startup fold (`persist.test.ts`), the store's hub handlers
+  - `apps/desktop`: the history file's startup fold and which screenshot folders have aged out
+    (`persist.test.ts`), the store's hub handlers
     (`resolved`, `inline`) through the real hub client with Tauri mocked (`store.test.ts`), and
     every fixture's compiled schema under JSON Forms' AJV settings and under strict mode with the
-    `x-*` keywords declared (`schemas.test.ts`).
+    `x-*` keywords declared, plus what a review and a capture accept (`schemas.test.ts`).
 - **`fake-ask`** (`scripts/fake-session.ts`) acts as one server session without an MCP client:
   it connects to the hub, sends a form and prints the outcome. It takes `ask` tool input (a bare
   name like `choice` resolves to `packages/protocol/fixtures/choice.json`), which goes through the
@@ -31,13 +32,15 @@ and when to reach for it.
   decision, `second` gives the first item the second, and `other:<text>` does that with the text
   as its comment, reading the decisions from the items' enum, so approve and reject without
   `decisions`; for a
-  text draft, `first` sends it unchanged and `other:<text>` appends the text as its last line). Each
+  text draft, `first` sends it unchanged and `other:<text>` appends the text as its last line; a
+  capture gets `other:<text>` as pasted text, or 'as you see fit', and never a screenshot). Each
   ask takes the next `--reply`; the last repeats. `--old-app` rejects `resolved` as an app from
   before inline cards does. Point a server at it with `PARLEY_SOCKET` and `PARLEY_NO_LAUNCH=1`.
 - **`fake-host`** stands in for an MCP Apps host (Claude Desktop). It advertises the extension,
   spawns the server (from source, or `--server dist`) and a `fake-hub` per scenario, plays both the
   model and the card, and prints pass or fail per scenario: `card-wins`, `window-wins`, `skip`,
-  `slice`, `unknown-id`, `path`, `old-app`, `plain`.
+  `slice`, `unknown-id`, `path`, `capture` (an image capture goes to the window, a text-only one
+  inline), `old-app`, `plain`.
 - **The gallery** renders every fixture through the real card without the hub
   ([the card](card-ui.md#how-it-works)).
 

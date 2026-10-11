@@ -1,5 +1,6 @@
 import { vanillaRenderers } from '@jsonforms/vue-vanilla'
 import BooleanRenderer from './renderers/BooleanRenderer.vue'
+import CaptureRenderer from './renderers/CaptureRenderer.vue'
 import ChoiceRenderer from './renderers/ChoiceRenderer.vue'
 import NumberRenderer from './renderers/NumberRenderer.vue'
 import PathRenderer from './renderers/PathRenderer.vue'
@@ -17,4 +18,5 @@ export const renderers = Object.freeze([
   { tester: widgetTester('boolean'), renderer: BooleanRenderer },
   { tester: widgetTester('path'), renderer: PathRenderer },
   { tester: widgetTester('review'), renderer: ReviewRenderer },
+  { tester: widgetTester('capture'), renderer: CaptureRenderer },
 ])

@@ -7,7 +7,7 @@
 //   pnpm --filter @parley/server fake-host [scenario...] [--server dist] [--verbose]
 //
 // Scenarios (all by default): card-wins, window-wins, skip, slice, unknown-id,
-// path, old-app, plain. `--server dist` runs dist/index.mjs instead of src/ under tsx.
+// path, capture, old-app, plain. `--server dist` runs dist/index.mjs instead of src/ under tsx.
 // `--verbose` passes the server's and the hub's stderr through.
 
 import { spawn, type ChildProcess } from 'node:child_process'
@@ -61,8 +61,9 @@ const scenarios: Record<string, Scenario> = {
       const resources = (await client.listResources()).resources.map((r) => r.uri)
       check('the card resource is listed', resources.includes(CARD_URI), resources)
       try {
-        const card = (await client.readResource({ uri: CARD_URI })).contents[0] as { mimeType?: string; text?: string }
+        const card = (await client.readResource({ uri: CARD_URI })).contents[0] as { mimeType?: string; text?: string; _meta?: Record<string, any> }
         check('the card reads as an MCP App', card?.mimeType === RESOURCE_MIME_TYPE && !!card.text?.includes('<html'), card?.mimeType)
+        check('the card asks for clipboard writes', !!card?._meta?.ui?.permissions?.clipboardWrite, card?._meta)
       } catch (error) {
         check('the card reads as an MCP App (is it built?)', false, message(error))
       }
@@ -164,6 +165,28 @@ const scenarios: Record<string, Scenario> = {
       check('ask_wait returns the window\'s answer', result.text.includes('/tmp/example'), result.text)
       const sent = hubLog().find((l) => l.type === 'ask')
       check('the window got the ask without inline', !!sent && !('inline' in sent), sent && Object.keys(sent))
+    },
+  },
+
+  // A capture that takes screenshots is window-only, like a path; a text-only one works inline.
+  capture: {
+    reply: ['other:v2.1.296', 'none'],
+    async run({ client, hubLog }, check) {
+      const imageId = await ask(client, fixture('capture'))
+      const result = await callText(client, 'ask_wait', { askId: imageId })
+      check('ask_wait returns the window\'s pasted text', result.text.includes('pasted "v2.1.296"'), result.text)
+
+      const textId = await ask(client, fixture('capture-text'))
+      const wait = callText(client, 'ask_wait', { askId: textId })
+      await sleep(300)
+      const submit = await structured(client, 'parley_submit', { askId: textId, kind: 'answer', data: { version: { text: 'v2.1.297' } } })
+      check('the card answers a text-only capture', submit.accepted === true, submit)
+      const answered = await wait
+      check('ask_wait returns the card\'s pasted text', answered.text.includes('pasted "v2.1.297"'), answered.text)
+
+      const asks = hubLog().filter((l) => l.type === 'ask')
+      check('the image capture went to the window without inline', !!asks[0] && !('inline' in asks[0]), asks[0] && Object.keys(asks[0]))
+      check('the text-only capture went with inline: true', asks[1]?.inline === true, asks[1] && { inline: asks[1].inline })
     },
   },
 

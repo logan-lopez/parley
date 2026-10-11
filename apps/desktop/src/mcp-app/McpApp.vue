@@ -7,7 +7,7 @@
 // shows the same ask, and the first answer wins.
 import { computed, ref, shallowRef } from 'vue'
 import { App } from '@modelcontextprotocol/ext-apps'
-import { hasPathQuestion } from '@parley/protocol'
+import { isWindowOnly } from '@parley/protocol'
 import { askInputSchema, compileQuestions, DEFAULT_TIMEOUT_SECONDS, type AskInput, type AskOutcome } from '@parley/protocol/ask'
 import AskCard from '../card/AskCard.vue'
 import { setPlatform } from '../platform'
@@ -32,8 +32,8 @@ const sendError = ref<string>()
 const host = ref('Claude')
 
 const form = computed(() => (input.value ? compileQuestions(input.value) : undefined))
-// No file picker in the host's iframe: the window answers these.
-const windowOnly = computed(() => !!form.value && hasPathQuestion(form.value))
+// No file picker or screenshot saving in the host's iframe: the window answers these.
+const windowOnly = computed(() => !!form.value && isWindowOnly(form.value))
 
 const app = new App({ name: 'parley-card', version: '0.0.0' }, {}, { autoResize: true })
 
@@ -136,7 +136,7 @@ const ended = computed(() => {
   }
   if (s.state === 'unknown') return { line: 'This ask is no longer open.' }
   if (cancelled.value) return { line: 'Cancelled.' }
-  if (windowOnly.value) return { line: 'This one has a file picker. Answer it in Parley (⌘⌃P).' }
+  if (windowOnly.value) return { line: 'This question needs the Parley window. Answer it there (⌘⌃P).' }
   if (sending.value) return { line: 'Sending…', data: sending.value.data, note: sending.value.note }
   return undefined
 })
