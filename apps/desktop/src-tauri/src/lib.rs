@@ -7,18 +7,20 @@ mod shortcut;
 mod tray;
 mod window;
 
-use tauri::{RunEvent, WindowEvent};
+use tauri::{Manager, RunEvent, WindowEvent};
 use tauri_plugin_window_state::StateFlags;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
-    tauri::Builder::default()
+    let builder = tauri::Builder::default()
         .plugin(tauri_plugin_dialog::init())
         // History file only; the scope is in capabilities/default.json.
         .plugin(tauri_plugin_fs::init())
         .plugin(tauri_plugin_notification::init())
-        .plugin(tauri_plugin_opener::init())
-        .plugin(tauri_nspanel::init())
+        .plugin(tauri_plugin_opener::init());
+    #[cfg(target_os = "macos")]
+    let builder = builder.plugin(tauri_nspanel::init());
+    builder
         // Remember position and size, but never restore visibility: the
         // window starts hidden and only the hotkey or tray shows it.
         .plugin(
@@ -28,8 +30,15 @@ pub fn run() {
         )
         .manage(hub::Hub::default())
         .setup(|app| {
+            // Menu-bar only: no Dock icon, no Cmd+Tab entry. Both activate
+            // the app, which the panel exists to avoid. The bundle's
+            // Info.plist (LSUIElement) does the same from launch; this
+            // covers the unbundled `tauri dev` binary.
             #[cfg(target_os = "macos")]
-            window::init_panel(app.handle())?;
+            {
+                app.set_activation_policy(tauri::ActivationPolicy::Accessory);
+                window::init_panel(app.handle())?;
+            }
             hub::start(app.handle().clone())?;
             tray::init(app)?;
             #[cfg(desktop)]
@@ -40,7 +49,7 @@ pub fn run() {
             // The close button hides; quitting is only from the tray menu.
             if let WindowEvent::CloseRequested { api, .. } = event {
                 api.prevent_close();
-                let _ = window.hide();
+                window::hide(window.app_handle());
             }
         })
         .invoke_handler(tauri::generate_handler![

@@ -72,10 +72,6 @@ in brief 7. Rare enough to wait for a brief that touches `AppClient` anyway.
   agent should tell the user something without waiting for an answer.
 - **More widgets:** rank, slider, A/B and annotate. Pick one up when a real ask needs it and the
   harness shows models would use it. `preview` covers most A/B comparisons.
-- **`tauri-nspanel`:** deferred past the MVP, then scheduled for the AeroSpace workspace jump.
-  Brief 8's spike said go, and [brief 9](09-panel-window.md) makes it real. The AeroSpace float
-  rule for Parley is drafted in `~/Dev/dotfiles/.aerospace.toml` and not yet reviewed; brief 9
-  drafts that cleanup too.
 - **A committed card harness:** brief 7 checked the card in headless Chromium with an ext-apps
   `AppBridge` host page, the real server and `fake-hub` (14 checks). It lives only in that
   session's scratchpad. Commit it as a `pnpm` script if the card starts changing often. The cost is

@@ -24,8 +24,9 @@ and move to `archive/` when they're done. Ideas that aren't scheduled yet are in
 
 8. [`08-nspanel-spike.md`](08-nspanel-spike.md) (done, awaiting review): spike, **go**. A
    non-activating `NSPanel` stops AeroSpace switching workspaces when Parley shows.
-9. [`09-panel-window.md`](09-panel-window.md): the panel for real. Pins `tauri-nspanel`, makes
-   Parley menu-bar only, and re-runs the checks on the installed build.
+9. [`09-panel-window.md`](09-panel-window.md) (done, awaiting review): the panel for real. Pins
+   `tauri-nspanel` and makes Parley menu-bar only. The hands-on checks on the dev and installed
+   builds haven't been run yet; the dotfiles cleanup waits on them.
 
 ## Done
 
@@ -93,9 +94,9 @@ Don't relitigate these. If one turns out to be wrong in practice, stop and say s
 ## Not built
 
 `ask_async`/`collect`, `notify`, raw-schema `ask_form`, rank/slider/A-B/annotate widgets, native
-elicitation, MCP Apps outside Claude Desktop (they need a remote server), `tauri-nspanel`, and
-remote/headless channels. `FUTURE.md` says where most of these stand. Anything that collects
-secrets stays out for good.
+elicitation, MCP Apps outside Claude Desktop (they need a remote server), and remote/headless
+channels. `FUTURE.md` says where most of these stand. Anything that collects secrets stays out for
+good.
 
 ## Future direction new work must not block
 

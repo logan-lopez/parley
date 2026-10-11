@@ -7,6 +7,7 @@ paths:
   - "apps/desktop/src-tauri/tauri.conf.json"
   - "apps/desktop/src-tauri/capabilities/**"
   - "apps/desktop/src-tauri/Cargo.toml"
+  - "apps/desktop/src-tauri/Info.plist"
   - "apps/desktop/src-tauri/build.rs"
   - "apps/desktop/vite.config.ts"
   - "apps/desktop/scripts/install.sh"

@@ -2,9 +2,9 @@ use tauri::{AppHandle, Manager};
 
 pub const MAIN: &str = "main";
 
-// Spike (brief 8): on macOS the main window is a non-activating NSPanel, so
-// showing it makes it key without activating Parley. The bet is that
-// AeroSpace then sees no app activation and doesn't jump workspaces.
+// On macOS the main window is a non-activating NSPanel: showing it makes it
+// key without activating Parley, so the app you were in stays active, and
+// AeroSpace doesn't manage it (no workspace jump, no focus change).
 #[cfg(target_os = "macos")]
 mod panel {
     use tauri_nspanel::tauri_panel;
@@ -43,14 +43,23 @@ pub fn show(app: &AppHandle) {
 }
 
 #[cfg(target_os = "macos")]
+pub fn hide(app: &AppHandle) {
+    use tauri_nspanel::ManagerExt;
+
+    if let Ok(panel) = app.get_webview_panel(MAIN) {
+        panel.hide();
+    }
+}
+
+#[cfg(target_os = "macos")]
 pub fn toggle(app: &AppHandle) {
     use tauri_nspanel::ManagerExt;
 
     if let Ok(panel) = app.get_webview_panel(MAIN) {
         if panel.is_visible() {
-            panel.hide();
+            hide(app);
         } else {
-            panel.show_and_make_key();
+            show(app);
         }
     }
 }
@@ -65,10 +74,17 @@ pub fn show(app: &AppHandle) {
 }
 
 #[cfg(not(target_os = "macos"))]
+pub fn hide(app: &AppHandle) {
+    if let Some(window) = app.get_webview_window(MAIN) {
+        let _ = window.hide();
+    }
+}
+
+#[cfg(not(target_os = "macos"))]
 pub fn toggle(app: &AppHandle) {
     if let Some(window) = app.get_webview_window(MAIN) {
         if window.is_visible().unwrap_or(false) {
-            let _ = window.hide();
+            hide(app);
         } else {
             show(app);
         }

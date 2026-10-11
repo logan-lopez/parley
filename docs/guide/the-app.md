@@ -35,8 +35,9 @@ on top of other windows, where you last left it and at the size you last gave it
 On macOS the window is a panel that takes your typing without making Parley the active app. The
 app you were in stays active, so under AeroSpace the window shows on the workspace you're on
 instead of pulling you back to wherever it was last. While it's up it floats over every workspace
-as you switch. Esc hides it, and your typing goes straight back to the app you were in. Parley
-also has a Dock icon and a Cmd+Tab entry for now.
+as you switch. Esc hides it, and your typing goes straight back to the app you were in.
+
+Parley has no Dock icon and isn't in Cmd+Tab: the hotkey and the tray are the ways in.
 
 With nothing waiting, the window says so, with a button for [history](history.md).
 

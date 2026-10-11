@@ -5,32 +5,40 @@ macOS), the plugins, the permissions and the CSP, and the installer. It stays sm
 the socket hub is the only other thing in Rust ([the hub](hub.md)), and everything else is in the
 webview.
 
-**Sources:** `apps/desktop/src-tauri/src/lib.rs`, `apps/desktop/src-tauri/src/window.rs`, `apps/desktop/src-tauri/src/tray.rs`, `apps/desktop/src-tauri/src/shortcut.rs`, `apps/desktop/src-tauri/tauri.conf.json`, `apps/desktop/src-tauri/capabilities/`, `apps/desktop/src-tauri/Cargo.toml`, `apps/desktop/src-tauri/build.rs`, `apps/desktop/vite.config.ts`, `apps/desktop/scripts/install.sh`
+**Sources:** `apps/desktop/src-tauri/src/lib.rs`, `apps/desktop/src-tauri/src/window.rs`, `apps/desktop/src-tauri/src/tray.rs`, `apps/desktop/src-tauri/src/shortcut.rs`, `apps/desktop/src-tauri/tauri.conf.json`, `apps/desktop/src-tauri/capabilities/`, `apps/desktop/src-tauri/Cargo.toml`, `apps/desktop/src-tauri/Info.plist`, `apps/desktop/src-tauri/build.rs`, `apps/desktop/vite.config.ts`, `apps/desktop/scripts/install.sh`
 
-**History:** [brief 1](../briefs/archive/01-hub-and-lifecycle.md), [brief 8](../briefs/08-nspanel-spike.md) (the panel)
+**History:** [brief 1](../briefs/archive/01-hub-and-lifecycle.md), [brief 8](../briefs/08-nspanel-spike.md) (the panel), [brief 9](../briefs/09-panel-window.md) (menu-bar only)
 
 `lib.rs` builds the app: plugins, setup, the close handler and the commands. `window.rs` is the
-panel and `show`/`toggle`. `tray.rs` is the tray icon, its menu and the pending count.
+panel and `show`/`hide`/`toggle`. `tray.rs` is the tray icon, its menu and the pending count.
 `shortcut.rs` is the global hotkey. `tauri.conf.json` has the window and the CSP;
-`capabilities/default.json` has the permissions.
+`capabilities/default.json` has the permissions. `Info.plist` is merged into the bundle's and sets
+`LSUIElement`.
 
 ## How it works
 
 - **Plugins:** dialog (the file picker), fs (history only), notification, opener (links),
-  `tauri-nspanel`, global shortcut and window state. Window state remembers position and size but
+  `tauri-nspanel` (registered on macOS only), global shortcut and window state. Window state remembers position and size but
   never visibility (`StateFlags::all() - VISIBLE`).
-- **Startup** (`setup`): on macOS, turn the main window into a panel; bind the socket hub; build
-  the tray; register the hotkey. The window is declared hidden, 440×600, always on top, so the app
+- **Startup** (`setup`): on macOS, set the activation policy to `Accessory` and turn the main
+  window into a panel; bind the socket hub; build the tray; register the hotkey. The window is declared hidden, 440×600, always on top, so the app
   starts with nothing on screen.
 - **The panel** (`window.rs`, macOS). `init_panel` converts the `main` window to a `ParleyPanel`
   (can become key, can't become main, floating) and adds the non-activating style mask with
   `add_style_mask`, keeping Tauri's title bar, resize and close styles. `show` is
   `show_and_make_key()`: the panel takes keys without activating Parley, so the app you were in
-  stays active. `toggle` uses the panel's own visibility. Other platforms keep a plain
-  show/unminimize/focus path under `cfg(not(target_os = "macos"))`, though the ungated
-  `tauri_nspanel::init()` in `lib.rs` means the app only builds on macOS for now.
-- **Hiding.** The close button hides (quitting is only from the tray). The webview's own hides (Esc
-  in the queue, the last ask answered) call Tauri's `hide()`, which works on the panel.
+  stays active. `hide` is the panel's `hide()` (`orderOut:`), and `toggle` picks between them on
+  the panel's own visibility. Other platforms keep a plain window path (show, unminimize, focus,
+  hide) under `cfg(not(target_os = "macos"))`.
+- **Menu-bar only** (macOS). No Dock icon and no Cmd+Tab entry: both activate the app, which the
+  panel exists to avoid, and the hotkey and the tray are the ways in. Two places set it. The
+  bundle's `Info.plist` has `LSUIElement`, so the installed app is an agent from launch, before any
+  Rust runs. `setup` also calls `set_activation_policy(Accessory)`, because the unbundled `tauri
+  dev` binary doesn't get the plist.
+- **Hiding.** Every Rust hide goes through `window::hide`: the close button (quitting is only from
+  the tray), the hotkey and a tray click. The webview's own hides (Esc in the queue, the last ask
+  answered) call Tauri's `hide()`. Both end in `orderOut:`, so they work on the panel, and routing
+  the webview's through a command would buy nothing.
 - **The tray.** A left click toggles the window; the menu has Show Parley and Quit.
   `set_pending_count` sets the number beside the icon (empty at zero); the store calls it whenever
   the queue changes.
@@ -70,13 +78,15 @@ panel and `show`/`toggle`. `tray.rs` is the tray icon, its menu and the pending 
   the second exits when it finds the first answering on `hub.sock`.
 - **The panel's risk:** `tauri-nspanel`'s style-mask call also sends the private
   `_setPreventsActivation:`. That's probably what makes the panel non-activating, and it's the part
-  a macOS update could break. The crate is on a git branch (`v2.1`), not a release; only `Cargo.lock` holds
-  it at `ef6e309`, so a `cargo update` can move it.
+  a macOS update could break, and the symptom would be the workspace jump coming back: rerun brief
+  8's check 1 after a major macOS update. There's no crates.io release of v2.1, so `Cargo.toml`
+  pins the git `rev` (`ef6e309`), not the branch. Moving it is a deliberate edit.
 - **Window managers.** AeroSpace doesn't manage the panel: it doesn't list it, can't move it, and
   sees no focus change when it shows. While visible, the panel floats over every workspace. An
   unbundled `tauri dev` binary reports `NULL-APP-BUNDLE-ID` with app name `parley`, so a rule that
   must match both builds matches on both. Window-manager config lives in Logan's dotfiles; Parley
-  never calls `aerospace`.
+  never calls `aerospace`. Those dotfiles keep an AeroSpace float rule for Parley as insurance. It
+  never fires today, but it would if AeroSpace started managing the panel.
 
 ## Decisions
 

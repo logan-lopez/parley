@@ -51,8 +51,9 @@ References: the [elicitation spec](https://modelcontextprotocol.io/specification
 
 How each part works, as you use it, is in [the guide](docs/guide/README.md).
 
-- [A menu bar app](docs/guide/the-app.md) with a notification per ask, a count in the menu bar,
-  and a window on Cmd+Ctrl+P that takes your typing without pulling you out of the app you're in.
+- [A menu bar app](docs/guide/the-app.md), with no Dock icon or Cmd+Tab entry: a notification per
+  ask, a count in the menu bar, and a window on Cmd+Ctrl+P that takes your typing without pulling
+  you out of the app you're in.
 - [Cards built for the keyboard](docs/guide/answering.md): number keys to pick, Cmd+Enter to send,
   a note for the agent, drafts that survive a restart.
 - [Six question types](docs/guide/question-types.md): choice (with your own answer), text, number,

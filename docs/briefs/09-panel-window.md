@@ -164,3 +164,110 @@ Logan checks by hand on the **installed** build, unless marked dev:
 
 The stop line: append `## Report`, retag the brief `(done, awaiting review)`, and ask Logan whether
 to commit. Don't push. Leave the dotfiles draft uncommitted in `~/Dev/dotfiles` for him.
+
+## Report
+
+*2026-10-10.* The code, the docs and the dotfiles draft are done, on branch `panel-window`
+(uncommitted). **The hands-on checks haven't been run.** Logan chose "Not now" when asked before
+the desktop run, so build-order steps 2 and 3 (`pnpm app`, then `pnpm install:desktop` and the
+installed-build checks) are still to do. The installed `Parley.app` is still the brief 8–era build.
+
+### Built
+
+- **`Cargo.toml`:** `tauri-nspanel` pinned to `rev = "ef6e3090a6083c653955ca0b6e7f6c6ae1453d40"`,
+  still under the macOS target, with a comment saying why. `Cargo.lock` changes only the source
+  string (`?branch=v2.1` → `?rev=…`); the commit is the same.
+- **`lib.rs`:** the builder is split so `tauri_nspanel::init()` is registered only under
+  `cfg(target_os = "macos")`, in the same place in the plugin order. In `setup`, on macOS:
+  `app.set_activation_policy(ActivationPolicy::Accessory)`, then `init_panel`. The close handler
+  calls `window::hide(window.app_handle())` (`Manager` imported for `app_handle`).
+- **`window.rs`:** a new `pub fn hide(app)`, through the panel on macOS (`panel.hide()`) and the
+  window elsewhere. Both `toggle`s use `hide` and `show`. The "Spike (brief 8)" comment now says
+  what the code is. The non-macOS branches stay.
+- **`Info.plist`** (new, `src-tauri/`): `LSUIElement` `true`.
+- **`App.vue`:** untouched, as the brief says.
+
+### Deviations
+
+- **The hands-on checks weren't run** (Logan's call, above). The dotfiles draft was gated on them
+  passing. It's drafted anyway, because Logan picked an option that said I'd draft it, and it sits
+  uncommitted in `~/Dev/dotfiles`, a review copy that changes nothing live. **Don't apply it until
+  the installed build passes checks 1 and 2.** The current installed build is a plain window and
+  still needs `parley-follow.sh`.
+- **A debug bundle build, not in the brief.** I ran `pnpm tauri build --debug --bundles app` to
+  confirm the plist merges, then deleted the bundle. It was never registered with LaunchServices
+  (`lsregister -u` returned `-10814`, not found), so `open -b` couldn't pick it up.
+
+### Defaults taken
+
+- **Dock flash at launch:** the default, both. `setup` sets Accessory (for `pnpm app`), and
+  `src-tauri/Info.plist` sets `LSUIElement` for the bundle. Tauri merges it: the debug bundle's
+  `Contents/Info.plist` has `LSUIElement = true` beside `CFBundleIdentifier =
+  com.loganlopez.parley`. Whether it really stops the flash is check 3, which hasn't been run.
+
+### Acceptance
+
+Automatic:
+
+- `cargo check` in `apps/desktop/src-tauri`: passes, no warnings.
+- `pnpm typecheck`: passes. `pnpm --filter @parley/desktop test`: 31/31 pass, unchanged.
+- `grep -n tauri-nspanel apps/desktop/src-tauri/Cargo.toml`: line 45, `rev = "ef6e309…"`, no
+  `branch =`.
+- Extra: the bundled `Info.plist` has `LSUIElement = true` (above).
+
+Hands-on, checks 1–10: **not run.** Logan deferred the desktop run. Before it starts: the
+installed Parley is running and has to be quit first, and another session's Vite holds port 1420,
+so the dev run needs the port-1430 command from the brief. Both monitors (Built-in Retina,
+45WQHD240) were connected on 2026-10-10.
+
+### Spot checks for Logan
+
+All ten hands-on checks, as the brief lists them: 1 and 2 on dev and installed, the rest on the
+installed build. The ones this change could break, most likely first:
+
+- **2, menu-bar only:** no Dock icon, not in Cmd+Tab, and
+  `lsappinfo info -only ApplicationType -app com.loganlopez.parley` no longer says `Foreground`.
+  The tray icon and its menu still work.
+- **3, no Dock flash:** quit, `open -b com.loganlopez.parley`, and watch the Dock.
+- **7, notifications:** agent apps can lose notification permission. If notifications stop, say
+  so; the brief stops there.
+- **6, hides:** the close button now goes through the panel's `hide()`. It should behave exactly
+  as before.
+- **1 and 5:** the jump and focus return. Accessory shouldn't change either, but they're the point
+  of the panel.
+- **10:** the `path` picker opening in front matters more now. An Accessory app's dialogs
+  are the classic place for a sheet to open behind something.
+
+Then review the dotfiles draft (`cd ~/Dev/dotfiles && git diff`) and apply it.
+
+### Docs updated
+
+- [`desktop-shell.md`](../architecture/desktop-shell.md): `Info.plist` in Sources and the file
+  map, brief 9 in History, `hide` in `window.rs`, the plugin registered on macOS only (the
+  "only builds on macOS" clause is gone), Accessory in startup, a **Menu-bar only** bullet (plist
+  plus runtime policy, and why both), **Hiding** (Rust hides go through `window::hide`; the
+  webview's stay on Tauri's `hide()`), the panel's risk (pinned `rev`, rerun check 1 after macOS
+  updates), and the dotfiles float rule kept as insurance.
+- `AGENTS.md` Areas row and `.claude/rules/desktop-shell.md`: `apps/desktop/src-tauri/Info.plist`
+  added.
+- [`FUTURE.md`](FUTURE.md): the `tauri-nspanel` bullet under Parked removed. The dotfiles note now
+  lives on the desktop-shell page (Window managers).
+- `docs/briefs/README.md`: `tauri-nspanel` out of Not built. The decisions table is unchanged.
+- Guide, [`the-app.md`](../guide/the-app.md): "Parley also has a Dock icon and a Cmd+Tab entry for
+  now" is replaced with no Dock icon, not in Cmd+Tab, and the hotkey and the tray as the ways in.
+  The root README's feature line says the same.
+
+### Dotfiles draft (`~/Dev/dotfiles`, uncommitted)
+
+- `.config/aerospace/parley-follow.sh`: deleted.
+- `.aerospace.toml`: `exec-on-workspace-change` is back to the SketchyBar trigger alone, exactly
+  as it was before `bd7a092` added the script. The Parley float rule stays, with its comment
+  saying the panel isn't managed today and the rule is insurance.
+- The repo had no other uncommitted changes.
+
+### Follow-ups
+
+- **Run the hands-on checks** (steps 2–3), then apply the dotfiles draft. The brief can't be
+  archived until then.
+- If check 9 shows the panel somewhere awkward on the ultrawide, moving it to the active screen is
+  the follow-up the brief already names.
