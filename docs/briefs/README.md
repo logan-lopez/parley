@@ -11,8 +11,9 @@ and move to `archive/` when they're done. Ideas that aren't scheduled yet are in
 - Built: the hub, `ask` with six question types, the trial harness, history and the `review` type
   (briefs 1–5), and inline cards in Claude Desktop (briefs 6–7, merged to main as `aaef062`).
 - In flight: brief 8 is done, awaiting review: the spike says go. AeroSpace ignores a
-  non-activating panel, so it shows where you are. The code is on `spike/nspanel`, unmerged.
-- Next: a brief to make the panel real (brief 8's report lists what it needs). After that,
+  non-activating panel, so it shows where you are. Its code is merged to main (`9b8eb93`).
+- Next: brief 9 makes the panel real (pinned crate, menu-bar only, checks on the installed
+  build), then the dotfiles cleanup it drafts. After that,
   [`FUTURE.md`](FUTURE.md)'s three sections: the reconnect fix is the smallest,
   and trial prompts for show-then-wait tell us whether the Desktop flow holds up with real models.
 - Loose ends: brief 7's check 11 (does the card render in Desktop's agent mode?) and whether
@@ -23,6 +24,8 @@ and move to `archive/` when they're done. Ideas that aren't scheduled yet are in
 
 8. [`08-nspanel-spike.md`](08-nspanel-spike.md) (done, awaiting review): spike, **go**. A
    non-activating `NSPanel` stops AeroSpace switching workspaces when Parley shows.
+9. [`09-panel-window.md`](09-panel-window.md): the panel for real. Pins `tauri-nspanel`, makes
+   Parley menu-bar only, and re-runs the checks on the installed build.
 
 ## Done
 
@@ -69,6 +72,8 @@ Don't relitigate these. If one turns out to be wrong in practice, stop and say s
 | Inline asks in MCP Apps clients | "Show, then wait": `ask` returns an `askId` at once, and `ask_wait` blocks in 200 s slices. Registered only for clients that advertise MCP Apps. | Desktop mounts a view only after its call returns, and cuts local calls at 240 s (brief 6). Claude Code's tool list stays as it is. |
 | MCP Apps hosts | Claude Desktop only. claude.ai and ChatGPT need a remote (HTTP) server. | Desktop is the host that runs local stdio servers, and Logan is fine with it being the only one (brief 7, 2026-10-10). |
 | AeroSpace workspace jump | On macOS the main window is a non-activating `NSPanel` (`tauri-nspanel`). Brief 8's spike said go; no hooks or park mode. Window-manager commands live in Logan's dotfiles; Parley never calls `aerospace`. | AeroSpace ignores the panel completely, so it shows on the current workspace and focus never moves (brief 8, 2026-10-10). *Was:* spike first, with hooks + park mode as the fallback. |
+| Dock and Cmd+Tab | Menu-bar only (`ActivationPolicy::Accessory`). The hotkey and tray are the ways in. | Both activate the app, which the panel exists to avoid, and nothing used them (Logan, 2026-10-10). |
+| Panel on more than one monitor | Shows at its remembered position. No following the cursor or the focused screen. | Smallest change. Revisit if the two-monitor check in brief 9 says it's a problem (Logan, 2026-10-10). |
 | Inline answers and the window | The window races the card quietly (no notification). The server sends an inline answer to the app (`resolved`), and history records it as answered in the chat. | The user already sees the card. History stays complete (2026-10-10). |
 | History when the window and the card both answer | The server's first-in answer wins, and `resolved` overwrites the window's answered or skipped record | History matches what the agent got (brief 7, 2026-10-10). |
 
