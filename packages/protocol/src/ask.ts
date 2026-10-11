@@ -64,7 +64,11 @@ const question = z.object({
     .min(1, 'a review question needs at least 1 item')
     .max(30, 'a review question takes at most 30 items; ask about the rest in a follow-up call')
     .optional(),
-  defaultDecision: z.enum(['approve', 'reject', 'none']).optional(),
+  decisions: z.array(z.string().min(1).max(12, "decision labels are 12 characters or fewer, like 'Port' or 'Skip'"))
+    .min(2, 'a review takes 2–4 decisions; leave `decisions` out for approve and reject')
+    .max(4, 'a review takes at most 4 decisions')
+    .optional(),
+  defaultDecision: z.string().optional(),
 })
 
 export const askInputSchema = z.object({
@@ -121,6 +125,22 @@ export const askInputSchema = z.object({
         }
         labels.add(item.label)
       })
+      const decisions = new Set<string>()
+      q.decisions?.forEach((d, j) => {
+        if (decisions.has(d)) {
+          ctx.addIssue({ code: 'custom', path: at('decisions', j), message: `question ${n} has the decision '${d}' twice; decisions must be unique` })
+        } else if (d === 'none') {
+          ctx.addIssue({ code: 'custom', path: at('decisions', j), message: `question ${n} has a decision labelled 'none', which is reserved for defaultDecision; pick another label` })
+        }
+        decisions.add(d)
+      })
+      const allowed = [...(q.decisions ?? REVIEW_DECISIONS), 'none']
+      if (q.defaultDecision !== undefined && !allowed.includes(q.defaultDecision)) {
+        const list = allowed.map((d) => `'${d}'`)
+        ctx.addIssue({ code: 'custom', path: at('defaultDecision'), message: q.decisions
+          ? `question ${n}'s defaultDecision '${q.defaultDecision}' isn't one of its decisions; use one of ${list.slice(0, -1).join(', ')}, or 'none'`
+          : `question ${n}'s defaultDecision '${q.defaultDecision}' isn't 'approve', 'reject' or 'none'; to use your own labels, list them in \`decisions\`` })
+      }
     } else if (q.options) {
       ctx.addIssue({ code: 'custom', path: at('options'), message: `question ${n} has type '${q.type}' but also has options; options only apply to type 'choice', so drop them or set type to 'choice'` })
     }
@@ -130,6 +150,10 @@ export const askInputSchema = z.object({
     }
     if (q.type === 'choice' && q.options && q.items) {
       ctx.addIssue({ code: 'custom', path: at('items'), message: `question ${n} has type 'choice' but also has items; items only apply to type 'review', and a choice question takes \`options\`` })
+    }
+
+    if (q.decisions && q.type !== 'review') {
+      ctx.addIssue({ code: 'custom', path: at('decisions'), message: `question ${n} has decisions but type '${q.type}'; decisions only apply to type 'review'` })
     }
 
     if (q.draft !== undefined && q.type !== 'text') {
@@ -152,7 +176,7 @@ const answerValue = z.union([z.string(), z.array(z.string()), z.number(), z.bool
 
 const reviewOutcome = z.object({
   label: z.string(),
-  decision: z.enum(REVIEW_DECISIONS),
+  decision: z.string(),   // 'approve' or 'reject', or one of the question's own decisions
   comment: z.string().optional(),
 })
 
@@ -163,7 +187,7 @@ export const askResultSchema = z.object({
     header: z.string(),
     value: answerValue,        // null: an optional question left blank
     custom: z.string().optional(),   // the user's own text, when it isn't one of the options
-    review: z.array(reviewOutcome).optional(),   // a review's every item, in order; `value` is the approved labels
+    review: z.array(reviewOutcome).optional(),   // a review's every item, in order; `value` is the labels given the first decision
     edited: z.boolean().optional(),  // a text question with a draft: whether the final text differs from it
   })).optional(),
   note: z.string().optional(),       // free text the user added for the agent, with an answer or a skip
@@ -276,7 +300,8 @@ function compileQuestion(q: Question): JsonSchema {
     }
     case 'review': {
       const items = q.items ?? []
-      const fallback = q.defaultDecision ?? 'approve'
+      const decisions = reviewDecisions(q)
+      const fallback = q.defaultDecision ?? decisions[0]!
       return {
         'x-widget': 'review', ...base,
         type: 'array',
@@ -286,7 +311,7 @@ function compileQuestion(q: Question): JsonSchema {
           ...(item.detail && { description: item.detail }),
           ...(item.preview && { 'x-preview': item.preview }),
           properties: {
-            decision: { type: 'string', enum: [...REVIEW_DECISIONS] },
+            decision: { type: 'string', enum: decisions },
             comment: { type: 'string' },
           },
           ...(fallback === 'none' && { required: ['decision'] as ['decision'] }),
@@ -298,6 +323,11 @@ function compileQuestion(q: Question): JsonSchema {
       }
     }
   }
+}
+
+// A review's decisions, the positive one first: its own, or approve and reject.
+function reviewDecisions(q: Question): string[] {
+  return [...(q.decisions ?? REVIEW_DECISIONS)]
 }
 
 export function shapeAnswer(input: AskInput, outcome: AskOutcome): { structured: AskResult; text: string } {
@@ -329,7 +359,9 @@ export function shapeAnswer(input: AskInput, outcome: AskOutcome): { structured:
     const id = ids[i]!
     const answer = readAnswer(q, data[id])
     answers[id] = answer
-    lines.push(answer.review ? describeReview(answer.header, answer.review) : describe(answer, new Set(q.options?.map((o) => o.label))))
+    lines.push(answer.review
+      ? (q.decisions ? describeDecisions(answer.header, answer.review, q.decisions) : describeReview(answer.header, answer.review))
+      : describe(answer, new Set(q.options?.map((o) => o.label))))
   })
   if (note) lines.push('', 'They also left a note:', quote(note))
   return text('answered', lines.join('\n'), answers)
@@ -378,18 +410,21 @@ function readAnswer(q: Question, raw: unknown): Answer {
       // The app always sends a complete array (the renderer writes the
       // defaults, or the form requires every decision), so only an optional
       // review can be blank. Missing entries, from fake-hub or partial data,
-      // fall back to the default; under 'none' that's a reject, so nothing is
-      // approved that the user didn't approve.
+      // fall back to the default; under 'none' that's the last decision, the
+      // most cautious one (reject, without decisions of its own), so nothing
+      // gets the first decision that the user didn't give it.
       if (!Array.isArray(raw) && q.required === false) return blank
       const entries = Array.isArray(raw) ? raw : []
-      const fallback: ReviewDecision = q.defaultDecision === 'reject' || q.defaultDecision === 'none' ? 'reject' : 'approve'
+      const decisions = reviewDecisions(q)
+      const preset = q.defaultDecision ?? decisions[0]!
+      const fallback: ReviewDecision = preset === 'none' ? decisions[decisions.length - 1]! : preset
       const review = (q.items ?? []).map(({ label }, i): ReviewOutcome => {
         const entry = isRecord(entries[i]) ? entries[i] : {}
-        const decision = entry.decision === 'approve' || entry.decision === 'reject' ? entry.decision : fallback
+        const decision = typeof entry.decision === 'string' && decisions.includes(entry.decision) ? entry.decision : fallback
         const comment = isFilled(entry.comment) ? entry.comment.trim() : undefined
         return { label, decision, ...(comment && { comment }) }
       })
-      return { header, value: review.filter((r) => r.decision === 'approve').map((r) => r.label), review }
+      return { header, value: review.filter((r) => r.decision === decisions[0]).map((r) => r.label), review }
     }
   }
 }
@@ -428,6 +463,25 @@ function describeReview(header: string, review: ReviewOutcome[]): string {
     const kind = r.decision === lead ? `${name}, with a comment` : name
     lines.push(`  - ${kind}: ${r.label}${r.comment !== undefined ? ` (${JSON.stringify(r.comment)})` : ''}`)
   }
+  return lines.join('\n')
+}
+
+// A review with its own decisions: the counts, the majority decision first and
+// empty ones left out, then the other decisions' items grouped by decision,
+// then majority items that came with a comment. Ties go to the earlier decision.
+function describeDecisions(header: string, review: ReviewOutcome[], decisions: string[]): string {
+  const count = (d: string) => review.filter((r) => r.decision === d).length
+  const lead = decisions.reduce((best, d) => (count(d) > count(best) ? d : best))
+  const item = (r: ReviewOutcome) => `${r.label}${r.comment !== undefined ? ` (${JSON.stringify(r.comment)})` : ''}`
+  const lines = [count(lead) === review.length
+    ? `- ${header}: ${lead} all ${review.length}`
+    : `- ${header}: ${[lead, ...decisions.filter((d) => d !== lead && count(d))].map((d) => `${d} ${count(d)}`).join(', ')} (of ${review.length})`]
+  for (const d of decisions) {
+    const given = review.filter((r) => r.decision === d)
+    if (d !== lead && given.length) lines.push(`  - ${d}: ${given.map(item).join(', ')}`)
+  }
+  const commented = review.filter((r) => r.decision === lead && r.comment !== undefined)
+  if (commented.length) lines.push(`  - ${lead}, with ${commented.length === 1 ? 'a comment' : 'comments'}: ${commented.map(item).join(', ')}`)
   return lines.join('\n')
 }
 

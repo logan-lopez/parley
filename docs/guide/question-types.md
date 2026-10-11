@@ -62,3 +62,21 @@ hurried Enter can't approve everything, and Send waits until each item has a dec
 
 If items come with previews, the focused item's shows below the list. The agent gets the
 approved items, every decision, and your comments.
+
+### The agent's own decisions
+
+Some reviews aren't approve or reject. The agent can name two to four decisions of its own, like
+Port, TODO and Skip for configs to move, or Pass, Fail and Didn't try for a checklist. Each row
+then has a button per decision instead of ✓ and ✕. The first one is the one the agent leans
+toward, in the accent color; the rest are plain. With long labels the buttons drop under the
+item. The line above the list counts each decision, plus any items still undecided.
+
+| Key | What it does |
+| --- | --- |
+| `1`–`4` | Give the focused item that decision. The hint under the list says which is which. |
+| Shift+`1`–`4` | Give every item that decision. |
+| Space | Move the focused item to the next decision. |
+| ↑/↓, `j`/`k`, Home, End, `c` | As above. |
+
+`a` and `r` do nothing here, and there are no "all" links: Shift with a number does that. The
+agent gets each item's decision and your comments, grouped by decision.

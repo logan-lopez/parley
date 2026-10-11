@@ -12,6 +12,11 @@
 // (hide). Other plain keys are the renderer's own, handled on its elements
 // (the review renderer's j/k/a/r/c). A renderer that needs Esc for itself, like
 // leaving a review comment, stops its propagation so the window stays up.
+//
+// One exception to the digits: a review with the agent's own decisions takes
+// 1–4 (and Shift+1–4) on a focused row to set its decision. The row's handler
+// runs first, on the element, and prevents the event; the card's handler is on
+// `window` and leaves a prevented digit alone.
 
 export const QUESTION = '[data-question]'
 

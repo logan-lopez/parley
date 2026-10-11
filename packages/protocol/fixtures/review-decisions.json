@@ -1,0 +1,21 @@
+{
+  "title": "Dotfiles ports",
+  "questions": [
+    {
+      "header": "Ports",
+      "question": "Which configs should I port to the new dotfiles layout in the next pass? **TODO** keeps a note in `PORTING.md`; **Skip** leaves the config where it is.",
+      "type": "review",
+      "decisions": ["Port", "TODO", "Skip"],
+      "items": [
+        { "label": "zellij", "detail": "Layouts and the keybind overrides. No plugins." },
+        { "label": "hermes", "detail": "One file; already uses XDG paths." },
+        { "label": "oh-my-zsh custom/", "detail": "Three plugins and the theme." },
+        { "label": "nvim", "detail": "The lazy.nvim spec and 40 plugin configs. Biggest by far." },
+        { "label": "helix", "detail": "`config.toml` and `languages.toml`." },
+        { "label": "jetbrains", "detail": "Exported settings ZIP; not plain text." },
+        { "label": "fzf", "detail": "Env vars in `.zshrc` only." },
+        { "label": "kitty", "detail": "Replaced by the current terminal setup?" }
+      ]
+    }
+  ]
+}

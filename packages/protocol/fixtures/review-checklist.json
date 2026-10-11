@@ -1,0 +1,19 @@
+{
+  "title": "Hands-on checks: the panel window",
+  "questions": [
+    {
+      "header": "Checks",
+      "question": "Run through these on the installed build and mark each one. Add a comment on anything that failed.",
+      "type": "review",
+      "decisions": ["Pass", "Fail", "Didn't try"],
+      "defaultDecision": "none",
+      "items": [
+        { "label": "Hotkey on another workspace", "detail": "On workspace 3, press Cmd+Ctrl+P. The window shows there, and AeroSpace doesn't switch workspaces." },
+        { "label": "Focus stays put", "detail": "Typing in the terminal, press the hotkey, answer with the keyboard, send. The terminal still has focus after." },
+        { "label": "Notification opens the card", "detail": "Start an ask with the window hidden. Clicking the notification shows the window with that card." },
+        { "label": "Tray count", "detail": "With two asks pending, the tray shows 2. It drops to 1 after answering one." },
+        { "label": "No Dock icon", "detail": "Parley is absent from the Dock and from Cmd+Tab, including right after launch." }
+      ]
+    }
+  ]
+}

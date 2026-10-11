@@ -15,7 +15,7 @@ macOS only, for now.
   it does.
 - **A form language models already write.** Questions are an array shaped like Claude's built-in
   `AskUserQuestion`, with more types: text, number, yes/no, file and folder paths, and a review
-  that approves or rejects each item of a list. The server compiles them to JSON Schema, which is
+  that gives each item of a list a decision: approve or reject, or the agent's own labels. The server compiles them to JSON Schema, which is
   all the app renders.
 - **An inbox, not a modal.** One app, many agents. Asks from every session queue up, labelled with
   who's asking; nothing steals your focus, and every ask is kept in history with what you sent.
@@ -57,7 +57,8 @@ How each part works, as you use it, is in [the guide](docs/guide/README.md).
 - [Cards built for the keyboard](docs/guide/answering.md): number keys to pick, Cmd+Enter to send,
   a note for the agent, drafts that survive a restart.
 - [Six question types](docs/guide/question-types.md): choice (with your own answer), text (or a
-  draft to edit in place), number, yes/no, path, and review.
+  draft to edit in place), number, yes/no, path, and review (approve and reject, or the agent's
+  own decisions, like Port / TODO / Skip).
 - [Claude Code](docs/guide/claude-code.md) asks block until you answer, for up to an hour.
 - [Claude Desktop](docs/guide/claude-desktop.md) shows the card inline in the chat as well.
 - [History](docs/guide/history.md) of every ask for 30 days, searchable.

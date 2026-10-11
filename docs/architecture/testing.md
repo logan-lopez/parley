@@ -27,8 +27,10 @@ and when to reach for it.
   `apps/server/fixtures/sample.json`). Ctrl-C kills it without a cancel, which exercises the
   app's disconnect path.
 - **`fake-hub`** stands in for the app on a socket, logs every ask (`--log`), and answers on a
-  script: `first`, `second`, `last`, `other:<text>`, `skip`, `none`, `delay:<s>:<policy>` (for a review, `first` and `last` approve every item,
-  `second` rejects the first, and `other:<text>` rejects it with the text as its comment; for a
+  script: `first`, `second`, `last`, `other:<text>`, `skip`, `none`, `delay:<s>:<policy>` (for a review, `first` and `last` give every item the first
+  decision, `second` gives the first item the second, and `other:<text>` does that with the text
+  as its comment, reading the decisions from the items' enum, so approve and reject without
+  `decisions`; for a
   text draft, `first` sends it unchanged and `other:<text>` appends the text as its last line). Each
   ask takes the next `--reply`; the last repeats. `--old-app` rejects `resolved` as an app from
   before inline cards does. Point a server at it with `PARLEY_SOCKET` and `PARLEY_NO_LAUNCH=1`.

@@ -25,7 +25,7 @@ and move to `archive/` when they're done. Ideas that aren't scheduled yet are in
 
 10. [`10-text-drafts.md`](10-text-drafts.md) (done, awaiting review): `text` takes a `draft` the user edits in place
     (commit messages, PR bodies); the answer says whether they changed it.
-11. [`11-review-decisions.md`](11-review-decisions.md): `review` takes 2–4 `decisions` of its own
+11. [`11-review-decisions.md`](11-review-decisions.md) (done, awaiting review): `review` takes 2–4 `decisions` of its own
     (Port / TODO / Skip, Pass / Fail) instead of approve and reject.
 12. [`12-capture-question.md`](12-capture-question.md): copy buttons on code blocks, a `capture`
     question for pasted output and screenshots, and the full trial pass for briefs 10–12.
@@ -103,7 +103,7 @@ Don't relitigate these. If one turns out to be wrong in practice, stop and say s
 | `review` question | 1–30 items, each approved or rejected with an optional comment; `defaultDecision` approve, reject or none. The answer's `value` is the approved labels, with every item's decision in `review`. | The richer input coding agents would use daily (brief 5, 2026-10-10). A tuple array on the wire, so a raw-schema form could send the same. |
 | `'unsafe-eval'` in the CSP | Allowed | AJV (JSON Forms validation) compiles validators with `new Function`. Markdown renders without raw HTML, so model text can't inject script. |
 | Drafts to edit | `draft` on `text` only. The answer is the final text plus `edited`; no diff in the message. | The "Commit as written / Not yet" cards took two round trips for a one-word change (Logan, 2026-10-10, brief 10). |
-| Review decisions | `review` takes 2–4 `decisions` of its own; without them it's approve/reject, unchanged. `value` is the labels given the first decision, so the answer union stays the same. | Per-item assignments were being crammed into multi-select plus Other (Logan, 2026-10-10, brief 11). |
+| Review decisions | `review` takes 2–4 `decisions` of its own; without them it's approve/reject, unchanged. `value` is the labels given the first decision, so the answer union stays the same. Gaps under `none` fall back to the last decision, the most cautious one. | Per-item assignments were being crammed into multi-select plus Other (Logan, 2026-10-10, brief 11). |
 | Pasted screenshots | `capture` saves them as PNGs under `$APPDATA/captures/` and returns the paths. Window-only, like `path`; text-only captures work inline. | Claude Code shows only `structuredContent` for tools with an `outputSchema`, so image content would likely be dropped, and a path is something the model can read (2026-10-10, brief 12). |
 | `ask_async` / `collect` | Not built; parked in [`FUTURE.md`](FUTURE.md#parked) | Claude Code backgrounds a call still running after 2 min and delivers the answer when it lands; `collect()` would depend on the model remembering to poll (2026-10-10). |
 

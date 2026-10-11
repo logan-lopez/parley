@@ -7,7 +7,7 @@ question.
 
 **Sources:** `packages/protocol/src/ask.ts`, `packages/protocol/src/form.ts`, `packages/protocol/fixtures/`
 
-**History:** [brief 2](../briefs/archive/02-ask-tool-and-ui.md), [brief 5](../briefs/archive/05-review-question.md) (`review`), [brief 10](../briefs/10-text-drafts.md) (`draft`)
+**History:** [brief 2](../briefs/archive/02-ask-tool-and-ui.md), [brief 5](../briefs/archive/05-review-question.md) (`review`), [brief 10](../briefs/10-text-drafts.md) (`draft`), [brief 11](../briefs/11-review-decisions.md) (review `decisions`)
 
 `ask.ts` is the `@parley/protocol/ask` entry: the tool's Zod input schema (`askInputSchema`), the
 result schema, `compileQuestions` and `shapeAnswer`. They're pure functions, shared by the server,
@@ -25,11 +25,14 @@ the app renders and holds its types.
   - `text`: `multiline`, `placeholder`, and `draft` (up to 4,000 characters), text the agent
     wrote for the user to edit in place. `number`: `min`, `max`, `integer`. `boolean`: nothing.
   - `path`: `pathKind` (`file` or `directory`), `multiple`, `extensions`.
-  - `review`: 1–30 `items`, each `{ label (≤120), detail?, preview? }`, and `defaultDecision`
-    (`approve`, `reject` or `none`).
+  - `review`: 1–30 `items`, each `{ label (≤120), detail?, preview? }`, optional `decisions`
+    (2–4 labels of 12 characters or fewer, used instead of approve and reject, the most cautious
+    last), and `defaultDecision`: `approve`, `reject` or `none`, or with `decisions` one of them
+    or `none`, defaulting to the first.
 - **Validation errors are written for the model.** The `superRefine` in `askInputSchema` catches
   the mistakes models make (options on a review, items on a choice, an "Other" option, a draft on
-  anything but text, duplicate labels or ids, `min` above `max`) and says what to do instead. The SDK rejects invalid input
+  anything but text, decisions on anything but review, duplicate labels, decisions or ids, a
+  `defaultDecision` that isn't one of the decisions, `min` above `max`) and says what to do instead. The SDK rejects invalid input
   before the tool runs, so the model sees the message and retries.
 - **Answer keys.** An explicit `id` wins; otherwise a slug of the header, `_2`, `_3` on
   collisions, with explicit ids reserved first (`questionIds`).
@@ -49,17 +52,21 @@ the app renders and holds its types.
   - `path`: a string, or an array of strings for `multiple`, with `x-path-kind` and
     `x-extensions` (dots stripped).
   - `review`: a tuple array, one object schema per item (`title`, `description`, `x-preview`,
-    `properties: { decision: approve|reject, comment }`), index-aligned with the data, with
-    `minItems`, `maxItems` and `additionalItems: false` pinning the length.
-    `x-default-decision` tells the renderer what to write into every entry on mount; under `none`
-    each item has `required: ['decision']` instead.
+    `properties: { decision, comment }`), index-aligned with the data, with `minItems`,
+    `maxItems` and `additionalItems: false` pinning the length. `decision.enum` is the decisions:
+    `['approve', 'reject']`, or the question's own, the first being the positive one. The renderer
+    reads them from there, so there's no `x-` key for them. `x-default-decision` (a decision, or
+    `none`) tells the renderer what to write into every entry on mount; under `none` each item has
+    `required: ['decision']` instead. Without `decisions` the schema is what it was before they
+    existed.
 - **Markdown** in `description` and `x-preview` renders without raw HTML and without images
   (`apps/desktop/src/forms/markdown.ts`).
 - **The result** (`askResultSchema`): `status` (`answered`, `dismissed`, `timed_out`,
   `cancelled`), `message`, `answers` keyed by id, and `note`. Each answer has `header`, `value`
   (a string, strings, a number, a boolean, or null for an optional question left blank), `custom`
   (the user's own text when it isn't an option) and, for a review, `review`: every item's
-  `{ label, decision, comment? }` in order, while `value` is the approved labels. A text question
+  `{ label, decision, comment? }` in order, while `value` is the labels of the items given the
+  first decision (the approved ones, without `decisions`). A text question
   with a draft adds `edited`: whether the final text differs from the draft, both trimmed and with
   line endings normalised, so re-wrapping the end isn't an edit. A draft cleared to blank is
   `value: null`, `edited: true`.
@@ -67,7 +74,9 @@ the app renders and holds its types.
   answers are quoted and marked as not one of the options. A draft reads "accepted the draft as
   written", or "edited the draft:" with the final text indented below, or "(cleared the
   draft)"; there's no diff. A review leads with the majority
-  decision and lists only the exceptions and the comments. A note is quoted after the answers.
+  decision and lists only the exceptions and the comments. With its own decisions it leads with
+  the counts, majority first ("Port 8, TODO 4, Skip 2 (of 14)", or "Port all 14"), then the
+  other decisions' items grouped by decision, then majority items with a comment. A note is quoted after the answers.
   Skips and timeouts each get a sentence that tells the model what to do next (don't ask again,
   continue and say what you assumed); a cancel only says so. `message` is the same text.
 - **Fixtures** in `packages/protocol/fixtures/` are `ask` tool input, at least one per question type.
@@ -83,8 +92,10 @@ the app renders and holds its types.
   branch. `review` has no downgrade: elicitation forms are flat.
 - **A review's data is always a full array** when it comes from the app (the renderer writes the
   defaults, or the form requires every decision). `shapeAnswer` still fills gaps from `fake-hub` or
-  partial data with the default, and under `none` that default is reject, so nothing is approved
-  that the user didn't approve.
+  partial data with the default, and under `none` with the last decision: reject, or the most
+  cautious of the agent's own if it followed the tool description. Nothing gets the first
+  decision that the user didn't give it. An entry whose decision isn't one of the question's is a
+  gap too.
 - **Tuples need `minItems` and `additionalItems`.** AJV's strict mode warns without them, and the
   desktop's `schemas.test.ts` compiles every fixture under strict mode.
 - **The tool description carries the shape and an example;** the fields aren't `.describe()`d one

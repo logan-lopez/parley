@@ -208,3 +208,139 @@ By hand, for Logan:
 - Four decision labels in the 440 px window with a long item label: does the row still read?
 
 Then stop. Ask Logan before committing.
+
+## Report
+
+*2026-10-11.*
+
+### Built
+
+- **Protocol** (`packages/protocol/src/ask.ts`, `form.ts`): `decisions` (2–4 labels, ≤12
+  characters) and a string `defaultDecision` on the question, checked in `superRefine` with the
+  brief's messages. The compiler puts the decisions in each item's `decision.enum` and the default
+  (the first decision unless given) in `x-default-decision`. `shapeAnswer` reads any of the
+  question's decisions, fills gaps with the default, or the last decision under `none`, and sets
+  `value` to the items given the first decision. Questions with their own decisions get the
+  grouped text from `describeDecisions`; without them, `describeReview` is untouched.
+  `ReviewDecision` and `DefaultDecision` are now `string`, and `REVIEW_DECISIONS` is the default
+  pair. The vocabulary comment in `form.ts` describes the enum.
+- **Fixtures:** `review-decisions.json` (8 dotfile configs, Port / TODO / Skip) and
+  `review-checklist.json` (5 hands-on checks for the panel window, Pass / Fail / Didn't try, under
+  `none`, each with what to look for).
+- **Renderer** (`ReviewRenderer.vue`, `styles.css`): reads the decisions from the first item's
+  enum. Approve/reject renders exactly as before. Any other set gets a labelled segmented control
+  per row: the first decision in the accent when pressed, the rest neutral (muted fill), and the
+  row bar accent or muted, never struck through. The header counts each decision, plus undecided.
+  `1`–`4` and Shift+`1`–`4` (matched on `event.code`) decide the row or all rows, and Space
+  cycles. `a`/`r` and the "all" links are off, and the hint line lists the digits with their labels.
+  The item label keeps 12rem; past that the control wraps under it, right-aligned, and a button
+  that still doesn't fit is cut with an ellipsis (its title has the full label).
+- **Card** (`AskCard.vue`): `if (event.defaultPrevented) return` before the digit branch.
+  `forms/keyboard.ts` documents the review exception to the card owning digits.
+- **Server** (`apps/server/src/tools/ask.ts`): one sentence added to the `review` line of the
+  tool description, as the brief worded it. Server instructions untouched.
+- **fake-hub / scorer / trials:** `fill` reads the decisions from the enum (`first`, `second`,
+  `other:` as specified). `questionsOf` records `review+decisions`. New prompt
+  `trials/prompts/sort-helpers.md` and its row in the trials README.
+
+### Deviations
+
+- **The counts line puts the majority first.** The brief's example ("Port 8, TODO 4, Skip 2")
+  happens to have the majority first in decision order too. When a later decision wins, decision
+  order read as "Port 2, TODO 2, Skip 4", where the lead wasn't the lead. It's now "Skip 4, Port
+  2, TODO 2 (of 8)", majority first and then decision order, with empty decisions left out.
+- **A decision labelled `none` is rejected**, with "…which is reserved for defaultDecision; pick
+  another label". It would have been ambiguous with `defaultDecision: 'none'`. Not in the brief's
+  list of checks.
+- **Comments on minority items are inline in their group:** `TODO: nvim ("after the plugin
+  audit"), jetbrains`. The brief's example only showed a comment on a majority item. Several
+  commented majority items read "Port, with comments: a ("…"), b ("…")".
+- **No "all" links for labelled decisions.** "Pass 0 · Fail 0 · Didn't try 0 · 5 undecided"
+  already fills the line in a 440 px window, so per the brief they're dropped, not measured.
+- **`.at(-1)` → index.** The desktop's TS lib doesn't include ES2022, and it typechecks
+  `@parley/protocol` source.
+
+### Defaults taken
+
+- **The fallback under `none`:** the last decision, as the brief's default says. The tool
+  description says to put the most cautious one last. With no `defaultDecision` the fallback is
+  the first decision, matching approve today. My first cut used the last decision there too,
+  which the existing "falls back to the default" test caught.
+
+### Acceptance
+
+1. **`pnpm --filter @parley/protocol test`:** pass, 69 tests (56 before). Every existing review
+   test passed unchanged. New: validation (accepts label/none defaults, decisions on a choice,
+   duplicates, `none` as a label, count and length limits, `defaultDecision` with and without
+   decisions), compiling (the enum, the first-decision default, a label default, `none` with
+   `required`), and `shapeAnswer` (all one decision, a mix with comments, a later majority,
+   gaps under a label default and under `none`, no default, `value` as the first decision's
+   labels, the result schema).
+2. **`pnpm --filter @parley/desktop test`:** pass, 34 tests. `review-decisions` and
+   `review-checklist` compile under strict AJV.
+3. **`pnpm typecheck`:** pass.
+4. **Gallery:** driven headless (Playwright, Chromium headless shell, since neither cached WebKit
+   matched an installed Playwright) on a separate Vite port, in light and dark, keyboard only:
+   - `review-decisions`: Shift+3 set all to Skip; `1`, `2`, Space (Skip → Port, wrapping),
+     Space twice, `c` + a comment + Esc on two rows; `5` did nothing. Cmd+Enter sent "Port 2, TODO
+     2, Skip 4", which reads "Skip 4, Port 2, TODO 2" after the deviation above.
+   - `review-checklist`: started with 5 undecided; Cmd+Enter didn't send ("Checks: 5 items
+     undecided"). Digits, a comment on the Fail, then sent.
+   - `review`, `review-diff`: `1` changed nothing, `a`/`r`/Space worked as before, and the hint
+     and "Approve all / Reject all" links were unchanged. Screenshots matched the old look.
+   - Four 11–12 character labels beside a 70-character item label (a temporary fixture, since
+     removed): the control wrapped under the label and nothing overflowed.
+5. **`fake-ask review-decisions` against the real app:** run after `pnpm install:desktop` and
+   your restart. You answered Port 6, TODO 1, Skip 1; the text was "Ports: Port 6, TODO 1, Skip 1
+   (of 8)", then "TODO: zellij" and "Skip: jetbrains". The run's own output got cut by my `tail`,
+   so that text was re-derived from the answer in `history.jsonl` through `shapeAnswer`.
+6. **Trials** (Claude Code 2.1.296, `claude-opus-5-5`):
+
+   | prompt | asked | first call valid | used |
+   | --- | --- | --- | --- |
+   | sort-helpers | 3/3 | 3/3 | – |
+   | prune-unused | 3/3 | 3/3 | 1/3 |
+
+   `sort-helpers` questions per run:
+   1. `review+decisions`: `["Approve", "Keep as-is", "Reject"]`, `none`, with the proposed action
+      in each item's label ("format-old.ts → delete").
+   2. `review+decisions`: `["Keep", "Fold", "Delete"]`, `none`. The intended shape, except Delete
+      is last, the opposite of "most cautious last".
+   3. Plain `review`, `none`, proposals in the labels ("dates.ts → fold into
+      scripts/migrate-v1.ts").
+
+   `prune-unused` still asks with one plain `review` in 3/3. `used` 1/3 (baseline 3/3) isn't a
+   regression: runs 1 and 3 kept `format-old.ts` exactly as the reply asked, but their summaries
+   don't contain "zephyr", the string `used` matches on.
+- Also run: `fake-host --server dist`, all 8 scenarios pass (the tool description changed).
+
+### Spot checks for Logan
+
+- **Four decision labels with a long item label, in the 440 px window:** does the row still read?
+  The gallery has no such fixture now. To see it, add a review with `"decisions": ["Port it
+  now", "Leave a TODO", "Skip for now", "Delete it"]` and a long label, or send one through
+  `fake-ask` with a file.
+- `fake-ask review-checklist` in the real window: that the neutral pressed state (muted fill)
+  reads as "chosen" next to the accent one, in your actual theme.
+
+### Docs updated
+
+- Guide: `docs/guide/question-types.md`, Review → "The agent's own decisions" (keys included).
+- Root `README.md`: the form-language line and the question-types feature line.
+- Architecture: `form-spec.md` (input, validation, compiled schema, result, text, the fallback
+  rule, History), `card-ui.md` (the review renderer, the digit exception, History),
+  `testing.md` (`fake-hub`'s review policies).
+- `apps/server/trials/README.md`: the prompt row and `review+decisions`.
+
+### Follow-ups
+
+- **Decision order in the trials.** One of the two runs with decisions put the destructive one
+  last. The fallback only matters for gaps, which the app never sends, but if the order matters
+  for reading the card, the tool description could say "the most cautious one last, like Keep"
+  more firmly. That's model-facing, so it's brief 12's full pass to judge.
+- **`used` is a string match.** It misses an answer acted on without being echoed (prune-unused
+  above). A diff-based check for prompts whose reply asks to keep something would be steadier.
+- **`fake-hub`'s `second` and `other:` policies** with custom decisions weren't exercised by a
+  trial (`sort-helpers` replies `first`).
+- **A non-review `defaultDecision`** used to be rejected by the enum; now any string passes on
+  other types and is ignored. Harmless, but it could get a "only applies to review" message.

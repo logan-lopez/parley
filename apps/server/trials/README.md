@@ -86,10 +86,11 @@ A changed prompt resets the comparison for that prompt.
 | prune-unused | ask | other:… | a list to sign off on: should be one `review` question |
 | config-format | ask | first | a single decision: should be a choice, not a `review` |
 | changelog-draft | ask | other:… | an edit-in-place draft: should be one `text` with a `draft` |
+| sort-helpers | ask | first | a per-item assignment: should be one `review` with `decisions` |
 
 The question types are in the `questions` field of each result, not scored. Check them by eye for
-`prune-unused`, `config-format` and `changelog-draft`; a text question with a draft shows as
-`text+draft`.
+`prune-unused`, `config-format`, `changelog-draft` and `sort-helpers`; a text question with a
+draft shows as `text+draft`, and a review with its own decisions as `review+decisions`.
 
 `project/` is `tally`, a small expense-CSV CLI with a planted sign bug in `fromCents`, unused
 helpers, unwired `reports/monthly.ts` and `reports/yearly.ts`, a superseded `utils/format-old.ts`

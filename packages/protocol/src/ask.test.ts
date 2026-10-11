@@ -282,6 +282,65 @@ describe('compileQuestions: review', () => {
   })
 })
 
+describe('review decisions: validation', () => {
+  const q = { header: 'Ports', question: 'Which?', type: 'review', items: [{ label: 'a' }, { label: 'b' }] }
+  const decisions = ['Port', 'TODO', 'Skip']
+
+  it('accepts decisions with a label default or none', () => {
+    expect(issues({ questions: [{ ...q, decisions }] })).toEqual([])
+    expect(issues({ questions: [{ ...q, decisions, defaultDecision: 'Skip' }] })).toEqual([])
+    expect(issues({ questions: [{ ...q, decisions, defaultDecision: 'none' }] })).toEqual([])
+  })
+
+  it('rejects decisions on other types', () => {
+    expect(issues({ questions: [{ header: 'Pick', question: '?', options: [{ label: 'A' }, { label: 'B' }], decisions }] }))
+      .toEqual(["question 1 has decisions but type 'choice'; decisions only apply to type 'review'"])
+  })
+
+  it('rejects duplicate decisions and a decision named none', () => {
+    expect(issues({ questions: [{ ...q, decisions: ['Port', 'Skip', 'Port'] }] }))
+      .toEqual(["question 1 has the decision 'Port' twice; decisions must be unique"])
+    expect(issues({ questions: [{ ...q, decisions: ['Port', 'none'] }] }))
+      .toEqual([expect.stringContaining("decision labelled 'none', which is reserved")])
+  })
+
+  it('limits the count and length of decisions', () => {
+    expect(issues({ questions: [{ ...q, decisions: ['Port'] }] })).toEqual([expect.stringContaining('2–4 decisions')])
+    expect(issues({ questions: [{ ...q, decisions: ['a', 'b', 'c', 'd', 'e'] }] })).toEqual(['a review takes at most 4 decisions'])
+    expect(issues({ questions: [{ ...q, decisions: ['Port', 'Not this time'] }] })).toEqual([expect.stringContaining('12 characters or fewer')])
+  })
+
+  it('checks defaultDecision against the decisions', () => {
+    expect(issues({ questions: [{ ...q, decisions, defaultDecision: 'approve' }] }))
+      .toEqual(["question 1's defaultDecision 'approve' isn't one of its decisions; use one of 'Port', 'TODO', 'Skip', or 'none'"])
+    expect(issues({ questions: [{ ...q, defaultDecision: 'Skip' }] }))
+      .toEqual([expect.stringContaining("question 1's defaultDecision 'Skip' isn't 'approve', 'reject' or 'none'")])
+    for (const d of ['approve', 'reject', 'none']) expect(issues({ questions: [{ ...q, defaultDecision: d }] })).toEqual([])
+  })
+})
+
+describe('compileQuestions: review decisions', () => {
+  const input = (extra: object) => parse({
+    questions: [{ header: 'Ports', question: '?', type: 'review', items: [{ label: 'a' }, { label: 'b' }], decisions: ['Port', 'TODO', 'Skip'], ...extra }],
+  })
+
+  it('puts the decisions in each item\'s enum, defaulting to the first', () => {
+    const ports = props(input({})).ports!
+    expect(ports['x-default-decision']).toBe('Port')
+    for (const item of ports.items as Record<string, any>[]) {
+      expect(item.properties.decision).toEqual({ type: 'string', enum: ['Port', 'TODO', 'Skip'] })
+      expect(item).not.toHaveProperty('required')
+    }
+  })
+
+  it('carries a label default, and none as a required decision per item', () => {
+    expect(props(input({ defaultDecision: 'Skip' })).ports!['x-default-decision']).toBe('Skip')
+    const none = props(input({ defaultDecision: 'none' })).ports!
+    expect(none['x-default-decision']).toBe('none')
+    expect((none.items as Record<string, unknown>[]).every((i) => (i.required as string[])?.[0] === 'decision')).toBe(true)
+  })
+})
+
 describe('shapeAnswer', () => {
   it('shapes every type, Other in single and multi select, and a skipped optional', () => {
     const input = parse({
@@ -485,6 +544,72 @@ describe('shapeAnswer', () => {
       })
       expect(askResultSchema.parse(structured)).toEqual(structured)
       expect(structured.answers!.upgrades!.value).toEqual(['vite 7 → 8'])
+    })
+  })
+
+  describe('review decisions', () => {
+    const decisions = ['Port', 'TODO', 'Skip']
+    const names = ['zellij', 'hermes', 'oh-my-zsh', 'nvim', 'helix', 'jetbrains', 'fzf', 'kitty']
+    const input = (extra: object = {}) => parse({
+      questions: [{ header: 'Ports', question: '?', type: 'review', decisions, items: names.map((label) => ({ label })), ...extra }],
+    })
+    const given = (...ds: string[]) => ({ status: 'answered' as const, data: { ports: ds.map((decision) => ({ decision })) } })
+
+    it('says one line when every item has the same decision', () => {
+      const { structured, text } = shapeAnswer(input(), given(...names.map(() => 'TODO')))
+      expect(text).toBe('The user answered:\n- Ports: TODO all 8')
+      expect(structured.answers!.ports).toEqual({
+        header: 'Ports',
+        value: [],
+        review: names.map((label) => ({ label, decision: 'TODO' })),
+      })
+    })
+
+    it('leads with the majority and groups the rest by decision, with comments', () => {
+      const data = {
+        ports: [
+          { decision: 'Port', comment: 'keep the old layout' },
+          { decision: 'Port' },
+          { decision: 'Port' },
+          { decision: 'TODO', comment: 'after the plugin audit' },
+          { decision: 'Port' },
+          { decision: 'TODO' },
+          { decision: 'TODO' },
+          { decision: 'Skip' },
+        ],
+      }
+      const { structured, text } = shapeAnswer(input(), { status: 'answered', data })
+      expect(text).toBe([
+        'The user answered:',
+        '- Ports: Port 4, TODO 3, Skip 1 (of 8)',
+        '  - TODO: nvim ("after the plugin audit"), jetbrains, fzf',
+        '  - Skip: kitty',
+        '  - Port, with a comment: zellij ("keep the old layout")',
+      ].join('\n'))
+      // `value` is the items given the first decision.
+      expect(structured.answers!.ports!.value).toEqual(['zellij', 'hermes', 'oh-my-zsh', 'helix'])
+      expect(structured.answers!.ports!.review![3]).toEqual({ label: 'nvim', decision: 'TODO', comment: 'after the plugin audit' })
+      expect(askResultSchema.parse(structured)).toEqual(structured)
+    })
+
+    it('leads with a later decision when it has the most, and leaves out empty ones', () => {
+      const { text, structured } = shapeAnswer(input(), given('Port', 'Skip', 'Skip', 'Skip', 'Skip', 'Skip', 'Skip', 'Port'))
+      expect(text).toBe('The user answered:\n- Ports: Skip 6, Port 2 (of 8)\n  - Port: zellij, kitty')
+      expect(structured.answers!.ports!.value).toEqual(['zellij', 'kitty'])
+    })
+
+    it('fills gaps with a label default, or the last decision under none', () => {
+      const partial = { status: 'answered' as const, data: { ports: [{ decision: 'Port' }, null, { decision: 'approve' }] } }
+      const todo = shapeAnswer(input({ defaultDecision: 'TODO' }), partial).structured.answers!.ports!
+      expect(todo.review!.map((r) => r.decision)).toEqual(['Port', ...names.slice(1).map(() => 'TODO')])
+      expect(todo.value).toEqual(['zellij'])
+
+      const none = shapeAnswer(input({ defaultDecision: 'none' }), partial)
+      expect(none.structured.answers!.ports!.review!.map((r) => r.decision)).toEqual(['Port', ...names.slice(1).map(() => 'Skip')])
+      expect(none.text).toBe('The user answered:\n- Ports: Skip 7, Port 1 (of 8)\n  - Port: zellij')
+
+      // No default given: the first decision, as approve is without decisions.
+      expect(shapeAnswer(input(), { status: 'answered', data: {} }).text).toBe('The user answered:\n- Ports: Port all 8')
     })
   })
 

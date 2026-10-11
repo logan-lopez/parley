@@ -10,8 +10,9 @@
 //   first | second | last   pick that option in every choice question
 //   other:<text>            answer every choice question with free text
 //
-// Review questions: `first` and `last` approve every item, `second` rejects
-// the first item, and `other:<text>` rejects it with <text> as the comment.
+// Review questions: `first` and `last` give every item the first decision
+// (approve), `second` gives the first item the second decision (reject), and
+// `other:<text>` does the same with <text> as its comment.
 // Text questions with a draft: `first` sends the draft unchanged, and
 // `other:<text>` appends <text> to it as its last line.
 //   skip                    dismiss
@@ -119,11 +120,13 @@ function fill(form: FormSpec, policy: string): Record<string, unknown> {
       case 'boolean': data[key] = policy !== 'second'; break
       case 'path': data[key] = prop.type === 'array' ? ['/tmp/example'] : '/tmp/example'; break
       case 'review': {
+        // The decisions are the items' enum: approve and reject, or the question's own.
         const other = policy.startsWith('other:') ? policy.slice(6) : undefined
-        const items: unknown[] = Array.isArray(prop.items) ? prop.items : []
+        const items: any[] = Array.isArray(prop.items) ? prop.items : []
+        const [first, second]: string[] = items[0]?.properties?.decision?.enum ?? ['approve', 'reject']
         data[key] = items.map((_, i) => {
-          if (i > 0 || (policy !== 'second' && other === undefined)) return { decision: 'approve' }
-          return { decision: 'reject', ...(other !== undefined && { comment: other }) }
+          if (i > 0 || (policy !== 'second' && other === undefined)) return { decision: first }
+          return { decision: second, ...(other !== undefined && { comment: other }) }
         })
         break
       }

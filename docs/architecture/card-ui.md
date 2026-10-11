@@ -6,7 +6,7 @@ Claude Desktop, and in the dev gallery.
 
 **Sources:** `apps/desktop/src/card/`, `apps/desktop/src/forms/`, `apps/desktop/src/platform.ts`, `apps/desktop/src/styles.css`, `apps/desktop/src/zoom.ts`, `apps/desktop/src/ZoomControl.vue`, `apps/desktop/src/App.vue`, `apps/desktop/src/main.ts`, `apps/desktop/src/gallery/`
 
-**History:** [brief 2](../briefs/archive/02-ask-tool-and-ui.md), [brief 5](../briefs/archive/05-review-question.md) (the review renderer), [brief 7](../briefs/archive/07-inline-cards.md) (the platform adapter, `html.inline`)
+**History:** [brief 2](../briefs/archive/02-ask-tool-and-ui.md), [brief 5](../briefs/archive/05-review-question.md) (the review renderer), [brief 7](../briefs/archive/07-inline-cards.md) (the platform adapter, `html.inline`), [brief 11](../briefs/11-review-decisions.md) (labelled review decisions)
 
 `card/AskCard.vue` is the card. It knows nothing about the hub or Tauri. `App.vue` is the window
 around it: the queue, Send and Skip, history. `forms/` holds the renderers, their registration, the
@@ -37,7 +37,8 @@ keyboard contract and markdown. `platform.ts` is the one way renderers reach the
   DOM only: `[data-question]` marks each question's root in order, `[data-pick="n"]` is what key
   n picks (clicked, or focused if it's a text input), `[data-primary]` is where focus lands, and
   `[data-advance-on-pick]` moves to the next question after a number-key pick. Other plain keys
-  belong to the renderer, handled on its own elements.
+  belong to the renderer, handled on its own elements. A renderer that takes a digit for itself
+  (a labelled review row) prevents it, and the card leaves prevented digits alone.
 - **Renderers** (`forms/renderers/`) are JSON Forms controls, one per `x-widget`, each ranked 10
   by `widgetTester` so it beats the vanilla set, which stays as the fallback
   (`forms/renderers.ts`). `useQuestion` gives each one its schema, data and frame.
@@ -54,7 +55,13 @@ keyboard contract and markdown. `platform.ts` is the one way renderers reach the
   - Review: one row per item. `j`/`k` or the arrows move, `a`/`r` approve or reject, Space toggles,
     `c` opens a comment, Shift+`a`/`r` decide all. It writes the default decision into every entry
     when it mounts (an empty entry per item under `none`). In a comment, Esc goes back to the row
-    instead of hiding the window.
+    instead of hiding the window. The decisions come from the items' `decision.enum`; any set
+    other than approve/reject is labelled: a segmented control per row (the first decision in
+    the accent, the rest neutral, no strike-through), counts per decision in the header and no
+    "all" links. Digits `1`–`4` (by `event.code`, so Shift+digit sets every row) decide the
+    focused row, and Space cycles; `a`/`r` are off. The row handler prevents the digit, and the
+    card skips a prevented event, so its `pick` never runs as well. Long labels wrap the control
+    under the item (the label keeps 12rem) and cut with an ellipsis if they still don't fit.
 - **Markdown** (`forms/markdown.ts`, markdown-it) renders model text with no raw HTML and no
   images. Links are linkified, and ```` ```diff ```` blocks color their lines. The webview never
   navigates: a capture-phase click handler in `main.ts` stops every link, and links open through

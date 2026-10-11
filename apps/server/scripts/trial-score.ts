@@ -168,7 +168,10 @@ function questionsOf(input: any): { header: string; type: string }[] {
   const questions = Array.isArray(input?.questions) ? input.questions : []
   return questions.map((q: any) => {
     const type = String(q?.type ?? 'choice')
-    return { header: String(q?.header ?? ''), type: type === 'text' && typeof q?.draft === 'string' ? 'text+draft' : type }
+    const variant = type === 'text' && typeof q?.draft === 'string' ? 'text+draft'
+      : type === 'review' && Array.isArray(q?.decisions) ? 'review+decisions'
+      : type
+    return { header: String(q?.header ?? ''), type: variant }
   })
 }
 

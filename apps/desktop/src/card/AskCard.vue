@@ -206,6 +206,8 @@ function onKey(event: KeyboardEvent) {
     return submit()
   }
 
+  // A renderer that used the digit itself (a review row with its own decisions) prevented it.
+  if (event.defaultPrevented) return
   if (/^[1-9]$/.test(event.key) && !mod && !isTyping(target)) {
     event.preventDefault()
     pick(Number(event.key))

@@ -19,15 +19,17 @@
 // - `boolean`: `type: boolean` with no default, so nothing is picked at first.
 // - `path`: `type: string`, or an array of strings when several are allowed.
 //   `x-path-kind: 'file' | 'directory'`, `x-extensions: ['ts', 'json']`.
-// - `review`: approve or reject each of a list of items. A tuple array, one
+// - `review`: one decision for each of a list of items. A tuple array, one
 //   `{ type: object, title, description?, 'x-preview'?, properties: { decision, comment } }`
 //   per item, index-aligned with the data, with `minItems`, `maxItems` and
-//   `additionalItems: false` pinning the length. `decision` is
-//   `'approve' | 'reject'`. `x-default-decision: 'approve' | 'reject' | 'none'`:
-//   the renderer writes the default into every entry when it mounts; under
-//   `'none'` each item has `required: ['decision']` instead. There's no
-//   elicitation downgrade for this one: elicitation forms are flat, with no
-//   arrays of objects.
+//   `additionalItems: false` pinning the length. `decision.enum` is the
+//   decisions, the same on every item: `['approve', 'reject']`, or the agent's
+//   own 2–4 labels (`['Port', 'TODO', 'Skip']`), the first one the positive
+//   one. The renderer reads them from the enum. `x-default-decision` is one of
+//   them or `'none'`: the renderer writes the default into every entry when it
+//   mounts; under `'none'` each item has `required: ['decision']` instead.
+//   There's no elicitation downgrade for this one: elicitation forms are flat,
+//   with no arrays of objects.
 //
 // Markdown in `description` and `x-preview` is rendered without raw HTML.
 
@@ -46,9 +48,12 @@ export interface ChoiceOptionSchema {
   'x-preview'?: string
 }
 
+// A review's decisions when the agent names none of its own.
 export const REVIEW_DECISIONS = ['approve', 'reject'] as const
-export type ReviewDecision = (typeof REVIEW_DECISIONS)[number]
-export type DefaultDecision = ReviewDecision | 'none'
+// A decision label: 'approve' or 'reject', or one of the agent's own.
+export type ReviewDecision = string
+// A decision label, or 'none' for no default.
+export type DefaultDecision = string
 
 // One entry of a review's tuple `items`.
 export interface ReviewItemSchema {
