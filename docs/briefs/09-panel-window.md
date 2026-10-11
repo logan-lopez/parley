@@ -83,14 +83,15 @@ All app changes are in `apps/desktop/src-tauri/`.
 - **`App.vue`:** leave the two `getCurrentWindow().hide()` calls alone. They work on the panel
   (brief 8, check 5), and routing them through a Rust command buys nothing.
 - **Docs, same change:**
-  - `CLAUDE.md`, Conventions: add a line saying that on macOS the main window is a non-activating
-    `NSPanel` (`tauri-nspanel`, pinned rev), that Parley is menu-bar only (Accessory), and that
-    AeroSpace doesn't manage the panel. Point at `window.rs`.
-  - `CLAUDE.md`, Open / deferred: remove the `tauri-nspanel` line, and replace the AeroSpace
-    float-rule line with the dotfiles note below.
+  - [`docs/architecture/desktop-shell.md`](../architecture/desktop-shell.md): say that the
+    `tauri-nspanel` crate is pinned to a rev, that Parley is menu-bar only (Accessory), and
+    whatever else this brief changes about the panel. The page already describes the panel and
+    AeroSpace.
+  - [`FUTURE.md`](FUTURE.md): remove the `tauri-nspanel` bullet under Parked, which also carries
+    the AeroSpace float-rule note, and record the dotfiles note below wherever it still applies.
   - `docs/briefs/README.md`: take `tauri-nspanel` out of Not built.
-  - The Obsidian project doc already records the go and menu-bar only (2026-10-10). Touch it only
-    if something here changes a decision.
+  - The decisions table in `docs/briefs/README.md` already records the go and menu-bar only
+    (2026-10-10). Touch it only if something here changes a decision.
 - **Dotfiles, drafted for Logan:** after the installed build passes acceptance, edit
   `~/Dev/dotfiles` (not `~/.config`; see `~/CLAUDE.md`) and leave it uncommitted for him to
   review. Don't touch the other uncommitted changes in that repo.

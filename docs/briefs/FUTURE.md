@@ -1,7 +1,11 @@
 # Future briefs
 
 These aren't scheduled. Each has enough here to turn into a brief when it's picked up. The
-decisions themselves live in the project doc in Obsidian.
+decisions themselves are the table in [`README.md`](README.md#decisions-already-made).
+
+Logan's own idea notes for Parley are in his Obsidian folder,
+`~/Writing/Books/TheBond/Development/Projects/Parley/` (`Ideas.md`). A section or bullet drawn from
+one names it.
 
 ## MCP Apps in claude.ai and ChatGPT (remote transport)
 
@@ -68,12 +72,20 @@ in brief 7. Rare enough to wait for a brief that touches `AppClient` anyway.
   agent should tell the user something without waiting for an answer.
 - **More widgets:** rank, slider, A/B and annotate. Pick one up when a real ask needs it and the
   harness shows models would use it. `preview` covers most A/B comparisons.
-- **`tauri-nspanel`:** still deferred, as it was in the MVP. Scheduled as a spike in brief 8, for
-  the AeroSpace workspace jump.
+- **`tauri-nspanel`:** deferred past the MVP, then scheduled for the AeroSpace workspace jump.
+  Brief 8's spike said go, and [brief 9](09-panel-window.md) makes it real. The AeroSpace float
+  rule for Parley is drafted in `~/Dev/dotfiles/.aerospace.toml` and not yet reviewed; brief 9
+  drafts that cleanup too.
 - **A committed card harness:** brief 7 checked the card in headless Chromium with an ext-apps
   `AppBridge` host page, the real server and `fake-hub` (14 checks). It lives only in that
   session's scratchpad. Commit it as a `pnpm` script if the card starts changing often. The cost is
   a `playwright-core` dev dependency.
+- **Opening the window from a notification:** `tauri-plugin-notification` shows only a title, body,
+  icon and sound on desktop; `onAction` is mobile-only, so a click can't open the window. The
+  hotkey and the tray are the way in. Revisit if the plugin gains desktop actions, or if a native
+  notification (a small Rust bridge) becomes worth it.
+- **Parley inside inn:** the card could later live as a component in inn, Logan's chat app, which
+  is an MCP host. Nothing to do until inn wants model → user questions of its own.
 - **One dark token block:** `src/styles.css` keeps two identical dark blocks in step by hand.
   `light-dark()` with `color-scheme` would make it one, if WKWebView's support is confirmed. Worth
   doing the next time the tokens change.

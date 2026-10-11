@@ -30,7 +30,8 @@ and move to `archive/` when they're done. Ideas that aren't scheduled yet are in
 ## Done
 
 Archived in [`archive/`](archive/). They record what was asked for and why, not how the code works
-now. For that, read `CLAUDE.md` and the code.
+now. For that, read `AGENTS.md`, the [architecture pages](../architecture/README.md) and the
+code.
 
 The MVP (briefs 1–2, done 2026-10-09) is a working equivalent of Claude's built-in question tool
 (`AskUserQuestion`), served over MCP, with answers given in a floating Parley window instead of
@@ -76,6 +77,18 @@ Don't relitigate these. If one turns out to be wrong in practice, stop and say s
 | Panel on more than one monitor | Shows at its remembered position. No following the cursor or the focused screen. | Smallest change. Revisit if the two-monitor check in brief 9 says it's a problem (Logan, 2026-10-10). |
 | Inline answers and the window | The window races the card quietly (no notification). The server sends an inline answer to the app (`resolved`), and history records it as answered in the chat. | The user already sees the card. History stays complete (2026-10-10). |
 | History when the window and the card both answer | The server's first-in answer wins, and `resolved` overwrites the window's answered or skipped record | History matches what the agent got (brief 7, 2026-10-10). |
+| Shell | Tauri 2, with capabilities-based permissions (not the Tauri 1 allowlist). The Rust side stays small: tray, hotkey, window, socket hub. | Official plugins cover the tray, hotkey, notifications and file dialog, and the UI is web tech, so the same card ships as an MCP Apps view ([desktop shell](../architecture/desktop-shell.md)). |
+| UI stack | Vue 3 (Composition API, `<script setup>`), JSON Forms 3.x Vue bindings, the three `@jsonforms/*` at the same exact version | JSON Forms renders arbitrary JSON Schema with custom renderers picked by testers, which is what a raw-schema `ask_form` will need ([the card](../architecture/card-ui.md)). |
+| Widget hints | `x-widget` (and other `x-*` keys) inside the JSON Schema. The model never writes a JSON Forms UI schema. | UI schemas are verbose. The testers match on `x-widget`, and JSON Forms lays out the rest ([form spec](../architecture/form-spec.md#decisions)). |
+| MCP SDK and TypeScript | MCP TypeScript SDK v2 (`@modelcontextprotocol/server`, Zod 4), not `@modelcontextprotocol/sdk` 1.x. TypeScript ~6.0. | The TS SDK is the most complete one. vue-tsc was scaffolded against TS 6; TS 7 is `latest` on npm. |
+| Result shape | `structuredContent` (with an `outputSchema`) plus a text block, and `message` in the structured result repeats the text | Claude Code shows the model only `structuredContent` when there's an `outputSchema`; Claude Desktop shows only the text (2026-10-09, [the ask tool](../architecture/ask-tool.md)). |
+| Tool loading in Claude Code | `ask` sets `_meta["anthropic/alwaysLoad"]: true` | Claude Code defers MCP tools behind ToolSearch, and the model skipped `ask`. In trials it went from asking on 1 of 3 prompts to 2 of 3 (brief 3). |
+| Timeouts | Default 1800 s, at most 3600, with a progress notification every 15 s | 600 s kept timing out during real work. The keep-alives reset Claude Code's 30 min idle timeout ([the ask tool](../architecture/ask-tool.md#claude-code-and-long-asks)). |
+| Note for the agent | Every card has an optional note, sent with an answer or a skip, returned as `note` and quoted in the text. Additive, so the wire stays v1. | Covers "answer plus context", "skipped because…", and feedback on Parley itself (2026-10-09). |
+| Several sessions at once | One queue in one app, one card at a time, each labelled `client · project dir` | Two sessions ask at once on day one (MVP). |
+| `review` question | 1–30 items, each approved or rejected with an optional comment; `defaultDecision` approve, reject or none. The answer's `value` is the approved labels, with every item's decision in `review`. | The richer input coding agents would use daily (brief 5, 2026-10-10). A tuple array on the wire, so a raw-schema form could send the same. |
+| `'unsafe-eval'` in the CSP | Allowed | AJV (JSON Forms validation) compiles validators with `new Function`. Markdown renders without raw HTML, so model text can't inject script. |
+| `ask_async` / `collect` | Not built; parked in [`FUTURE.md`](FUTURE.md#parked) | Claude Code backgrounds a call still running after 2 min and delivers the answer when it lands; `collect()` would depend on the model remembering to poll (2026-10-10). |
 
 ## Not built
 
