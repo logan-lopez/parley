@@ -13,11 +13,10 @@ and move to `archive/` when they're done. Ideas that aren't scheduled yet are in
   inputs drawn from real asks (10–12): drafts you edit in place, review with the agent's own
   decisions, and `capture` for pasted output and screenshots, with copy buttons on code. Seven
   question types.
-- In flight: nothing. No brief is written.
-- Next: pick a direction (`ideate`) or brief one from [`FUTURE.md`](FUTURE.md). The live
-  candidates: "Hands-on runs", which builds on 10–12, and the trial tune-ups, led by
-  `crash-output` never asking (0/3): agents hand over a command in chat instead of asking with
-  `capture`, and the lever is the server instructions.
+- In flight: briefs 13–14 are written, not started: colors in card markdown, then HTML and SVG
+  previews drawn as pictures. 14 runs the trial pass for both.
+- Next: brief 13. After 14, the [`FUTURE.md`](FUTURE.md) candidates are still "Hands-on runs" and
+  the trial tune-ups, led by `crash-output` never asking (0/3).
 - Loose ends waiting on Logan: the hand checks from briefs 10–12 (a draft and a copy button in
   Desktop's inline card, a screenshot pasted into the installed build, whether a real debugging
   session reaches for `capture`, the draft box's height, four long decision labels in the 440 px
@@ -26,7 +25,11 @@ and move to `archive/` when they're done. Ideas that aren't scheduled yet are in
 
 ## Open
 
-Nothing open.
+13. [`13-color-chips.md`](13-color-chips.md): a color in a code span shows a swatch, and a
+    ```` ```palette ```` block shows large labelled swatches, in every markdown surface.
+14. [`14-fenced-previews.md`](14-fenced-previews.md): ```` ```html preview ```` and
+    ```` ```svg preview ```` blocks drawn as SVG images (static by construction, no CSP change),
+    starting with a foreignObject spike; then the trial pass for 13–14.
 
 ## Done
 
@@ -118,6 +121,8 @@ Don't relitigate these. If one turns out to be wrong in practice, stop and say s
 | Drafts to edit | `draft` on `text` only. The answer is the final text plus `edited`; no diff in the message. | The "Commit as written / Not yet" cards took two round trips for a one-word change (Logan, 2026-10-10, brief 10). |
 | Review decisions | `review` takes 2–4 `decisions` of its own; without them it's approve/reject, unchanged. `value` is the labels given the first decision, so the answer union stays the same. Gaps under `none` fall back to the last decision, the most cautious one. | Per-item assignments were being crammed into multi-select plus Other (Logan, 2026-10-10, brief 11). |
 | Pasted screenshots | `capture` saves them as PNGs under `$APPDATA/captures/<day>/` and returns the paths. Window-only, like `path`; text-only captures work inline. Day folders go after 30 days; Clear deletes them all except those still in a waiting ask's draft. | Claude Code shows only `structuredContent` for tools with an `outputSchema`, so image content would likely be dropped, and a path is something the model can read (2026-10-10, brief 12). |
+| Colors in markdown | A color in a code span (hex or a CSS color function, no named colors) gets a swatch; a ```` ```palette ```` block draws labelled swatches. Set through the CSSOM, never a `style` attribute. | Prose `#123` is as often an issue number. The release CSP drops `style` attributes while dev allows them (Logan, 2026-10-11, brief 13). |
+| HTML and SVG previews | Opt-in ```` ```html preview ```` / ```` ```svg preview ```` fences, drawn as an SVG image from a `data:` URL at a size the agent gives. A sandboxed iframe is the fallback only if the spike fails. | Plain ```` ```html ```` is how agents show source. An image is static by construction and needs no CSP change in the window or the card; inline sanitized HTML would rest on the sanitizer alone in the card (Logan, 2026-10-11, brief 14). |
 | `ask_async` / `collect` | Not built; parked in [`FUTURE.md`](FUTURE.md#parked) | Claude Code backgrounds a call still running after 2 min and delivers the answer when it lands; `collect()` would depend on the model remembering to poll (2026-10-10). |
 
 ## Not built
