@@ -12,6 +12,8 @@
 //
 // Review questions: `first` and `last` approve every item, `second` rejects
 // the first item, and `other:<text>` rejects it with <text> as the comment.
+// Text questions with a draft: `first` sends the draft unchanged, and
+// `other:<text>` appends <text> to it as its last line.
 //   skip                    dismiss
 //   none                    never answer (let it time out or be cancelled)
 //   delay:<s>:<policy>      wait, then apply the policy
@@ -103,7 +105,16 @@ function fill(form: FormSpec, policy: string): Record<string, unknown> {
         data[key] = prop.type === 'array' ? [label] : label
         break
       }
-      case 'text': data[key] = 'as you see fit'; break
+      case 'text': {
+        // A draft: sent as written under `first`, with the free text as a new
+        // last line under `other:<text>`.
+        const draft: string | undefined = prop['x-draft']
+        const other = policy.startsWith('other:') ? policy.slice(6) : undefined
+        if (draft !== undefined && policy === 'first') data[key] = draft
+        else if (draft !== undefined && other !== undefined) data[key] = `${draft}\n${other}`
+        else data[key] = 'as you see fit'
+        break
+      }
       case 'number': data[key] = prop.minimum ?? 1; break
       case 'boolean': data[key] = policy !== 'second'; break
       case 'path': data[key] = prop.type === 'array' ? ['/tmp/example'] : '/tmp/example'; break

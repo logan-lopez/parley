@@ -11,6 +11,10 @@
 //   options on the property. Multi select is `type: array, uniqueItems: true`
 //   with the options on `items`. This is MCP elicitation's titled-enum shape.
 // - `text`: `type: string`. `x-multiline: true` for a textarea, `x-placeholder`.
+//   `x-draft`: text the agent wrote, which the renderer writes into the data on
+//   mount for the user to edit or send as it is. A draft with a line break
+//   always comes with `x-multiline`. Elicitation downgrade: `x-draft` becomes
+//   `default` on the string field.
 // - `number`: `type: number` or `integer`, with optional `minimum`/`maximum`.
 // - `boolean`: `type: boolean` with no default, so nothing is picked at first.
 // - `path`: `type: string`, or an array of strings when several are allowed.

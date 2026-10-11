@@ -321,6 +321,14 @@ kbd {
 textarea.text-input { resize: vertical; min-height: 60px; line-height: 1.4; }
 .text-input::placeholder { color: var(--faint); }
 .text-input[aria-invalid='true'] { border-color: var(--danger); }
+/* A draft fits its text, 4 to 12 lines, then scrolls. Where field-sizing
+   isn't supported, the renderer's `rows` estimate stands in. */
+textarea.text-input.draft {
+  field-sizing: content;
+  min-height: calc(4lh + 14px);
+  max-height: calc(12lh + 14px);
+}
+.draft-reset { align-self: flex-start; }
 
 .number-row { display: flex; align-items: center; gap: 10px; }
 .number-input { width: 120px; font-variant-numeric: tabular-nums; }

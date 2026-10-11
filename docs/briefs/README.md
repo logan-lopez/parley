@@ -23,7 +23,7 @@ and move to `archive/` when they're done. Ideas that aren't scheduled yet are in
 
 ## Open
 
-10. [`10-text-drafts.md`](10-text-drafts.md): `text` takes a `draft` the user edits in place
+10. [`10-text-drafts.md`](10-text-drafts.md) (done, awaiting review): `text` takes a `draft` the user edits in place
     (commit messages, PR bodies); the answer says whether they changed it.
 11. [`11-review-decisions.md`](11-review-decisions.md): `review` takes 2–4 `decisions` of its own
     (Port / TODO / Skip, Pass / Fail) instead of approve and reject.

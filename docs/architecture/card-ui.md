@@ -44,7 +44,11 @@ keyboard contract and markdown. `platform.ts` is the one way renderers reach the
   - Choice: option cards as radios or checkboxes; with an Other branch, the last row is a text
     input, and typing in it selects it. ↑/↓ move among options and Space picks. A focused option's
     `x-preview` shows below the list.
-  - Text, number: inputs with the schema's limits.
+  - Text, number: inputs with the schema's limits. A text question with `x-draft` writes the
+    draft into the data on mount (not over data already there: a restored draft or history), sizes
+    its textarea to the text, 4 to 12 lines (`field-sizing: content`, with a `rows` estimate as
+    the fallback), puts the caret at the end on first focus rather than selecting all, and shows
+    "Reset to draft" once the text differs.
   - Boolean: Yes and No, with `y` and `n`, and the arrow keys between them.
   - Path: a button that opens the native picker through `pickPaths`; paths only, never contents.
   - Review: one row per item. `j`/`k` or the arrows move, `a`/`r` approve or reject, Space toggles,

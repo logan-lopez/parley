@@ -1,0 +1,19 @@
+{
+  "title": "Committing the cents fix",
+  "questions": [
+    {
+      "header": "Commit",
+      "question": "Here's the commit message I'd use. Edit it, or send it as it is.",
+      "type": "text",
+      "draft": "fix(money): keep the sign on negative amounts in fromCents\n\nAmounts below zero lost their sign: -5 cents printed as $0.05 and\n-150 as $-1.50. They now print as -$0.05 and -$1.50.\n\nAdds cases for zero, -1 and -150 to money.test.ts."
+    },
+    {
+      "header": "PR title",
+      "question": "And the pull request title, if you want one opened.",
+      "type": "text",
+      "draft": "Keep the sign on negative amounts in fromCents",
+      "placeholder": "Leave blank to skip the PR",
+      "required": false
+    }
+  ]
+}

@@ -28,7 +28,8 @@ and when to reach for it.
   app's disconnect path.
 - **`fake-hub`** stands in for the app on a socket, logs every ask (`--log`), and answers on a
   script: `first`, `second`, `last`, `other:<text>`, `skip`, `none`, `delay:<s>:<policy>` (for a review, `first` and `last` approve every item,
-  `second` rejects the first, and `other:<text>` rejects it with the text as its comment). Each
+  `second` rejects the first, and `other:<text>` rejects it with the text as its comment; for a
+  text draft, `first` sends it unchanged and `other:<text>` appends the text as its last line). Each
   ask takes the next `--reply`; the last repeats. `--old-app` rejects `resolved` as an app from
   before inline cards does. Point a server at it with `PARLEY_SOCKET` and `PARLEY_NO_LAUNCH=1`.
 - **`fake-host`** stands in for an MCP Apps host (Claude Desktop). It advertises the extension,

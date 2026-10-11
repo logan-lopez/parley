@@ -24,6 +24,11 @@ recommendation usually comes first, marked "(Recommended)". Press a number to pi
 A one-line box, or a larger one for longer answers, sometimes with a hint inside. In the larger
 box Enter is a new line; send with Cmd+Enter.
 
+Sometimes the box starts with a draft the agent wrote, such as a commit message or a PR
+description, with the cursor at the end. Edit it in place, or press Cmd+Enter to send it as it is.
+Once you've changed it, "Reset to draft" under the box puts the agent's version back. The agent is
+told whether you accepted the draft or edited it, and gets your final text.
+
 ## Number
 
 A number box, with the allowed range beside it ("Whole number, 1 to 10") when there is one. Out of

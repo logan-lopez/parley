@@ -14,7 +14,7 @@ Ask the user 1–4 questions in a form and wait for their answers.
 
 Each question has a \`header\` (a chip of 12 characters or fewer), the \`question\` (markdown) and a \`type\`:
 - choice (default): 2–6 \`options\`, each { label, description?, preview? }. \`preview\` is markdown shown while the option is focused, such as a code sketch. \`multiSelect\` allows several. The user can always type their own answer instead, unless \`allowOther: false\`.
-- text: \`multiline\`, \`placeholder\`.
+- text: \`multiline\`, \`placeholder\`. \`draft\`: text you wrote for the user to edit in place, such as a commit message or PR description; the answer says whether they changed it.
 - number: \`min\`, \`max\`, \`integer\`.
 - boolean: an explicit Yes or No.
 - path: a native file or folder picker that returns paths only. \`pathKind\` ('file' or 'directory'), \`multiple\`, \`extensions\`.

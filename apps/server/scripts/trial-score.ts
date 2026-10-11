@@ -166,7 +166,10 @@ function readCodex(events: any[]): Stream {
 
 function questionsOf(input: any): { header: string; type: string }[] {
   const questions = Array.isArray(input?.questions) ? input.questions : []
-  return questions.map((q: any) => ({ header: String(q?.header ?? ''), type: String(q?.type ?? 'choice') }))
+  return questions.map((q: any) => {
+    const type = String(q?.type ?? 'choice')
+    return { header: String(q?.header ?? ''), type: type === 'text' && typeof q?.draft === 'string' ? 'text+draft' : type }
+  })
 }
 
 function statusOf(value: unknown): string | null {

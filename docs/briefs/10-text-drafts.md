@@ -182,3 +182,112 @@ By hand, for Logan:
   editing it in the window feel right?
 
 Then stop. Ask Logan before committing.
+
+## Report
+
+*2026-10-10, implemented in one session. Not committed.*
+
+### Built
+
+- **Protocol** (`packages/protocol/src/ask.ts`, `form.ts`): `draft` (1–4,000 characters) on the
+  question; the wrong-type message from the brief in `superRefine`; `x-draft` in the compiled
+  `text` schema, with `x-multiline` forced by a line break; `edited` on the answer, comparing
+  trimmed text with normalised line endings; "accepted the draft as written", "edited the draft:"
+  with the final text indented, and "(cleared the draft)". `x-draft` and its `default` downgrade
+  are in the vocabulary comment.
+- **Renderer** (`apps/desktop/src/forms/renderers/TextRenderer.vue`, `styles.css`): writes the
+  draft into the data on mount unless data is already there or the view is read-only; the caret
+  goes to the end on first focus, never select-all; "Reset to draft" (`tabindex="-1"`) once the
+  text differs; a draft textarea fits its text, 4 to 12 lines, then scrolls.
+- **Server** (`apps/server/src/tools/ask.ts`): the one sentence on the `text` line. Server
+  instructions untouched.
+- **fake-hub and the scorer:** `first` sends a draft unchanged and `other:<text>` appends a line;
+  `questionsOf` records `text+draft`.
+- **Trials:** `trials/prompts/changelog-draft.md` as written in the brief, with its row in the
+  trials README.
+- **Fixture:** `packages/protocol/fixtures/text-draft.json`, a five-line commit message and an
+  optional one-line PR title with a placeholder.
+
+### Deviations
+
+- **Sizing uses `field-sizing: content`, not just `rows`.** A `rows` estimate at 72 characters a
+  line cut off the fixture's last line in WebKit at the window's width and 110% zoom. Draft
+  textareas get a `.draft` class with `field-sizing: content` between `4lh` and `12lh`, so they
+  also grow as you type. The `rows` estimate (now 60 characters a line) stays as the fallback.
+  Playwright's WebKit 27.2 supports it; the system Safari is 27.0, and the textarea in Logan's run
+  of the installed build showed no problem, though he wasn't asked about sizing specifically.
+
+### Defaults taken
+
+- **How tall the textarea grows:** fit the draft, up to 12 lines, then scroll (the default).
+
+### Acceptance
+
+1. **Protocol tests: pass,** 56 tests. New: draft validation (allowed with a placeholder, the
+   wrong-type message on choice and boolean, the length limits), compiling a draft including a
+   line break forcing multiline over `multiline: false`, and `shapeAnswer` for untouched, edited,
+   whitespace and CRLF only (not edited), and an optional draft cleared to blank.
+2. **Desktop tests: pass,** 32 tests; `text-draft compiles without warnings` under strict AJV.
+3. **`pnpm typecheck`: pass.**
+4. **Gallery: pass,** in headless WebKit (Playwright 1.64, WebKit 27.2) on a second Vite at port
+   1430: both drafts prefilled, light and dark; the textarea focused with the caret at 230 of
+   230; Reset hidden before an edit, shown after, and restoring the draft; Cmd+Enter untouched
+   gives "accepted the draft as written" twice; an edited commit plus a cleared title gives the
+   indented text and "(cleared the draft)". Screenshots weren't kept in the repo.
+5. **`fake-ask text-draft` against the real app: pass.** Reinstalled with `pnpm install:desktop`,
+   and Logan reopened Parley. He sent the commit untouched and edited the PR title, after trying
+   Reset to draft ("Reset to draft works"): "Commit: accepted the draft as written", "PR title:
+   edited the draft: Keeping the sign on negative amounts in fromCents", with `edited` false and
+   true.
+6. **Trial `--prompt changelog-draft --runs 3`: 3/3 asked, 3/3 first call valid, 3/3 used, no
+   errors** (`results/2026-10-11T03-10-19-833Z.jsonl`, Claude Code 2.1.296, `claude-opus-5-5`).
+   Questions per run:
+
+   | run | questions |
+   | --- | --- |
+   | 1 | Wording `text+draft`, Code fix `choice` |
+   | 2 | Wording `text+draft`, The fix `choice` |
+   | 3 | Fix missing `choice`, Wording `text+draft` |
+
+   Every run drafted the entry. Every run also asked a `choice` about the fix itself, because the
+   prompt says "the fix" and `tally`'s `fromCents` still has its planted bug. That's the prompt,
+   not the tool (Follow-ups).
+
+The fake-hub policies were also checked through `fake-ask` against `fake-hub` on a temp socket:
+`first` gives "accepted the draft as written", and `other:` gives "edited the draft" with the text
+as the last line.
+
+### Spot checks for Logan
+
+- A real Claude Code session with a commit to make: does the model reach for a draft, and does
+  editing it in the window feel right?
+- The draft box's height in the window: it should fit a commit message without scrolling and grow
+  as you add lines. If it stays at 4 lines whatever the draft, the system WebKit lacks
+  `field-sizing`, and the fallback estimate is doing the work.
+- A draft in Claude Desktop's inline card (not checked): prefilled, and Cmd+Enter sends it.
+
+### Docs updated
+
+- `docs/architecture/form-spec.md`: `draft` in what the model writes, the validation list, `x-draft`
+  over the wire, `edited` in the result, the draft lines in the text, History.
+- `docs/architecture/card-ui.md`: the text renderer's draft behavior.
+- `docs/architecture/testing.md`: fake-hub's draft policies.
+- `docs/guide/question-types.md`: a paragraph on drafts under Text.
+- `README.md`: the question types line mentions drafts.
+- `apps/server/trials/README.md`: the prompt row and the `text+draft` note.
+
+### Follow-ups
+
+- **`changelog-draft` asks about a fix that isn't there.** All three runs added a choice question
+  about the missing `fromCents` fix. Rewording it ("I've fixed…" plus applying the fix in a
+  fixture, or pointing at the bug as already fixed) would make the drafted entry the only
+  question. The prompts are the spec, so it's Logan's call, best before brief 12's full pass.
+- **"Draft" now means two things in the guide.** `answering.md` (and the README's keyboard line)
+  call the user's unsent answers, kept across a restart, "drafts". With the agent's drafts in
+  `question-types.md`, one might want a different word.
+- **A cleared draft comes back after a restart.** If the user empties a draft box and Parley
+  restarts before they send, the saved form has no value, so the renderer writes the draft back
+  in. Rare, and harmless, since they'd see it.
+- **An orphan Vite on port 1420** (from 17:15, no `tauri dev` around it) is still running in
+  `apps/desktop`. Left alone. It blocks `pnpm --filter @parley/desktop dev` and `pnpm app` until
+  it's stopped.

@@ -116,6 +116,28 @@ describe('review validation', () => {
   })
 })
 
+describe('draft validation', () => {
+  const q = { header: 'Commit', question: 'Message?', draft: 'fix: a thing' }
+
+  it('allows a draft on text, with or without a placeholder', () => {
+    expect(issues({ questions: [{ ...q, type: 'text' }] })).toEqual([])
+    expect(issues({ questions: [{ ...q, type: 'text', placeholder: 'A message' }] })).toEqual([])
+  })
+
+  it('points a draft on another type at text', () => {
+    expect(issues({ questions: [{ ...q, options: [{ label: 'A' }, { label: 'B' }] }] }))
+      .toEqual(["question 1 has a draft but type 'choice'; drafts only apply to type 'text', so set type to 'text' or drop it"])
+    expect(issues({ questions: [{ ...q, type: 'boolean' }] }))
+      .toEqual(["question 1 has a draft but type 'boolean'; drafts only apply to type 'text', so set type to 'text' or drop it"])
+  })
+
+  it('limits draft length', () => {
+    expect(issues({ questions: [{ ...q, type: 'text', draft: '' }] })).toHaveLength(1)
+    expect(issues({ questions: [{ ...q, type: 'text', draft: 'x'.repeat(4001) }] }))
+      .toEqual([expect.stringContaining('4,000 characters or fewer')])
+  })
+})
+
 describe('questionIds', () => {
   it('slugs headers', () => {
     expect(questionIds([{ header: 'Auth method' }, { header: 'Café / Bar!' }, { header: '2FA' }, { header: '???' }]))
@@ -179,6 +201,20 @@ describe('compileQuestions', () => {
     const p = props(fixture('text'))
     expect(p.name).toEqual({ 'x-widget': 'text', title: 'Name', description: expect.any(String), type: 'string', minLength: 1, 'x-placeholder': 'e.g. @parley/forms' })
     expect(p.notes).toEqual({ 'x-widget': 'text', title: 'Notes', description: expect.any(String), type: 'string', 'x-multiline': true })
+  })
+
+  it('compiles a draft, and a line break in it forces multiline', () => {
+    const p = props(fixture('text-draft'))
+    expect(p.commit).toEqual({
+      'x-widget': 'text', title: 'Commit', description: expect.any(String), type: 'string', minLength: 1,
+      'x-multiline': true, 'x-draft': expect.stringContaining('fix(money): keep the sign'),
+    })
+    expect(p.pr_title).toEqual({
+      'x-widget': 'text', title: 'PR title', description: expect.any(String), type: 'string',
+      'x-placeholder': 'Leave blank to skip the PR', 'x-draft': 'Keep the sign on negative amounts in fromCents',
+    })
+    const forced = props(parse({ questions: [{ header: 'Note', question: '?', type: 'text', multiline: false, draft: 'a\nb' }] }))
+    expect(forced.note!['x-multiline']).toBe(true)
   })
 
   it('compiles number and integer', () => {
@@ -449,6 +485,50 @@ describe('shapeAnswer', () => {
       })
       expect(askResultSchema.parse(structured)).toEqual(structured)
       expect(structured.answers!.upgrades!.value).toEqual(['vite 7 → 8'])
+    })
+  })
+
+  describe('drafts', () => {
+    const input = fixture('text-draft')
+    const commit = input.questions[0]!.draft!
+    const title = input.questions[1]!.draft!
+
+    it('says the draft was accepted as written', () => {
+      const { structured, text } = shapeAnswer(input, { status: 'answered', data: { commit, pr_title: title } })
+      expect(structured.answers).toEqual({
+        commit: { header: 'Commit', value: commit, edited: false },
+        pr_title: { header: 'PR title', value: title, edited: false },
+      })
+      expect(text).toBe('The user answered:\n- Commit: accepted the draft as written\n- PR title: accepted the draft as written')
+      expect(askResultSchema.parse(structured)).toEqual(structured)
+    })
+
+    it('quotes an edited draft, indented', () => {
+      const edited = 'Fix negative amounts in `fromCents`.\n\nAmounts below zero lost their sign.'
+      const { structured, text } = shapeAnswer(input, { status: 'answered', data: { commit: edited, pr_title: 'Fix fromCents' } })
+      expect(structured.answers!.commit).toEqual({ header: 'Commit', value: edited, edited: true })
+      expect(text).toBe([
+        'The user answered:',
+        '- Commit: edited the draft:',
+        '  Fix negative amounts in `fromCents`.',
+        '  ',
+        '  Amounts below zero lost their sign.',
+        '- PR title: edited the draft:',
+        '  Fix fromCents',
+      ].join('\n'))
+    })
+
+    it('ignores whitespace at the ends and line endings', () => {
+      const crlf = `\n${commit.replace(/\n/g, '\r\n')}  \n`
+      const { structured, text } = shapeAnswer(input, { status: 'answered', data: { commit: crlf, pr_title: title } })
+      expect(structured.answers!.commit!.edited).toBe(false)
+      expect(text).toContain('- Commit: accepted the draft as written')
+    })
+
+    it('says an optional draft was cleared', () => {
+      const { structured, text } = shapeAnswer(input, { status: 'answered', data: { commit, pr_title: '  ' } })
+      expect(structured.answers!.pr_title).toEqual({ header: 'PR title', value: null, edited: true })
+      expect(text).toContain('- PR title: (cleared the draft)')
     })
   })
 

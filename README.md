@@ -56,8 +56,8 @@ How each part works, as you use it, is in [the guide](docs/guide/README.md).
   you out of the app you're in.
 - [Cards built for the keyboard](docs/guide/answering.md): number keys to pick, Cmd+Enter to send,
   a note for the agent, drafts that survive a restart.
-- [Six question types](docs/guide/question-types.md): choice (with your own answer), text, number,
-  yes/no, path, and review.
+- [Six question types](docs/guide/question-types.md): choice (with your own answer), text (or a
+  draft to edit in place), number, yes/no, path, and review.
 - [Claude Code](docs/guide/claude-code.md) asks block until you answer, for up to an hour.
 - [Claude Desktop](docs/guide/claude-desktop.md) shows the card inline in the chat as well.
 - [History](docs/guide/history.md) of every ask for 30 days, searchable.

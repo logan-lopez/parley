@@ -7,7 +7,7 @@ question.
 
 **Sources:** `packages/protocol/src/ask.ts`, `packages/protocol/src/form.ts`, `packages/protocol/fixtures/`
 
-**History:** [brief 2](../briefs/archive/02-ask-tool-and-ui.md), [brief 5](../briefs/archive/05-review-question.md) (`review`)
+**History:** [brief 2](../briefs/archive/02-ask-tool-and-ui.md), [brief 5](../briefs/archive/05-review-question.md) (`review`), [brief 10](../briefs/10-text-drafts.md) (`draft`)
 
 `ask.ts` is the `@parley/protocol/ask` entry: the tool's Zod input schema (`askInputSchema`), the
 result schema, `compileQuestions` and `shapeAnswer`. They're pure functions, shared by the server,
@@ -22,13 +22,14 @@ the app renders and holds its types.
   type:
   - `choice`: 2–6 `options`, each `{ label (≤60), description?, preview? }`, plus `multiSelect`
     and `allowOther` (default on).
-  - `text`: `multiline`, `placeholder`. `number`: `min`, `max`, `integer`. `boolean`: nothing.
+  - `text`: `multiline`, `placeholder`, and `draft` (up to 4,000 characters), text the agent
+    wrote for the user to edit in place. `number`: `min`, `max`, `integer`. `boolean`: nothing.
   - `path`: `pathKind` (`file` or `directory`), `multiple`, `extensions`.
   - `review`: 1–30 `items`, each `{ label (≤120), detail?, preview? }`, and `defaultDecision`
     (`approve`, `reject` or `none`).
 - **Validation errors are written for the model.** The `superRefine` in `askInputSchema` catches
-  the mistakes models make (options on a review, items on a choice, an "Other" option, duplicate
-  labels or ids, `min` above `max`) and says what to do instead. The SDK rejects invalid input
+  the mistakes models make (options on a review, items on a choice, an "Other" option, a draft on
+  anything but text, duplicate labels or ids, `min` above `max`) and says what to do instead. The SDK rejects invalid input
   before the tool runs, so the model sees the message and retries.
 - **Answer keys.** An explicit `id` wins; otherwise a slug of the header, `_2`, `_3` on
   collisions, with explicit ids reserved first (`questionIds`).
@@ -39,7 +40,10 @@ the app renders and holds its types.
     free text allowed they're in `anyOf`, followed by `{ type: 'string', minLength: 1, title:
     'Other' }`; without, in `oneOf`. Single select is a `string`; multi select is an array with
     `uniqueItems` and the options on `items`.
-  - `text`: a `string`, `minLength: 1` when required, `x-multiline`, `x-placeholder`.
+  - `text`: a `string`, `minLength: 1` when required, `x-multiline`, `x-placeholder`, and
+    `x-draft`. A draft with a line break always gets `x-multiline`. The renderer writes the draft
+    into the data on mount, so an untouched draft satisfies `required`; in an elicitation
+    downgrade it would be the field's `default`.
   - `number`: `number` or `integer`, with `minimum`/`maximum`.
   - `boolean`: a `boolean` with no default, so nothing is picked at first.
   - `path`: a string, or an array of strings for `multiple`, with `x-path-kind` and
@@ -55,9 +59,14 @@ the app renders and holds its types.
   `cancelled`), `message`, `answers` keyed by id, and `note`. Each answer has `header`, `value`
   (a string, strings, a number, a boolean, or null for an optional question left blank), `custom`
   (the user's own text when it isn't an option) and, for a review, `review`: every item's
-  `{ label, decision, comment? }` in order, while `value` is the approved labels.
+  `{ label, decision, comment? }` in order, while `value` is the approved labels. A text question
+  with a draft adds `edited`: whether the final text differs from the draft, both trimmed and with
+  line endings normalised, so re-wrapping the end isn't an edit. A draft cleared to blank is
+  `value: null`, `edited: true`.
 - **The text** (`shapeAnswer`) leads with "The user answered:" and one line per question. Own
-  answers are quoted and marked as not one of the options. A review leads with the majority
+  answers are quoted and marked as not one of the options. A draft reads "accepted the draft as
+  written", or "edited the draft:" with the final text indented below, or "(cleared the
+  draft)"; there's no diff. A review leads with the majority
   decision and lists only the exceptions and the comments. A note is quoted after the answers.
   Skips and timeouts each get a sentence that tells the model what to do next (don't ask again,
   continue and say what you assumed); a cancel only says so. `message` is the same text.

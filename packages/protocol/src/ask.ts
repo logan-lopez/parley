@@ -50,6 +50,7 @@ const question = z.object({
   // text
   multiline: z.boolean().optional(),
   placeholder: z.string().optional(),
+  draft: z.string().min(1).max(4000, 'a draft is 4,000 characters or fewer').optional(),
   // number
   min: z.number().optional(),
   max: z.number().optional(),
@@ -131,6 +132,10 @@ export const askInputSchema = z.object({
       ctx.addIssue({ code: 'custom', path: at('items'), message: `question ${n} has type 'choice' but also has items; items only apply to type 'review', and a choice question takes \`options\`` })
     }
 
+    if (q.draft !== undefined && q.type !== 'text') {
+      ctx.addIssue({ code: 'custom', path: at('draft'), message: `question ${n} has a draft but type '${q.type}'; drafts only apply to type 'text', so set type to 'text' or drop it` })
+    }
+
     if (q.type === 'number' && q.min !== undefined && q.max !== undefined && q.min > q.max) {
       ctx.addIssue({ code: 'custom', path: at('min'), message: `question ${n} has min ${q.min} above max ${q.max}` })
     }
@@ -159,6 +164,7 @@ export const askResultSchema = z.object({
     value: answerValue,        // null: an optional question left blank
     custom: z.string().optional(),   // the user's own text, when it isn't one of the options
     review: z.array(reviewOutcome).optional(),   // a review's every item, in order; `value` is the approved labels
+    edited: z.boolean().optional(),  // a text question with a draft: whether the final text differs from it
   })).optional(),
   note: z.string().optional(),       // free text the user added for the agent, with an answer or a skip
 })
@@ -242,8 +248,10 @@ function compileQuestion(q: Question): JsonSchema {
         'x-widget': 'text', ...base,
         type: 'string',
         ...(required && { minLength: 1 }),
-        ...(q.multiline && { 'x-multiline': true }),
+        // A draft with a line break needs a textarea, whatever `multiline` says.
+        ...((q.multiline || q.draft?.includes('\n')) && { 'x-multiline': true }),
         ...(q.placeholder && { 'x-placeholder': q.placeholder }),
+        ...(q.draft && { 'x-draft': q.draft }),
       }
     case 'number':
       return {
@@ -331,6 +339,10 @@ function quote(text: string): string {
   return text.replace(/^/gm, '> ')
 }
 
+function indent(text: string): string {
+  return text.replace(/^/gm, '  ')
+}
+
 function readAnswer(q: Question, raw: unknown): Answer {
   const header = q.header
   const blank: Answer = { header, value: null }
@@ -346,8 +358,13 @@ function readAnswer(q: Question, raw: unknown): Answer {
         ...(custom.length && { custom: custom.join(', ') }),
       }
     }
-    case 'text':
-      return isFilled(raw) ? { header, value: raw } : blank
+    case 'text': {
+      const answer = isFilled(raw) ? { header, value: raw } : blank
+      if (q.draft === undefined) return answer
+      // Trimmed, with line endings normalised: re-wrapping the end of a draft isn't an edit.
+      const edited = !isFilled(raw) || plain(raw) !== plain(q.draft)
+      return { ...answer, edited }
+    }
     case 'number':
       return typeof raw === 'number' && Number.isFinite(raw) ? { header, value: raw } : blank
     case 'boolean':
@@ -380,7 +397,11 @@ function readAnswer(q: Question, raw: unknown): Answer {
 const OWN_ANSWER = '(their own answer, not one of the options)'
 
 // `labels` tells a choice's own-text values apart from its options.
-function describe({ header, value, custom }: Answer, labels: Set<string>): string {
+function describe({ header, value, custom, edited }: Answer, labels: Set<string>): string {
+  if (edited !== undefined) {
+    if (typeof value !== 'string') return `- ${header}: (cleared the draft)`
+    return edited ? `- ${header}: edited the draft:\n${indent(value)}` : `- ${header}: accepted the draft as written`
+  }
   if (value === null) return `- ${header}: (left blank)`
   if (typeof value === 'boolean') return `- ${header}: ${value ? 'Yes' : 'No'}`
   if (typeof value === 'number') return `- ${header}: ${value}`
@@ -389,7 +410,7 @@ function describe({ header, value, custom }: Answer, labels: Set<string>): strin
     return `- ${header}: ${value.map((v) => (own(v) ? `"${v}" ${OWN_ANSWER}` : v)).join(', ')}`
   }
   if (custom !== undefined) return `- ${header}: "${value}" ${OWN_ANSWER}`
-  if (value.includes('\n')) return `- ${header}:\n${value.replace(/^/gm, '  ')}`
+  if (value.includes('\n')) return `- ${header}:\n${indent(value)}`
   return `- ${header}: ${value}`
 }
 
@@ -414,6 +435,10 @@ function duration(seconds: number): string {
   if (seconds < 120) return `${seconds} seconds`
   const minutes = Math.round(seconds / 60)
   return `${minutes} minutes`
+}
+
+function plain(text: string): string {
+  return text.replace(/\r\n?/g, '\n').trim()
 }
 
 function isFilled(value: unknown): value is string {
