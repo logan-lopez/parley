@@ -51,6 +51,30 @@ the agent still gets the answer. `cancel` has the same gap. The fix is small: `A
 them and sends them after the next connect, alongside the pending asks it already re-sends. Found
 in brief 7. Rare enough to wait for a brief that touches `AppClient` anyway.
 
+## Hands-on runs: "go do these steps and report back"
+
+**The question:** should an agent be able to hand Logan a short test plan (steps, what each
+should show, commands to run) and get back a pass/fail per step with evidence, in one ask that
+stays on screen while he works in other apps?
+
+**Why it matters:** hands-on checks are where asking breaks down. Brief 1's acceptance came back
+as chains of single-question cards and multi-selects of passed checks. Briefs 8 and 9 opened with
+a 20-minute "Go now / Not now" that got "Not now" twice, and brief 9's checks were waived in the
+end. The inn composer-gap debugging went through five `text` cards in a row, each with a snippet
+to copy and a DOM dump to paste back. (From `ideate`, 2026-10-10, mining the session transcripts
+and `history.jsonl`.)
+
+**Likely shape:** builds on briefs 10–12. A `steps` question, each step `{ do, expect?, command? }`,
+answered with brief 11's custom decisions (Pass / Fail / Didn't try) and brief 12's capture for
+evidence. The desktop side adds a pinned state, where Esc doesn't hide the panel and it floats over
+the app being tested; the non-activating panel (brief 9) is what makes that possible without
+stealing focus. A run probably wants the full 3600 s timeout by default. Pinning touches
+`window.rs`, so it's a Rust change.
+
+**Kill criteria:** briefs 11 and 12 used together (a review with Pass / Fail decisions, plus a
+capture question) cover the real cases. Then the pin is the only new thing, and it's only worth
+it if Logan finds himself reopening the panel mid-test.
+
 ## Parked
 
 - **Inline answers when the model never calls `ask_wait`:** with show-then-wait (brief 7), an answer
