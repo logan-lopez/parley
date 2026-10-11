@@ -160,3 +160,117 @@ what broke and how hard it would be to fix, and the follow-up:
   that changes its design.
 
 Then stop. Don't merge the branch. Ask Logan before deleting it.
+
+## Report
+
+*2026-10-10.* **Go.** AeroSpace ignores a non-activating panel completely. It shows on the
+workspace you're on, focus never leaves the app you were in, and nothing the brief listed broke.
+Both kill criteria are clear. Logs: [`assets/08/baseline.txt`](assets/08/baseline.txt) (installed
+build) and [`assets/08/panel.txt`](assets/08/panel.txt) (spike).
+
+### Built (on `spike/nspanel`, uncommitted)
+
+- `Cargo.toml`: `tauri-nspanel` from git, branch `v2.1` (resolved to `ef6e309`), macOS target only.
+- `lib.rs`: `.plugin(tauri_nspanel::init())`, and `window::init_panel` first in `setup`. The
+  plugin line isn't `cfg`-gated (a builder chain can't be), so it compiles on macOS only. That's
+  the MVP platform anyway.
+- `window.rs`: a `ParleyPanel` class (`can_become_key_window: true`,
+  `can_become_main_window: false`, `is_floating_panel: true`). `init_panel` converts `main` and
+  adds the `nonactivating_panel` mask with `add_style_mask`. On macOS, `show` is
+  `show_and_make_key()` with no `set_focus`, and `toggle` uses the panel's `is_visible` / `hide`.
+  The old path stays under `cfg(not(target_os = "macos"))`.
+- Not touched: the JS hides in `App.vue` and the close handler. They still call Tauri's `hide()`,
+  and they work on the panel (check 5).
+
+Found in the crate: `set_style_mask` also calls the private `_setPreventsActivation:`, because a
+class swap skips `NSPanel`'s init and the style mask alone doesn't tell WindowServer. That private
+call is probably what makes this work, and it's the part a macOS update could break.
+`show_and_make_key` is `makeKeyWindow` + `orderFrontRegardless`.
+
+### Deviations
+
+- **Baseline on the installed build, not a `main` checkout.** The installed `Parley.app` was a
+  2026-10-10 main build, and `window.rs` / `tauri.conf.json` haven't changed since brief 2, so it
+  had the same show path without a rebuild.
+- **`pnpm app` ran with its own Vite on port 1430**
+  (`pnpm tauri dev --config '{"build":{"devUrl":"http://localhost:1430","beforeDevCommand":"pnpm dev --port 1430"}}'`).
+  Another session's Vite held 1420.
+- **Check 1 has no marker in `panel.txt`.** `aerospace subscribe` was writing with `>`, so my
+  marker line was overwritten. The logger was restarted in append mode from check 2 on. The check 1
+  section is everything above the first `---` line.
+
+### Defaults taken
+
+- The open question (should the panel stay key while Logan types elsewhere?) went to its default:
+  the panel takes keys when shown, as the window did.
+
+### Acceptance
+
+Automatic:
+
+- `cargo check`: passes, no warnings.
+- `pnpm typecheck`: passes.
+- `pnpm --filter @parley/desktop test`: 31/31 pass.
+
+Baseline (installed build): reproduced. Hidden on 1, Cmd+Ctrl+P from 2:
+
+```
+{"_event":"focus-changed","windowId":75399,"workspace":"1"}
+{"_event":"focused-workspace-changed","prevWorkspace":"2","workspace":"1"}
+```
+
+Logan's hands-on checks (spike build, another session running alongside):
+
+1. **The jump: pass.** Shown and hidden on 1, then Cmd+Ctrl+P from 2: the panel showed on 2 and
+   Logan stayed there. The log has no event for Parley's window at all. The only workspace switches
+   are the ones Logan made himself (2 → 1 → 2).
+2. **AeroSpace's view: pass.** `aerospace list-windows --monitor all` doesn't list the panel, visible
+   or hidden. `list-apps` shows `parley` (`NULL-APP-BUNDLE-ID`, dev build). With the panel up and
+   holding keys, AeroSpace's focused window is still kitty (67469). So the `layout floating` rule
+   never applies, and AeroSpace can't put the panel off-screen, because it doesn't manage it. While
+   visible, the panel stays on top as you switch workspaces (1 ↔ 2).
+3. **Keyboard: pass.** Typing, Cmd+A/C/V/Z, Tab, Cmd+N note, Cmd+Y history, and Cmd+= / Cmd+- zoom
+   all work. Number-key picks and the submit key worked on a choice ask (answered:
+   `Layout: Single package`, `Node: 26 current`), and Cmd+. skipped the text ask (`dismissed`).
+4. **Focus return: pass.** After Esc, typing lands in kitty with no Cmd+Tab. Same after clicking
+   inside the panel first. The log was empty for the whole check: AeroSpace never saw focus leave
+   kitty.
+5. **The other hides: pass.** Answering the last ask hid the panel (the JS hide), and so did the
+   close button. Neither needs routing through Rust.
+6. **Window state: pass.** A move and resize survived a hide/show, and a quit from the tray plus a
+   relaunch (saved as 1085×921 at 1593,243).
+7. **The `path` question: pass.** The native picker opened in front, on the current workspace, and
+   returned `/Users/logan/Downloads/tokyokeyboard_tokyo60_layout_60_hhkb_2026-10-02.json`. No
+   `window-detected` and no Parley event in the log.
+8. **Links: pass.** The runbook link opened in Chrome. AeroSpace followed Chrome to its workspace S
+   (`focus-changed 40776 S`): that's the browser activating, as a link from any app does, not a
+   Parley jump.
+9. **The tray: pass.** A left click toggles the panel, and the menu's Show Parley shows it, in both
+   cases at the remembered position.
+
+Not checked: more than one monitor, whether Parley still shows in Cmd+Tab, and Esc from the history
+view.
+
+### Follow-up: what the real-build brief needs
+
+- **Pin the dependency.** `tauri-nspanel` has no crates.io release for v2.1, so use
+  `rev = "ef6e309"`, not `branch`. The lockfile pins it today, but `cargo update` would move it.
+- **Hides.** All four already work on the panel. Only the Rust hides (`toggle`) go through the
+  panel API; `App.vue` and the close handler can stay on Tauri's `hide()`. The real build should
+  pick one path on purpose, not by accident.
+- **Remove the window-focus TODO** in `window.rs` (the nspanel half is done). Decide whether the
+  `cfg(not(target_os = "macos"))` branch stays, and gate the plugin registration, since the builder
+  chain doesn't compile anywhere else.
+- **Dotfiles (Logan's call, not changed here):** `parley-follow.sh` and its call in
+  `exec-on-workspace-change` do nothing now. AeroSpace can't see the panel, so the script finds no
+  window to move, and the panel floats over every workspace on its own. The Parley
+  `on-window-detected` float rule in `.aerospace.toml` is dead for the same reason. Both can go once
+  the real build is installed. Keep them until then: the installed build still needs them.
+- **`CLAUDE.md`:** in Open / deferred, the `tauri-nspanel` line becomes done, and the AeroSpace
+  float-rule line goes. Add a line under Conventions: on macOS the main window is a non-activating
+  panel, so it never activates the app, and AeroSpace doesn't manage it.
+- **README:** take `tauri-nspanel` out of Not built.
+- **Behaviour to decide:** the panel now floats over every workspace while visible. Logan saw this
+  and didn't object, and it's what `parley-follow.sh` was approximating, but it's new.
+- **Risk to note:** the private `_setPreventsActivation:` inside the crate. If a macOS release drops
+  it, the symptom is the jump coming back. Re-run check 1 after major macOS updates.

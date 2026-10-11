@@ -1,0 +1,44 @@
+{"_event":"focused-workspace-changed","prevWorkspace":"2","workspace":"2"}
+{"_event":"focus-changed","windowId":67469,"workspace":"2"}
+{"_event":"focus-changed","windowId":31431,"workspace":"1"}
+{"_event":"focused-workspace-changed","prevWorkspace":"2","workspace":"1"}
+{"_event":"focus-changed","windowId":67469,"workspace":"2"}
+{"_event":"focused-workspace-changed","prevWorkspace":"1","workspace":"2"}
+{"_event":"focus-changed","windowId":31431,"workspace":"1"}
+{"_event":"focused-workspace-changed","prevWorkspace":"2","workspace":"1"}
+{"_event":"focus-changed","windowId":67469,"workspace":"2"}
+{"_event":"focused-workspace-changed","prevWorkspace":"1","workspace":"2"}
+--- check 2 (panel visible, queried)
+--- check 2: panel visible on ws 2. list-windows --monitor all: parley not listed. Focused window per AeroSpace: 67469 kitty
+{"_event":"focused-workspace-changed","prevWorkspace":"2","workspace":"2"}
+{"_event":"focus-changed","windowId":67469,"workspace":"2"}
+{"_event":"focus-changed","windowId":31431,"workspace":"1"}
+{"_event":"focused-workspace-changed","prevWorkspace":"2","workspace":"1"}
+{"_event":"focus-changed","windowId":67469,"workspace":"2"}
+{"_event":"focused-workspace-changed","prevWorkspace":"1","workspace":"2"}
+{"_event":"focus-changed","windowId":1751,"workspace":"C"}
+{"_event":"focused-workspace-changed","prevWorkspace":"2","workspace":"C"}
+{"_event":"focus-changed","windowId":67469,"workspace":"2"}
+{"_event":"focused-workspace-changed","prevWorkspace":"C","workspace":"2"}
+--- check 2b done (panel stays on top across ws 1/2); check 3 done (keys work); --- check 4: Esc
+--- check 5: last-ask hide + close button
+{"_event":"focus-changed","windowId":40776,"workspace":"S"}
+{"_event":"focused-workspace-changed","prevWorkspace":"2","workspace":"S"}
+{"_event":"focus-changed","windowId":67469,"workspace":"2"}
+{"_event":"focused-workspace-changed","prevWorkspace":"S","workspace":"2"}
+--- check 6 + 9: move/resize, tray show
+{"_event":"focus-changed","windowId":40776,"workspace":"S"}
+{"_event":"focused-workspace-changed","prevWorkspace":"2","workspace":"S"}
+{"_event":"focus-changed","windowId":31732,"workspace":"S"}
+{"_event":"focus-changed","windowId":67469,"workspace":"2"}
+{"_event":"focused-workspace-changed","prevWorkspace":"S","workspace":"2"}
+{"_event":"focus-changed","windowId":31732,"workspace":"S"}
+{"_event":"focused-workspace-changed","prevWorkspace":"2","workspace":"S"}
+--- check 6 + 9 pass (state survives hide/show + restart; tray click toggles; tray menu shows); --- check 7: path picker
+{"_event":"focus-changed","windowId":67469,"workspace":"2"}
+{"_event":"focused-workspace-changed","prevWorkspace":"S","workspace":"2"}
+--- check 7 result in; --- check 8: link
+{"_event":"focus-changed","windowId":40776,"workspace":"S"}
+{"_event":"focused-workspace-changed","prevWorkspace":"2","workspace":"S"}
+{"_event":"focus-changed","windowId":67469,"workspace":"2"}
+{"_event":"focused-workspace-changed","prevWorkspace":"S","workspace":"2"}

@@ -18,6 +18,7 @@ pub fn run() {
         .plugin(tauri_plugin_fs::init())
         .plugin(tauri_plugin_notification::init())
         .plugin(tauri_plugin_opener::init())
+        .plugin(tauri_nspanel::init())
         // Remember position and size, but never restore visibility: the
         // window starts hidden and only the hotkey or tray shows it.
         .plugin(
@@ -27,6 +28,8 @@ pub fn run() {
         )
         .manage(hub::Hub::default())
         .setup(|app| {
+            #[cfg(target_os = "macos")]
+            window::init_panel(app.handle())?;
             hub::start(app.handle().clone())?;
             tray::init(app)?;
             #[cfg(desktop)]
