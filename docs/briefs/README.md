@@ -25,10 +25,10 @@ and move to `archive/` when they're done. Ideas that aren't scheduled yet are in
 
 ## Open
 
-13. [`13-color-chips.md`](13-color-chips.md): a color in a code span shows a swatch, and a
-    ```` ```palette ```` block shows large labelled swatches, in every markdown surface.
-14. [`14-fenced-previews.md`](14-fenced-previews.md): ```` ```html preview ```` and
-    ```` ```svg preview ```` blocks drawn as SVG images (static by construction, no CSP change),
+13. [`13-color-chips.md`](13-color-chips.md) (done, awaiting review): a color in a code span shows a swatch,
+    and a ```` ```palette ```` block shows large labelled swatches, in every markdown surface.
+14. [`14-fenced-previews.md`](14-fenced-previews.md): blocks marked `html preview` and
+    `svg preview`, drawn as SVG images (static by construction, no CSP change),
     starting with a foreignObject spike; then the trial pass for 13–14.
 
 ## Done

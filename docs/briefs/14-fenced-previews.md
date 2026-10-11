@@ -19,7 +19,7 @@ renders as a picture of its content in place of the code:
 ```
 ````
 
-```` ```svg preview ```` does the same for SVG. Like brief 13, this is markdown rendering: there's
+An ```` ```svg preview ```` block does the same for SVG. Like brief 13, this is markdown rendering: there's
 no new field, no question type and no wire change. It works anywhere block markdown renders,
 including an option's `preview` (where ↑/↓ flips between layouts in one spot), a review item's
 `preview` and the question text, in the window, the inline card, the gallery and history.

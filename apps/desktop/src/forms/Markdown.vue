@@ -1,10 +1,23 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import { copyText, openExternal } from '../platform'
 import { renderMarkdown } from './markdown'
 
 const props = defineProps<{ source: string; inline?: boolean }>()
 const html = computed(() => renderMarkdown(props.source, props.inline))
+
+// After every render: v-html replaces the DOM. Swatch colors go through the
+// CSSOM, which the CSP allows; a `style` attribute in the markup it drops.
+const root = ref<HTMLElement>()
+
+function paint() {
+  for (const el of root.value?.querySelectorAll<HTMLElement>('[data-color]') ?? []) {
+    el.style.setProperty('--swatch', el.dataset.color!)
+  }
+}
+
+onMounted(paint)
+watch(html, paint, { flush: 'post' })
 
 // Links open in the default browser; the webview never navigates. A code
 // block's button copies it.
@@ -49,5 +62,5 @@ async function copyBlock(button: HTMLButtonElement) {
 
 <template>
   <!-- markdown-it escapes HTML (html: false), so this is safe to inject. -->
-  <component :is="inline ? 'span' : 'div'" class="md" v-html="html" @click="onClick" @auxclick.prevent="onClick" />
+  <component :is="inline ? 'span' : 'div'" ref="root" class="md" v-html="html" @click="onClick" @auxclick.prevent="onClick" />
 </template>

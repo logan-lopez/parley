@@ -266,6 +266,34 @@ kbd {
 .md .diff-hunk { color: var(--accent); }
 .md .diff-meta { color: var(--muted); font-weight: 600; }
 
+/* Colors. `--swatch` is set from `data-color` by Markdown.vue. The checker
+   under it shows alpha; the hairline shows white on light and black on dark. */
+.md .swatch {
+  --checker: conic-gradient(#c8c8c8 25%, #fff 0 50%, #c8c8c8 0 75%, #fff 0) 0 0 / 6px 6px;
+  display: inline-block;
+  border-radius: 3px;
+  background: linear-gradient(var(--swatch, transparent), var(--swatch, transparent)), var(--checker);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--text) 25%, transparent);
+}
+.md .color-chip { white-space: nowrap; }
+.md .color-chip .swatch {
+  width: 0.9em;
+  height: 0.9em;
+  margin-right: 4px;
+  vertical-align: -0.1em;
+}
+.md .palette { display: flex; flex-wrap: wrap; gap: 8px; margin: 0 0 8px; }
+.md .palette-entry { display: flex; flex-direction: column; gap: 2px; width: 64px; min-width: 0; }
+.md .palette-entry .swatch { width: 64px; height: 40px; border-radius: 6px; }
+.md .palette-name, .md .palette-value {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 11px;
+}
+.md .palette-name { font-weight: 600; }
+.md .palette-value { padding: 0; background: none; color: var(--muted); font-size: 10.5px; }
+
 /* Choice */
 
 .options { display: flex; flex-direction: column; gap: 4px; }

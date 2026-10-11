@@ -71,7 +71,9 @@ the app renders and holds its types.
   in the host's iframe, and nowhere to save an image). The server doesn't send it `inline`, and
   the card shows it read-only ([inline cards](inline-cards.md)).
 - **Markdown** in `description` and `x-preview` renders without raw HTML and without images
-  (`apps/desktop/src/forms/markdown.ts`).
+  (`apps/desktop/src/forms/markdown.ts`). Colors in code spans get swatches, and a palette
+  fence (```` ```palette ````) draws swatches ([the card](card-ui.md)); the schema carries them as
+  plain markdown, so a client without Parley's renderer shows the text.
 - **The result** (`askResultSchema`): `status` (`answered`, `dismissed`, `timed_out`,
   `cancelled`), `message`, `answers` keyed by id, and `note`. Each answer has `header`, `value`
   (a string, strings, a number, a boolean, or null for an optional question left blank), `custom`

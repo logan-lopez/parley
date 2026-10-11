@@ -209,3 +209,100 @@ By hand, for Logan:
 - Whether the false-positive chip on `` `#123` `` bothers him.
 
 Then stop. Ask Logan before committing.
+
+## Report
+
+Built 2026-10-11 on `main`, uncommitted, on top of fe76e0e (the briefs' own commit).
+
+### Built
+
+- **Colors** (`apps/desktop/src/forms/colors.ts`, new). `isColor`: hex of 3, 4, 6 or 8 digits, or
+  one call to `rgb`, `rgba`, `hsl`, `hsla`, `hwb`, `lab`, `lch`, `oklab`, `oklch` or `color`,
+  with no nested parentheses, then `CSS.supports('color', …)` where `CSS` exists. `parsePalette`:
+  1 to 12 non-blank lines (`PALETTE_MAX`), each a color then an optional name. The color ends at
+  `)` for functions. Any bad line gives `undefined`.
+- **Rendering** (`forms/markdown.ts`). A `code_inline` override emits
+  `<code class="color-chip" data-color>` with a swatch span for colors, and the default
+  otherwise. The `fence` override draws a `palette` block that parses as the pinned markup, and
+  everything else as before, with its copy button. Palette values carry a `title` with the full
+  value, since long ones are cut off.
+- **Painting** (`forms/Markdown.vue`). A template ref and `paint()`, run `onMounted` and from
+  `watch(html, …, { flush: 'post' })`. It sets `--swatch` from `data-color` through
+  `style.setProperty`.
+- **Styles** (`styles.css`). The swatch sits on a 6 px conic-gradient checker, with a 25% `--text`
+  hairline. Chips are 0.9em and don't wrap. Palette entries are 64 px wide with 64×40 swatches,
+  and the name and value are cut off with an ellipsis. No token changes.
+- **Tool description** (`apps/server/src/tools/ask.ts`). The markdown paragraph from §5, as its
+  own paragraph between the types and "Questions are required…". Server instructions untouched.
+  No trial run, per the brief.
+- **Fixture** `packages/protocol/fixtures/colors.json`: the palette choice with chips in every
+  description (one `rgba()` at 15%, one `oklch()`, one `hsl()`), a palette preview per option
+  (one without names), and a yes/no whose text has `` `#dc2626` ``, a prose `#123` (no chip) and
+  `` `#123` `` (a chip).
+- **Tests** `apps/desktop/src/forms/markdown.test.ts`: 34 cases over `isColor`, `parsePalette`
+  and `renderMarkdown`.
+
+### Deviations
+
+- **`title` on palette values.** It wasn't in the pinned markup. It's additive, and a cut-off
+  `oklch(72…` was unreadable without it.
+- **The release-CSP check ran headless, not in the installed build.** Logan asked to check through
+  the gallery and keep his running Parley as it is. Instead, headless WebKit loaded the gallery
+  with the CSP rewritten to `style-src-elem 'self' 'unsafe-inline'; style-src-attr 'none'`. That
+  keeps Vite's `<style>` elements working and drops `style` attributes, as the release CSP does.
+  A control element with a `style` attribute was refused, and every chip and palette swatch had
+  its color.
+
+### Defaults taken
+
+- Palettes take 1 to 12 lines. More renders as code.
+- Names aren't cut at 40 characters in the text. CSS cuts them at the entry's width (64 px), with
+  an ellipsis.
+
+### Acceptance
+
+1. `pnpm --filter @parley/desktop test`: **pass**, 71 tests, including `markdown.test.ts`.
+   `colors.json` compiles under strict AJV.
+2. `pnpm --filter @parley/protocol test`: **pass**, 85 tests. The new fixture validates and
+   compiles.
+3. `pnpm typecheck` and `pnpm --filter @parley/server build`: **pass**.
+4. Gallery: **pass**, in headless Playwright WebKit (1.64, WebKit 2370) at 440 px, light and dark.
+   Chips appear in the question and in every option description. The `rgba()` chip shows the
+   checker. Focusing an option shows its palette, and Orchard's Wash swatch shows the checker
+   through 15% green. The plain `#123` in text has no chip, and `` `#123` `` has one.
+5. Release CSP: **pass, by proxy** (see Deviations). The installed build was not run.
+
+One console error appears under the rewritten CSP: "Refused to apply a stylesheet…". It also
+appears on the `choice` fixture, and the app's source has no `style="` attribute. It predates this
+brief and is most likely Vite's dev client. Under the real dev CSP it doesn't happen.
+
+### Spot checks for Logan
+
+- The gallery at `http://localhost:1420/?gallery&fixture=colors`, with the dev server running
+  (`pnpm --filter @parley/desktop dev`). Arrow through the options to see each palette, in light
+  and dark.
+- After the next `pnpm install:desktop`: `pnpm --filter @parley/server fake-ask colors` in the
+  installed app. That's the one real release-CSP check.
+- The chips and the palette in Desktop's inline card, the next time an ask comes up there.
+- Whether the chip on `` `#123` `` bothers you.
+
+### Docs updated
+
+- `docs/architecture/card-ui.md`: chips, palettes and `paint()` in the Markdown bullet. A new rule
+  worth keeping: no model-derived values in `style` attributes. Brief 13 is in History.
+- `docs/architecture/form-spec.md`: the Markdown bullet.
+- `docs/architecture/testing.md`, the `AGENTS.md` Areas row, and `.claude/rules/testing.md`:
+  `markdown.test.ts`.
+- Guide: a "Colors" section in `answering.md`, and the intro of `question-types.md`. The root
+  README's copy-buttons line now covers swatches too.
+- **Reflowed four lines** that began with an inline ```` ```` ```` span: two in
+  `docs/briefs/README.md`, one in `14-fenced-previews.md` and one in my `form-spec.md` edit.
+  CommonMark reads such a line as the start of a fence. In `form-spec.md` it swallowed the rest of
+  the page, which `checklinks.py` caught as a missing `#decisions` anchor.
+
+### Follow-ups
+
+- `docs/briefs/archive/12-capture-question.md:68` has the same fence-opening line. It's in the
+  archive, so it's left for `wrap`.
+- Brief 14 writes its `width`/`height` info-string examples inline. When writing its docs, keep
+  every inline ```` ```` ```` span off the start of a line.

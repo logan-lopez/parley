@@ -21,6 +21,17 @@ A code block in a question (a command to run, a snippet for the console) has a *
 its top right. Click it and it says "Copied" for a moment. Where the clipboard is off limits, it
 selects the code instead and says "Press ⌘C". It's for the mouse; there's no key for it.
 
+## Colors
+
+A color the agent writes as code, like `#38bdf8` or `oklch(70% 0.15 230)`, has a small swatch in
+front of it, so you see the color as well as its value. A see-through color shows a checkerboard
+under it. Colors in plain text don't get one, and neither do color names like `red`. One catch: an
+issue number written as code, like `#123`, is also a valid color and gets a swatch.
+
+An agent can also show a whole palette: a row of large swatches, each with its name and value
+under it. Hover a value that's cut off to see all of it. In a palette question, each option
+usually shows its colors as swatches on its own line, and its full palette as the preview.
+
 ## Keys
 
 | Key | What it does |

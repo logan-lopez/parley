@@ -4,7 +4,7 @@ How Parley is checked without a person at the keyboard or a real client: unit te
 parts, stand-ins for each side of the socket and for an MCP Apps host, and a harness that runs real
 models against a fake app.
 
-**Sources:** `apps/server/scripts/`, `apps/server/trials/`, `apps/server/fixtures/`, `packages/protocol/src/ask.test.ts`, `apps/desktop/src/asks/persist.test.ts`, `apps/desktop/src/asks/store.test.ts`, `apps/desktop/src/forms/schemas.test.ts`
+**Sources:** `apps/server/scripts/`, `apps/server/trials/`, `apps/server/fixtures/`, `packages/protocol/src/ask.test.ts`, `apps/desktop/src/asks/persist.test.ts`, `apps/desktop/src/asks/store.test.ts`, `apps/desktop/src/forms/schemas.test.ts`, `apps/desktop/src/forms/markdown.test.ts`
 
 **History:** [brief 1](../briefs/archive/01-hub-and-lifecycle.md) (`fake-ask`), [brief 3](../briefs/archive/03-trial-harness.md) (`fake-hub`, trials), [brief 7](../briefs/archive/07-inline-cards.md) (`fake-host`), [brief 12](../briefs/archive/12-capture-question.md) (the `capture` scenario)
 
@@ -20,7 +20,9 @@ and when to reach for it.
     (`persist.test.ts`), the store's hub handlers
     (`resolved`, `inline`) through the real hub client with Tauri mocked (`store.test.ts`), and
     every fixture's compiled schema under JSON Forms' AJV settings and under strict mode with the
-    `x-*` keywords declared, plus what a review and a capture accept (`schemas.test.ts`).
+    `x-*` keywords declared, plus what a review and a capture accept (`schemas.test.ts`), and
+    what counts as a color, palette parsing and the markdown it renders to (`markdown.test.ts`,
+    in Node, so without `CSS.supports`).
 - **`fake-ask`** (`scripts/fake-session.ts`) acts as one server session without an MCP client:
   it connects to the hub, sends a form and prints the outcome. It takes `ask` tool input (a bare
   name like `choice` resolves to `packages/protocol/fixtures/choice.json`), which goes through the

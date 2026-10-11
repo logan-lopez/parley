@@ -6,7 +6,7 @@ Claude Desktop, and in the dev gallery.
 
 **Sources:** `apps/desktop/src/card/`, `apps/desktop/src/forms/`, `apps/desktop/src/platform.ts`, `apps/desktop/src/styles.css`, `apps/desktop/src/zoom.ts`, `apps/desktop/src/ZoomControl.vue`, `apps/desktop/src/App.vue`, `apps/desktop/src/main.ts`, `apps/desktop/src/gallery/`
 
-**History:** [brief 2](../briefs/archive/02-ask-tool-and-ui.md), [brief 5](../briefs/archive/05-review-question.md) (the review renderer), [brief 7](../briefs/archive/07-inline-cards.md) (the platform adapter, `html.inline`), [brief 11](../briefs/archive/11-review-decisions.md) (labelled review decisions), [brief 12](../briefs/archive/12-capture-question.md) (copy buttons, the capture renderer)
+**History:** [brief 2](../briefs/archive/02-ask-tool-and-ui.md), [brief 5](../briefs/archive/05-review-question.md) (the review renderer), [brief 7](../briefs/archive/07-inline-cards.md) (the platform adapter, `html.inline`), [brief 11](../briefs/archive/11-review-decisions.md) (labelled review decisions), [brief 12](../briefs/archive/12-capture-question.md) (copy buttons, the capture renderer), [brief 13](../briefs/13-color-chips.md) (color chips, palettes)
 
 `card/AskCard.vue` is the card. It knows nothing about the hub or Tauri. `App.vue` is the window
 around it: the queue, Send and Skip, history. `forms/` holds the renderers, their registration, the
@@ -79,7 +79,13 @@ keyboard contract and markdown. `platform.ts` is the one way renderers reach the
   is wrapped in `.code-block` with a `[data-copy]` button that carries nothing: `Markdown.vue`'s
   delegated click copies the block's `<code>` text (less its trailing newline) through `copyText`,
   then says "Copied" for 1.5 s, or, when that fails, selects the code and says "Press ⌘C". The
-  button has `tabindex="-1"` and no key. The webview never navigates: a capture-phase click
+  button has `tabindex="-1"` and no key. A color in a code span (hex or a CSS color function,
+  checked by `isColor` in `forms/colors.ts`, which defers to `CSS.supports` where it exists)
+  renders as `.color-chip` with a swatch, and a ```` ```palette ```` fence whose lines all parse
+  (`parsePalette`: a color, then an optional name, 1 to 12 lines) renders as a row of labelled
+  swatches; one that doesn't parse stays a code block. Both carry the color in `data-color`, and
+  `Markdown.vue`'s `paint()`, run on mount and after every render (`v-html` replaces the DOM),
+  sets it as `--swatch` through the CSSOM. The webview never navigates: a capture-phase click
   handler in `main.ts` stops every link, and links open through `openExternal`.
 - **The platform adapter** (`platform.ts`): `pickPaths` (the Tauri dialog, or `window.prompt`
   outside Tauri), `openExternal` (http(s) and mailto only; the opener plugin in Tauri, the
@@ -108,5 +114,8 @@ keyboard contract and markdown. `platform.ts` is the one way renderers reach the
   isn't an editing key (`Cmd+Backspace` is). `Cmd+N` opens the note because plain `n` is No on a
   focused Yes/No. `Cmd+0` belongs to AeroSpace, so zoom reset is a click. Check
   `~/.config/keymap/keymap.md` before adding a chord.
+- **Never put a model-derived value in a `style` attribute.** The release CSP (`style-src 'self'`)
+  drops it, while the dev header allows inline styles for Vite, so it looks right in the gallery
+  and does nothing in the installed app. Set it through the CSSOM after render, as `paint()` does.
 - **Keep the two dark blocks in `styles.css` in step.** Host colors are mapped onto the tokens in
   `src/mcp-app/theme.ts`; accents and status colors stay Parley's.

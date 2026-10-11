@@ -1,0 +1,31 @@
+{
+  "title": "Colors for the HTML report",
+  "questions": [
+    {
+      "header": "Accent",
+      "question": "Which palette should the report use? The current one is `#1d4ed8` on `#ffffff`.",
+      "options": [
+        {
+          "label": "Harbor (Recommended)",
+          "description": "`#0f172a` `#38bdf8` `#f59e0b` `#f8fafc`",
+          "preview": "```palette\n#0f172a Ink\n#38bdf8 Sky\n#f59e0b Amber\n#f8fafc Paper\n```\n\nCool and high-contrast. Amber is only for warnings."
+        },
+        {
+          "label": "Orchard",
+          "description": "`#14532d` `oklch(72% 0.17 142)` `#fde68a` `rgba(20, 83, 45, 0.15)`",
+          "preview": "```palette\n#14532d Forest\noklch(72% 0.17 142) Leaf\n#fde68a Straw\nrgba(20, 83, 45, 0.15) Wash\n```\n\nThe wash is 15% Forest, for row stripes."
+        },
+        {
+          "label": "Graphite",
+          "description": "`#111111` `#6b7280` `#e5e7eb` `hsl(0 72% 51%)`",
+          "preview": "```palette\n#111111\n#6b7280\n#e5e7eb\nhsl(0 72% 51%)\n```\n\nMonochrome with one red for negative totals."
+        }
+      ]
+    },
+    {
+      "header": "Totals",
+      "question": "Should negative totals be red (`#dc2626`)? It's what #123 asked for (`#123`), but refunds would look like errors.",
+      "type": "boolean"
+    }
+  ]
+}
