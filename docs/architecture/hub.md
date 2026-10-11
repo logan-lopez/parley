@@ -29,7 +29,7 @@ lines without reading them. `src/hub/client.ts` is the webview end, which owns t
   answers on it, another Parley owns it, and this one exits: that's how the app stays single
   instance. A socket nobody answers on is left over from a crash, and is removed. Each connection
   gets an id. Every line is parsed as JSON (invalid JSON closes the connection) and emitted to the
-  webview as `hub:message` with the id; a closed connection emits `hub:disconnected`. The webview
+  webview as `hub:message` with the id, keys in the order they arrived; a closed connection emits `hub:disconnected`. The webview
   writes back with the `hub_send` and `hub_close` commands. Rust never looks at a message's
   `type`.
 - **`hub_ready`.** Rust buffers events until the webview calls `hub_ready`, so nothing arrives
@@ -62,6 +62,10 @@ lines without reading them. `src/hub/client.ts` is the webview end, which owns t
   `app-client.ts`, never to `hub.rs`.
 - **Tool code sees only `AppClient`.** A second transport (remote, HTTP) is a second
   implementation of that interface, and shouldn't touch the tools.
+- **Key order survives Rust.** A form's `properties` are its question order, so serde_json is
+  built with `preserve_order`; without it `Value` is a `BTreeMap` and the window showed questions
+  alphabetically, while the gallery and the inline card, which skip Rust, were right. A test in
+  `hub.rs` round-trips a line to hold it.
 - **Additive changes stay v1.** A new optional field or a new message an old peer can reject
   cleanly is fine. When the server sends `resolved` to an app too old to know it, the app answers
   `invalid_message`, and the server falls back to `cancel` (it listens for that for 30 s).

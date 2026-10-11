@@ -222,3 +222,18 @@ pub fn hub_close(hub: State<'_, Hub>, conn: u64) {
         let _ = tx.send(Out::Close);
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use serde_json::Value;
+
+    // A form's `properties` are its question order. Without serde_json's
+    // `preserve_order`, `Value` sorts object keys and the window shows the
+    // questions alphabetically.
+    #[test]
+    fn a_forwarded_line_keeps_its_key_order() {
+        let line = r#"{"type":"ask","form":{"schema":{"properties":{"storage":{},"keys":{},"backup":{}}}}}"#;
+        let message: Value = serde_json::from_str(line).unwrap();
+        assert_eq!(message.to_string(), line);
+    }
+}

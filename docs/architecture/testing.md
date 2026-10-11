@@ -23,6 +23,8 @@ and when to reach for it.
     `x-*` keywords declared, plus what a review and a capture accept (`schemas.test.ts`), and
     what counts as a color, palette parsing and the markdown it renders to (`markdown.test.ts`,
     in Node, so without `CSS.supports`).
+  - `apps/desktop/src-tauri` (`cargo test`): a line through the hub keeps its key order, which is
+    the question order (`hub.rs`).
 - **`fake-ask`** (`scripts/fake-session.ts`) acts as one server session without an MCP client:
   it connects to the hub, sends a form and prints the outcome. It takes `ask` tool input (a bare
   name like `choice` resolves to `packages/protocol/fixtures/choice.json`), which goes through the
