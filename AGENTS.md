@@ -72,6 +72,9 @@ the root (gitignored) registers the built server for Claude Code in this repo.
   `~/.config/keymap/keymap.md`. `Cmd+0` belongs to AeroSpace.
 - The model-facing text (server instructions, tool descriptions, result text) is measured by the
   trial harness. Change it deliberately, and rerun the trials.
+- An `ask` answer that arrives after Claude Code backgrounded the call (2 min) has `<` and `>` as
+  `&lt;` and `&gt;`. That's Claude Code, not Parley ([the ask tool](docs/architecture/ask-tool.md)).
+  When you commit or write out a draft the user accepted (`edited: false`), use your own text.
 - `PARLEY_SOCKET` overrides the socket on both sides; `PARLEY_NO_LAUNCH=1` stops the server
   launching the app. macOS caps socket paths at 104 bytes: test sockets go under `$TMPDIR`.
 - Use the project's Tauri CLI (`pnpm tauri ...`), not a global `cargo tauri`.
