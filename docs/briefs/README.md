@@ -6,16 +6,17 @@ and move to `archive/` when they're done. Ideas that aren't scheduled yet are in
 
 ## Where things stand
 
-*Updated 2026-10-11.*
+*Updated 2026-10-12.*
 
 - Built: the hub, `ask`, the trial harness, history and `review` (briefs 1–5), inline cards in
   Claude Desktop (6–7), the window as a non-activating panel, menu-bar only (8–9), and three
   inputs drawn from real asks (10–12): drafts you edit in place, review with the agent's own
   decisions, and `capture` for pasted output and screenshots, with copy buttons on code. Seven
   question types.
-- In flight: briefs 13–14 are written, not started: colors in card markdown, then HTML and SVG
-  previews drawn as pictures. 14 runs the trial pass for both.
-- Next: brief 13. After 14, the [`FUTURE.md`](FUTURE.md) candidates are still "Hands-on runs" and
+- In flight: brief 13 (colors in card markdown) is done and awaiting review; 14 (HTML and SVG
+  previews drawn as pictures, plus the trial pass for both) is written, not started. 15 (themes
+  from a config file, inn's format) is written and goes after 14, since both edit `styles.css`.
+- Next: brief 14, then 15. After those, the [`FUTURE.md`](FUTURE.md) candidates are still "Hands-on runs" and
   the trial tune-ups, led by `crash-output` never asking (0/3).
 - Loose ends waiting on Logan: the hand checks from briefs 10–12 (a draft and a copy button in
   Desktop's inline card, a screenshot pasted into the installed build, whether a real debugging
@@ -30,6 +31,9 @@ and move to `archive/` when they're done. Ideas that aren't scheduled yet are in
 14. [`14-fenced-previews.md`](14-fenced-previews.md): blocks marked `html preview` and
     `svg preview`, drawn as SVG images (static by construction, no CSP change),
     starting with a foreignObject spike; then the trial pass for 13–14.
+15. [`15-themes.md`](15-themes.md): every window color from a base16/base24 theme, picked in
+    `~/.config/parley/settings.json` as one id or a light/dark pair that follows the system live;
+    inn's themes load in place.
 
 ## Done
 
@@ -123,6 +127,8 @@ Don't relitigate these. If one turns out to be wrong in practice, stop and say s
 | Pasted screenshots | `capture` saves them as PNGs under `$APPDATA/captures/<day>/` and returns the paths. Window-only, like `path`; text-only captures work inline. Day folders go after 30 days; Clear deletes them all except those still in a waiting ask's draft. | Claude Code shows only `structuredContent` for tools with an `outputSchema`, so image content would likely be dropped, and a path is something the model can read (2026-10-10, brief 12). |
 | Colors in markdown | A color in a code span (hex or a CSS color function, no named colors) gets a swatch; a ```` ```palette ```` block draws labelled swatches. Set through the CSSOM, never a `style` attribute. | Prose `#123` is as often an issue number. The release CSP drops `style` attributes while dev allows them (Logan, 2026-10-11, brief 13). |
 | HTML and SVG previews | Opt-in ```` ```html preview ```` / ```` ```svg preview ```` fences, drawn as an SVG image from a `data:` URL at a size the agent gives. A sandboxed iframe is the fallback only if the spike fails. | Plain ```` ```html ```` is how agents show source. An image is static by construction and needs no CSP change in the window or the card; inline sanitized HTML would rest on the sanitizer alone in the card (Logan, 2026-10-11, brief 14). |
+| Themes | inn's format (base16/base24 YAML with `overrides`, inn's token names), set as `theme` in `~/.config/parley/settings.json`: one id, or `{ light, dark }` following the macOS appearance live. Reads `~/.config/inn/themes/` in place and `~/.config/parley/themes/`. No settings page. Parley Light and Dark reproduce the old colors and are the default pair. | One theme file serves inn, Quire and Parley, and the pair's contract is written to be copied back into inn and Quire (Logan, 2026-10-12, brief 15). |
+| Themes and the inline card | The card keeps following Claude's surfaces and text over Parley Light or Dark; the server never reads `~/.config` | It sits in Claude's chat (Logan, 2026-10-12, brief 15). |
 | `ask_async` / `collect` | Not built; parked in [`FUTURE.md`](FUTURE.md#parked) | Claude Code backgrounds a call still running after 2 min and delivers the answer when it lands; `collect()` would depend on the model remembering to poll (2026-10-10). |
 
 ## Not built
@@ -130,7 +136,8 @@ Don't relitigate these. If one turns out to be wrong in practice, stop and say s
 `ask_async`/`collect`, `notify`, raw-schema `ask_form`, rank/slider/A-B/annotate widgets, native
 elicitation, MCP Apps outside Claude Desktop (they need a remote server), the panel following the
 active screen, remote/headless channels, and for captures: dragging image files in, thumbnails in
-history, screen capture started from Parley, and images as MCP image content. `FUTURE.md` says where most of these stand. Anything that collects secrets stays out for
+history, screen capture started from Parley, and images as MCP image content. For themes: a settings page or picker, and the inline card
+following the theme. `FUTURE.md` says where most of these stand. Anything that collects secrets stays out for
 good.
 
 ## Future direction new work must not block

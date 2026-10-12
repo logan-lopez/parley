@@ -123,6 +123,16 @@ Each is too small for a brief alone; pick them up with a brief in the same code.
   scopes in `capabilities/default.json` would tighten it. It's all the app's own data dir either
   way.
 
+## The light/dark pair in inn and Quire
+
+Brief 15 gives Parley's `theme` setting a second form, `{ "light": "<id>", "dark": "<id>" }`,
+that follows the macOS appearance while the app runs. inn and Quire take one id, and Logan wants
+the pair there too (2026-10-12). It's a brief in each repo, not here: copy Parley's
+`apps/desktop/src/theme/setting.ts` (the pinned contract) and `appearance.ts`, accept the object
+form in their `settings.json` parsers, and decide what their pickers write when the setting is a
+pair (Quire's ⇧⌘T steps through themes). Wait until brief 15 has been in daily use, so the
+contract has settled.
+
 ## Parked
 
 - **Inline answers when the model never calls `ask_wait`:** with show-then-wait (brief 7), an answer
@@ -161,3 +171,4 @@ Each is too small for a brief alone; pick them up with a brief in the same code.
 - **One dark token block:** `src/styles.css` keeps two identical dark blocks in step by hand.
   `light-dark()` with `color-scheme` would make it one, if WKWebView's support is confirmed. Worth
   doing the next time the tokens change.
+  Scheduled: [brief 15](15-themes.md) paints every token from a theme, so both blocks go.
