@@ -3,9 +3,11 @@
 import { createApp } from 'vue'
 import '../styles.css'
 import McpApp from './McpApp.vue'
+import { initCardTheme } from './theme'
 
 // styles.css: content height, the max width, host fonts.
 document.documentElement.classList.add('inline')
+initCardTheme()
 
 // The view never navigates. Markdown links open through `openExternal`,
 // which McpApp points at the host's `ui/open-link`.

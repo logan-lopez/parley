@@ -1,5 +1,6 @@
 import { createApp } from 'vue'
 import './styles.css'
+import { initGalleryTheme, initTheme, startTheme } from './theme'
 import { initZoom } from './zoom'
 
 // The webview never navigates; links in model text open through the platform adapter.
@@ -9,6 +10,7 @@ document.addEventListener('click', (event) => {
 
 if (import.meta.env.DEV && new URLSearchParams(location.search).has('gallery')) {
   const { default: Gallery } = await import('./gallery/Gallery.vue')
+  initGalleryTheme(new URLSearchParams(location.search).get('theme'))
   initZoom()
   createApp(Gallery).mount('#app')
 } else {
@@ -16,6 +18,7 @@ if (import.meta.env.DEV && new URLSearchParams(location.search).has('gallery')) 
 }
 
 async function startApp() {
+  initTheme()
   const [{ default: App }, { startHub }, { hubHandlers, hydrate }, { load }, { initNotifications }] = await Promise.all([
     import('./App.vue'),
     import('./hub/client'),
@@ -26,6 +29,7 @@ async function startApp() {
 
   initZoom()
   createApp(App).mount('#app')
+  startTheme()
 
   // History loads before the hub: servers re-send their pending asks on
   // connect, and those must find their records (and drafts) already there.

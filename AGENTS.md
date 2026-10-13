@@ -64,8 +64,9 @@ the root (gitignored) registers the built server for Claude Code in this repo.
 - `tauri.conf.json`'s CSP and the dev header in `vite.config.ts` must match, except for what Vite
   needs in dev (inline styles, the HMR socket). `script-src` keeps
   `'unsafe-eval'` for AJV.
-- `src/styles.css` has two identical dark token blocks (system media query and `data-theme`). Keep
-  them in step.
+- Every color in the window comes from `src/theme/`: theme tokens painted on `:root`, and shades
+  mixed from them in `src/theme/tokens.css`. No color literals anywhere else in `apps/desktop/src`;
+  `no-color-literals.test.ts` enforces it ([themes](docs/architecture/themes.md)).
 - A new Tauri command needs its name in the app manifest in `src-tauri/build.rs` and its
   permission in `src-tauri/capabilities/default.json`. The fs scope
   is the two history files and `captures/` only; `hub.sock` is in the same directory.
@@ -98,3 +99,4 @@ is the same map for every agent).
 | `packages/protocol/src/wire.ts`, `apps/desktop/src-tauri/src/hub.rs`, `apps/desktop/src/hub/**`, `apps/server/src/app-client.ts` | [The hub and the wire protocol](docs/architecture/hub.md) |
 | `apps/server/src/tools/inline.ts`, `apps/server/src/ask-lifecycle.ts`, `apps/server/src/card.ts`, `apps/server/tsdown.config.ts`, `apps/desktop/src/mcp-app/**`, `apps/desktop/mcp-app.html`, `apps/desktop/vite.mcp-app.config.ts` | [Inline cards (show, then wait)](docs/architecture/inline-cards.md) |
 | `apps/server/scripts/**`, `apps/desktop/scripts/screenshots.ts`, `apps/server/trials/**`, `apps/server/fixtures/**`, `packages/protocol/src/ask.test.ts`, `apps/desktop/src/asks/persist.test.ts`, `apps/desktop/src/asks/store.test.ts`, `apps/desktop/src/forms/schemas.test.ts`, `apps/desktop/src/forms/markdown.test.ts` | [Testing](docs/architecture/testing.md) |
+| `apps/desktop/src/theme/**` | [Themes](docs/architecture/themes.md) |

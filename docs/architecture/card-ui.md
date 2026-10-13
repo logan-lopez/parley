@@ -6,7 +6,7 @@ Claude Desktop, and in the dev gallery.
 
 **Sources:** `apps/desktop/src/card/`, `apps/desktop/src/forms/`, `apps/desktop/src/platform.ts`, `apps/desktop/src/styles.css`, `apps/desktop/src/zoom.ts`, `apps/desktop/src/ZoomControl.vue`, `apps/desktop/src/App.vue`, `apps/desktop/src/main.ts`, `apps/desktop/src/gallery/`
 
-**History:** [brief 2](../briefs/archive/02-ask-tool-and-ui.md), [brief 5](../briefs/archive/05-review-question.md) (the review renderer), [brief 7](../briefs/archive/07-inline-cards.md) (the platform adapter, `html.inline`), [brief 11](../briefs/archive/11-review-decisions.md) (labelled review decisions), [brief 12](../briefs/archive/12-capture-question.md) (copy buttons, the capture renderer), [brief 13](../briefs/13-color-chips.md) (color chips, palettes)
+**History:** [brief 2](../briefs/archive/02-ask-tool-and-ui.md), [brief 5](../briefs/archive/05-review-question.md) (the review renderer), [brief 7](../briefs/archive/07-inline-cards.md) (the platform adapter, `html.inline`), [brief 11](../briefs/archive/11-review-decisions.md) (labelled review decisions), [brief 12](../briefs/archive/12-capture-question.md) (copy buttons, the capture renderer), [brief 13](../briefs/13-color-chips.md) (color chips, palettes), [brief 15](../briefs/15-themes.md) (tokens from themes)
 
 `card/AskCard.vue` is the card. It knows nothing about the hub or Tauri. `App.vue` is the window
 around it: the queue, Send and Skip, history. `forms/` holds the renderers, their registration, the
@@ -94,10 +94,14 @@ keyboard contract and markdown. `platform.ts` is the one way renderers reach the
   PNG to `$APPDATA/captures/<YYYY-MM-DD>/<8 hex>.png` with the fs plugin and returns the
   absolute path (a made-up `/tmp/parley-capture-n.png` outside Tauri, so the gallery works). All
   of them can be overridden through `setPlatform`.
-- **Styles** (`styles.css`): one set of tokens. Light on `:root`; dark under the system media
-  query (`:root:not([data-theme='light'])`) and again under `:root[data-theme='dark']`, which the
-  inline card sets from the host. The window sets neither, so it follows the system.
-  `html.inline` (set by the card) is content height with no inner scroll, at most 640 px wide.
+- **Styles** (`styles.css`): no colors of its own. Every color is a theme token (`--bg`,
+  `--surface-raised`, `--text-muted`, `--accent`, `--highlight`, `--link` …) that `src/theme/`
+  paints on `:root`, or a shade mixed from them in `src/theme/tokens.css` (`--hover`, `--code-bg`,
+  `--highlight-subtle` …) ([themes](themes.md)). Actions and marks take `--accent`, what's picked
+  or selected `--highlight`, links `--link`. The picked checkbox's tick is a mask filled with
+  `--accent-text`. The window's root is `.window`, a column with the theme banner on top when
+  there's a problem. `html.inline` (set by the card) is content height with no inner scroll, at
+  most 640 px wide.
 - **Zoom** (`zoom.ts`): page zoom from 80% to 150% in 10% steps, default 110%, kept in
   localStorage. `Cmd+=` (or `Cmd++`) and `Cmd+-`, or the control in the meta row, where a click on
   the percentage resets it. The inline card has no zoom.
@@ -105,7 +109,8 @@ keyboard contract and markdown. `platform.ts` is the one way renderers reach the
   `http://localhost:1420/?gallery`. It renders every fixture through `compileQuestions` and the
   real card without the hub; submitting shows `shapeAnswer`'s output. `&fixture=<name>` picks one,
   and `&source=<label>` replaces the meta row's `gallery · fixtures` (the screenshots use
-  `claude-code · parley`).
+  `claude-code · parley`). `&theme=<id>` paints a bundled theme (`parley-light`, `parley-dark`);
+  without it the pair follows the system.
 
 ## Rules worth keeping
 
@@ -119,5 +124,6 @@ keyboard contract and markdown. `platform.ts` is the one way renderers reach the
 - **Never put a model-derived value in a `style` attribute.** The release CSP (`style-src 'self'`)
   drops it, while the dev header allows inline styles for Vite, so it looks right in the gallery
   and does nothing in the installed app. Set it through the CSSOM after render, as `paint()` does.
-- **Keep the two dark blocks in `styles.css` in step.** Host colors are mapped onto the tokens in
+- **No color literals outside `src/theme/`.** Use a token, or add a shade to `tokens.css`; the
+  scanner test fails otherwise. In the inline card, host colors are mapped onto the tokens in
   `src/mcp-app/theme.ts`; accents and status colors stay Parley's.

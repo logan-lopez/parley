@@ -1,0 +1,127 @@
+# Claude Dark — inn
+# Generated from templates/inn/theme.yaml.j2; regenerate: python3 tools/build.py --port inn
+# Install: copy to ~/.config/inn/themes/claude-dark.yaml and set "theme": "claude-dark"
+# in inn's settings.json. Role map and decisions: ports/inn/README.md
+#
+# Sampled from the Claude desktop app. Neutral surfaces, warm text,
+# Anthropic accents.
+#
+# 1. Surfaces are neutral; the warmth is in the text. Every background is a
+#    true grey (R=G=B) and the text ramp is warm-shifted. Nothing is tinted
+#    to "match the feel."
+# 2. Coral marks content, not chrome — accents, marks, spinners, branch
+#    glyphs. UI state (selection, current row, focus) stays neutral.
+#
+# Every inn token is set in `overrides`, so nothing falls back to inn's default
+# mapping and a change to that mapping cannot move this theme. inn rejects an
+# unknown token, so a token inn renames needs this file regenerated.
+#
+# inn splits the one brand colour three ways. `accent` is coral: Send, the other
+# primary buttons and marks. `highlight` is a neutral grey: the selected message,
+# the active tab, list highlights and the ::selection tint. `link` is the content
+# mark. Coral on the primary action breaks rule 2 knowingly; see the README.
+# Primary button: canvas on coral, 5.85:1. Body: 15.56:1.
+system: "base24"
+name: "Claude Dark"
+slug: "claude-dark"
+author: "Logan"
+description: "Sampled from the Claude Desktop app. Neutral surfaces, warm text, Anthropic accents."
+variant: "dark"
+palette:
+  base00: "#151515"
+  base01: "#1d1d1d"
+  base02: "#353535"
+  base03: "#7d7c76"
+  base04: "#bbbaaf"
+  base05: "#edede9"
+  base06: "#f4f3ef"
+  base07: "#faf9f5"
+  base08: "#d7757e"
+  base09: "#d97757"
+  base0A: "#cfae6e"
+  base0B: "#94b87a"
+  base0C: "#72b6b4"
+  base0D: "#6a9bcc"
+  base0E: "#b68dc4"
+  base0F: "#b4977e"
+  base10: "#111111"
+  base11: "#0e0e0e"
+  base12: "#e78e96"
+  base13: "#e1c285"
+  base14: "#a8ce8c"
+  base15: "#84cdca"
+  base16: "#80afde"
+  base17: "#caa1d9"
+overrides:
+  # Surfaces: chrome goes down from the canvas, raised things go up.
+  bg: "#151515"
+  surface: "#111111"
+  surface-raised: "#1d1d1d"
+  surface-sunken: "#0e0e0e"
+  # Text
+  text: "#edede9"
+  text-muted: "#bbbaaf"
+  text-faint: "#7d7c76"
+  text-strong: "#f4f3ef"
+  # Lines and state. Borders take the hairline, a declared non-slot value.
+  border: "#2a2a2a"
+  border-strong: "#7d7c76"
+  selection: "#353535"
+  # Coral on actions and marks; marks are small text, 6.05:1 on the chrome.
+  accent: "#d97757"
+  # UI state stays neutral: 8.63:1 on the raised surface.
+  highlight: "#bbbaaf"
+  accent-text: "#151515"
+  focus-ring: "#bbbaaf"
+  # Links are content: 7.45:1 on the canvas, 5.00:1 on the selection.
+  link: "#e98e70"
+  danger: "#d7757e"
+  warning: "#cfae6e"
+  success: "#94b87a"
+  info: "#72b6b4"
+  caret: "#edede9"
+  shadow-color: "#0e0e0e"
+  search-match: "#cfae6e"
+  # Conversation roles are 12px labels, so they take the bright ramp. The
+  # assistant takes the content mark. Assistant on chrome: 7.70:1.
+  role-user: "#84cdca"
+  role-assistant: "#e98e70"
+  role-system: "#caa1d9"
+  # Vim mode badges: inn draws the canvas colour on these fills, in small caps,
+  # so they take the bright ramp too. Normal: 7.92:1.
+  mode-normal: "#80afde"
+  mode-insert: "#a8ce8c"
+  mode-visual: "#caa1d9"
+  mode-replace: "#e78e96"
+  # Code blocks: the Neovim port's mapping, base accents throughout.
+  syntax-comment: "#7d7c76"
+  syntax-keyword: "#b68dc4"
+  syntax-string: "#94b87a"
+  syntax-number: "#d97757"
+  syntax-constant: "#d97757"
+  syntax-function: "#6a9bcc"
+  syntax-type: "#cfae6e"
+  syntax-variable: "#f4f3ef"
+  syntax-property: "#edede9"
+  syntax-operator: "#edede9"
+  syntax-punctuation: "#bbbaaf"
+  syntax-regexp: "#72b6b4"
+  syntax-tag: "#b68dc4"
+  syntax-attribute: "#6a9bcc"
+  syntax-builtin: "#72b6b4"
+  syntax-meta: "#b68dc4"
+  syntax-inserted: "#94b87a"
+  syntax-deleted: "#d7757e"
+  syntax-changed: "#cfae6e"
+  # Markdown in the editors: the Neovim port's markup captures. inn already
+  # sets the weight and slant, so emphasis and strong stay body text.
+  md-heading: "#d97757"
+  md-emphasis: "#edede9"
+  md-strong: "#edede9"
+  md-link: "#e98e70"
+  md-url: "#72b6b4"
+  md-code: "#72b6b4"
+  md-quote: "#7d7c76"
+  md-list: "#e98e70"
+  md-mark: "#7d7c76"
+  macro: "#72b6b4"

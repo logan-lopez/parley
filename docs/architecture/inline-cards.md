@@ -51,7 +51,9 @@ app is the card: `McpApp.vue` around the same `AskCard` the window uses, and `th
   `askId`). The card compiles the questions itself, renders `AskCard` with `embedded` (no focus
   grab, no Esc hint), long-polls `parley_status` until the ask ends, and answers through
   `parley_submit`. It points `openExternal` at the host's `openLink` through `setPlatform`, and
-  maps the host's theme, fonts and colors onto Parley's tokens (`theme.ts`). `html.inline` makes
+  takes the host's look (`theme.ts`): Parley Light or Dark by the host's `theme`, its fonts, and
+  its surface, text and border colors mapped over the tokens, again after each repaint. It never
+  reads the window's theme setting ([themes](themes.md)). `html.inline` makes
   it content height with no inner scroll, at most 640 px wide.
 - **The build.** `pnpm --filter @parley/desktop build:mcp-app` (Vite with `vite-plugin-singlefile`)
   writes `apps/desktop/dist-mcp-app/mcp-app.html`. `pnpm --filter @parley/server build` runs that

@@ -52,8 +52,12 @@ panel and `show`/`hide`/`toggle`. `tray.rs` is the tray icon, its menu and the p
   the four app commands (`hub_ready`, `hub_send`, `hub_close`, `set_pending_count`), and fs:
   read-text-file, write-text-file and rename for history, and write-file, mkdir, read-dir and
   remove for screenshots. One `fs:scope` covers them all: `$APPDATA/history.jsonl`, its `.tmp`,
-  `$APPDATA/captures` and `$APPDATA/captures/**`. Nothing outside the app's data dir, and no
-  read of a screenshot's contents.
+  `$APPDATA/captures` and `$APPDATA/captures/**`, with no read of a screenshot's contents. Themes
+  add read-only grants scoped to their own commands, so the global scope stays the data dir and
+  `~/.config` is never writable: `read-text-file` on `$HOME/.config/parley/settings.json`,
+  `$HOME/.config/parley/themes/*` and `$HOME/.config/inn/themes/*`, `read-dir` on those two
+  folders, and `exists` on the folders and `settings.json` ([themes](themes.md)). Following the
+  system appearance needs nothing beyond `core:default`.
 - **CSP.** `tauri.conf.json` sets it for bundled assets. `tauri dev` on macOS loads the Vite server
   directly, where that CSP doesn't apply, so `vite.config.ts` serves the same policy as a header,
   plus inline styles and the HMR socket for Vite.

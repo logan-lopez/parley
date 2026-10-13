@@ -1,0 +1,47 @@
+/*
+ * Derived shades. The theme (theme/paint.ts) sets the tokens and `color-scheme` on :root;
+ * everything here is mixed from them, so a theme never lists hover or tinted variants. Components
+ * use the tokens and these, never palette slots or color literals.
+ *
+ * light-dark() picks the mix by the theme's variant (paint sets color-scheme from it, not from the
+ * system): a dark theme needs a bigger step to show than a light one. The percentages put Parley
+ * Light and Dark within a hair of the literals they replaced.
+ */
+:root {
+  /* Hovered buttons and rows, the segmented control's track, neutral chips. */
+  --hover: light-dark(
+    color-mix(in oklab, var(--bg), var(--text) 3%),
+    color-mix(in oklab, var(--bg), var(--text) 10%)
+  );
+  /* Code spans and blocks. */
+  --code-bg: light-dark(
+    color-mix(in oklab, var(--bg), var(--text) 4%),
+    color-mix(in oklab, var(--bg), var(--text) 11%)
+  );
+  /* Behind what's picked or selected, and behind accent marks. */
+  --highlight-subtle: light-dark(
+    color-mix(in oklab, var(--bg), var(--highlight) 6%),
+    color-mix(in oklab, var(--bg), var(--highlight) 21%)
+  );
+  --accent-subtle: light-dark(
+    color-mix(in oklab, var(--bg), var(--accent) 6%),
+    color-mix(in oklab, var(--bg), var(--accent) 21%)
+  );
+  --warning-subtle: light-dark(
+    color-mix(in oklab, var(--bg), var(--warning) 5%),
+    color-mix(in oklab, var(--bg), var(--warning) 14%)
+  );
+  --danger-subtle: light-dark(
+    color-mix(in oklab, var(--bg), var(--danger) 6%),
+    color-mix(in oklab, var(--bg), var(--danger) 13%)
+  );
+  /* A primary button under the pointer. */
+  --accent-hover: color-mix(in srgb, var(--accent) 88%, var(--text));
+  /* Keyboard focus: a gap in the window color, then the ring. */
+  --focus-ring-soft: color-mix(in srgb, var(--focus-ring) 70%, transparent);
+  --focus-shadow: 0 0 0 2px var(--bg), 0 0 0 4px var(--focus-ring-soft);
+  /* A swatch's hairline, which shows white on light and black on dark. */
+  --swatch-edge: color-mix(in srgb, var(--text) 25%, transparent);
+  /* Behind a color swatch, to show its alpha. Not the theme's: a checkerboard is grey on any. */
+  --swatch-checker: conic-gradient(#c8c8c8 25%, #fff 0 50%, #c8c8c8 0 75%, #fff 0) 0 0 / 6px 6px;
+}

@@ -1,0 +1,44 @@
+# Telnet: a port of text-game's default theme (apps/web/app/themes/palettes.ts).
+#
+# A MUD session over telnet: black glass, greys with a faint phosphor-green cast, ANSI-bright
+# hues, and an amber cursor for the accent. text-game's palette is base16 plus base10; base11 and
+# the bright slots (base12–base17) are filled in here as the ANSI "bright" variants.
+system: "base24"
+name: "Telnet"
+author: "Logan Lopez"
+variant: "dark"
+palette:
+  base00: "#0a0b0a" # canvas: black glass
+  base01: "#111311" # raised: composer, fields, code frames
+  base02: "#2a302a" # selection, hairlines
+  base03: "#6c766a" # faint text, comments
+  base04: "#98a395" # muted text
+  base05: "#cdd6c8" # text: phosphor-tinted grey
+  base06: "#e4ebdf" # strong text
+  base07: "#f3f7f0" # lightest
+  base08: "#f0625d" # red
+  base09: "#f08a4b" # orange
+  base0A: "#f2b84b" # amber (the cursor)
+  base0B: "#7ddc6a" # green
+  base0C: "#4fd6c8" # cyan
+  base0D: "#6aa8ff" # blue
+  base0E: "#d08cf0" # magenta
+  base0F: "#b5926a" # brown
+  base10: "#050605" # chrome: sidebar, panels
+  base11: "#020302" # wells, shadows
+  base12: "#ff8a85" # bright red
+  base13: "#ffd27a" # bright amber
+  base14: "#a3f08f" # bright green
+  base15: "#7ff0e3" # bright cyan
+  base16: "#95c2ff" # bright blue
+  base17: "#e4b2ff" # bright magenta
+overrides:
+  # The amber cursor is the accent, as in text-game.
+  accent: base0A
+  focus-ring: base0A
+  caret: base0A
+  # Warning moves to orange so it never looks like the accent.
+  warning: base09
+  # You type in phosphor green; the far end answers in cyan.
+  role-user: base0B
+  role-assistant: base0C

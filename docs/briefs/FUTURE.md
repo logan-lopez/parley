@@ -168,7 +168,3 @@ contract has settled.
   on the laptop plus the ultrawide, was waived. Revisit if Logan finds himself hunting for it.
 - **Parley inside inn:** the card could later live as a component in inn, Logan's chat app, which
   is an MCP host. Nothing to do until inn wants model → user questions of its own.
-- **One dark token block:** `src/styles.css` keeps two identical dark blocks in step by hand.
-  `light-dark()` with `color-scheme` would make it one, if WKWebView's support is confirmed. Worth
-  doing the next time the tokens change.
-  Scheduled: [brief 15](15-themes.md) paints every token from a theme, so both blocks go.

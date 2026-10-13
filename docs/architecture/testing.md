@@ -22,7 +22,10 @@ and when to reach for it.
     every fixture's compiled schema under JSON Forms' AJV settings and under strict mode with the
     `x-*` keywords declared, plus what a review and a capture accept (`schemas.test.ts`), and
     what counts as a color, palette parsing and the markdown it renders to (`markdown.test.ts`,
-    in Node, so without `CSS.supports`).
+    in Node, so without `CSS.supports`). Themes: the bundled pair reproduces the old colors, inn's
+    files parse, and errors name the file (`theme.test.ts`); folder precedence and fallbacks
+    (`load.test.ts`); the setting and `settings.json` (`setting.test.ts`); and no color literal
+    outside `src/theme/` (`no-color-literals.test.ts`) ([themes](themes.md)).
   - `apps/desktop/src-tauri` (`cargo test`): a line through the hub keeps its key order, which is
     the question order (`hub.rs`).
 - **`fake-ask`** (`scripts/fake-session.ts`) acts as one server session without an MCP client:

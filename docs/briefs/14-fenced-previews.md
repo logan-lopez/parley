@@ -74,6 +74,12 @@ Don't revisit these silently.
   `data-theme`. `getComputedStyle(...).getPropertyValue('--bg')` returns the value with `var()`
   substituted, so the resolved colors can be baked into the image. The host's value may itself be
   `light-dark(...)`, which needs `color-scheme` set inside the image (2026-10-11).
+  *Since brief 15 (2026-10-12):* the tokens are renamed to inn's names, painted by `src/theme/`:
+  `--surface` is `--surface-raised`, `--surface-2` is `--hover`, `--muted` and `--faint` are
+  `--text-muted` and `--text-faint`, and `--accent` splits into `--accent`, `--highlight` and
+  `--link`. The card no longer sets `data-theme`; `color-scheme` is on `:root`. New preview styles
+  must use tokens: `no-color-literals.test.ts` fails on a color literal outside `src/theme/`
+  ([themes](../architecture/themes.md)).
 - **Not checked, and step 0 settles each:** how well WKWebView draws HTML inside `foreignObject` in
   an `<img>` (flex, grid, borders, `system-ui`, form controls), and whether the page's CSP leaks
   into the image's own `<style>`. Per spec it shouldn't: an image document isn't a browsing

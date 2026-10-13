@@ -51,6 +51,8 @@ Every question type, in light and dark: [What it looks like](docs/guide/screensh
   as such, a note for the agent if you add one, and a sentence on what to do if you skip.
 - **One card, two places.** The same card runs in the window and, in Claude Desktop, inline in the
   chat, where the first answer wins.
+- **Your theme, from inn.** Colors come from inn's base16/base24 theme files, read where they are,
+  so one file themes inn, Quire and Parley.
 - **Local by design.** The server talks to the app over a unix socket only you can open. No port,
   no token, nothing on the network.
 
@@ -94,6 +96,8 @@ How each part works, as you use it, is in [the guide](docs/guide/README.md).
 - [Claude Code](docs/guide/claude-code.md) asks block until you answer, for up to an hour.
 - [Claude Desktop](docs/guide/claude-desktop.md) shows the card inline in the chat as well.
 - [History](docs/guide/history.md) of every ask for 30 days, searchable.
+- [Themes](docs/guide/themes.md) in inn's base16/base24 format, picked in a settings file: one
+  theme, or a light/dark pair that follows the system. inn's themes load as they are.
 
 ## Requirements
 

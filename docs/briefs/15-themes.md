@@ -326,3 +326,137 @@ so **ask Logan once before that run** (about ten minutes). Then:
    and a Desktop restart).
 
 Then stop. Append the report, and ask Logan before merging anything.
+
+## Report
+
+Built 2026-10-12, on `main`, uncommitted. Brief 13 had landed (324ff0e); brief 14 wasn't started,
+so the "after 14 if it's in flight" condition didn't hold, and 15 went first.
+
+### Built
+
+- **The theme module, `apps/desktop/src/theme/`.** `setting.ts` is the pinned contract as written,
+  plus `THEME_ID` and `DEFAULT_THEME_SETTING` (the one line inn and Quire change when they copy
+  it). `theme.ts` is Quire's parser with Parley's 15 tokens and the `parley:` block. `load.ts` is
+  `loadThemes` over `{ list, read }` and `pickThemes`, which resolves both appearances and falls
+  back per side. `settings.ts` parses `settings.json`. `appearance.ts` is `currentAppearance` and
+  `watchAppearance`. `paint.ts` holds the bundled themes and `paint`. `index.ts` is the window's
+  side: the cache, `refreshTheme`, `startTheme`, `themeError`, and `initGalleryTheme`.
+  `themes/parley-light.yaml` and `themes/parley-dark.yaml` reproduce the old tokens exactly.
+  `tokens.css` mixes the derived shades.
+- **`styles.css`:** the three token blocks and `color-scheme: light dark` are gone. Every
+  `--accent` use is split by inn's meanings (accent: actions and marks; highlight: picked and
+  selected; link: links; focus rings take `focus-ring`). The checkbox tick is a mask filled with
+  `--accent-text`. The rejected and neutral pressed decisions take `--bg` for their text.
+- **The window:** `main.ts` calls `initTheme()` before mounting and `startTheme()` after it (and
+  `initGalleryTheme` in the gallery). `App.vue` wraps its views in `.window`, with the banner on
+  top.
+- **The inline card:** `src/mcp-app/theme.ts` paints Parley Light or Dark (`initCardTheme` before
+  connecting, then the host's `theme`), maps Claude's seven surface, text and border variables
+  over it, and maps them again after each repaint. A variable the host stops sending gets the
+  bundled value back.
+- **The capability:** scoped read grants, global `fs:scope` unchanged. `cargo check` validates it.
+- **Tests:** `theme.test.ts`, `load.test.ts`, `setting.test.ts`, and `no-color-literals.test.ts`
+  with the scanner ported to `src/theme/color-literals.ts`.
+- `yaml@^2.9.1` added to `apps/desktop`.
+
+### Deviations
+
+- **`fs:allow-exists`, scoped to `settings.json` and the two folders,** is added beside the two
+  grants the brief lists. Without it, telling a missing folder from a refused path means parsing
+  error strings. A scope mistake would then look like "no themes" instead of a banner.
+- **`paint.ts` split from `index.ts`.** The card needs `paint` and the bundled themes, and
+  `index.ts` imports the fs plugin and `homeDir`. The card importing it would break "the card keeps
+  no Tauri import".
+- **`settings.ts`** holds `parseSettingsFile`, separate from `setting.ts`, so the contract file
+  stays exactly what inn and Quire copy.
+- **The gallery gets `initGalleryTheme(id)`, not `initTheme()`.** `initTheme` paints from the
+  cache. In the gallery that would show whatever was last cached, and the screenshot run reuses one
+  page per scheme.
+- **Derived shades use `light-dark()`.** No single `color-mix()` percentage reproduced both old
+  sets (hover wants 3% in light and 10% in dark), so each subtle shade is two mixes picked by
+  `color-scheme`, which `paint` sets from the theme's variant.
+- **The scanner skips `*.test.ts`.** `forms/markdown.test.ts` holds colors as model text under
+  test. Quire's scan covers `src/`, and its tests live outside it. Two comments in
+  `forms/colors.ts` (`red`, `rgb(nonsense)`) were reworded to pass.
+- **The scanner reads files through `import.meta.glob`,** not `node:fs`. The app's tsconfig has no
+  Node types, so vue-tsc failed on `node:fs`.
+- **Extra derived names:** `--accent-hover`, `--focus-ring-soft` and `--swatch-edge`, for three
+  `color-mix()` calls that used to sit in `styles.css`.
+- **`FUTURE.md`'s "One dark token block" entry is removed,** since this closes it. **Brief 14**
+  gets a note under its "Tokens" bullet with the new names, because its preview code reads
+  `--surface` and `--muted`.
+
+### Defaults taken
+
+- **Where the error shows:** a banner across the top of the window over any view, warning
+  colors, one problem a line, gone on the next read that finds nothing wrong.
+- **`onThemeChanged`:** both it and the media query are listened to, plus one `theme()` read at
+  start. Whether the media query alone fires reliably while the panel is hidden is for check 3.
+- **Claude's tertiary background in the card:** dropped. `--hover` and `--code-bg` mix from the
+  mapped `bg` and `text`, so they follow Claude without it.
+
+### Acceptance
+
+- `pnpm typecheck`: pass. `pnpm build`: pass.
+- `pnpm --filter @parley/desktop test`: 8 files, 122 tests, all pass, including the four new
+  files. The scanner reports nothing. It caught brief 13's comments and test data on its first run
+  (fixed above), so it really is scanning.
+- The `rg` for old token names and `data-theme=.dark` in `apps/desktop/src`: no matches.
+- `pnpm --filter @parley/server build`: pass. `dist/card.html` grew from 725,785 to 829,857 bytes
+  (+104 KB, +14%); gzipped, 221,064 to 253,237. Most of that is `yaml`. The built card, loaded
+  headless in WebKit in light and dark, paints Parley Light or Dark before connecting, with no
+  errors.
+- `pnpm --filter @parley/server fake-host`: all 9 scenarios pass, from source and with
+  `--server dist`.
+- `pnpm --filter @parley/desktop screenshots`: pixel-diffed against shots taken before the change,
+  which matched the committed PNGs byte for byte. Light: at most 9/255 per channel anywhere. Dark:
+  at most 14/255, and only in the accent tint behind the question chip (old `#263152`, now about
+  `#2d3243`, a little greyer; the old color had more chroma than any mix of `bg` and `accent`
+  reaches). Nothing visibly changed, so the PNGs aren't recommitted. A one-off headless shot of
+  multi-select under Claude Dark's tokens showed coral Send and chip, grey picked options, and a
+  dark tick on them, as the theme intends.
+
+Not run: the hand checks below. They need the dev app, and the brief says to ask first.
+
+### Spot checks for Logan
+
+Needs the installed Parley quit, then `pnpm app` (about ten minutes). I can run it if you want.
+
+1. No `settings.json`: the window looks as it does today, light and dark.
+2. `{ "theme": "claude-dark" }`, then show the window: Claude Dark from inn's folder, with coral
+   Send and grey picked options. Then `telnet`. **If the banner says the files "couldn't be
+   read" or names a forbidden path, the scoped grants didn't work at runtime.** That's the one part
+   nothing here could test.
+3. `{ "theme": { "light": "claude-light", "dark": "claude-dark" } }`. Switch Appearance in System
+   Settings with the window shown, then hidden and shown again. It should follow each time.
+4. Appearance on Auto across a sunset or sunrise. Report later.
+5. A typo in a theme file, with that theme selected: the banner names the file and the problem,
+   and the bundled theme shows. Fix it and show the window: the banner goes. Also try an unknown
+   key in `settings.json`.
+6. The inline card in Claude Desktop looks as before (`pnpm --filter @parley/server build` is
+   done; restart Desktop).
+
+### Docs updated
+
+- New: [`docs/architecture/themes.md`](../architecture/themes.md), its Areas row in `AGENTS.md`,
+  and `.claude/rules/themes.md` (from `areas.py`, which also put `.claude/rules/testing.md`'s paths
+  back in its page's order).
+- `AGENTS.md`: the two-dark-blocks rule became the no-color-literals rule.
+- [The card](../architecture/card-ui.md): the styles bullet, the gallery's `&theme=`, and the rule.
+  [The desktop shell](../architecture/desktop-shell.md): permissions.
+  [Inline cards](../architecture/inline-cards.md): how the card takes the host's look.
+  [Testing](../architecture/testing.md): the new tests.
+- Guide: new [`docs/guide/themes.md`](../guide/themes.md), a line in the guide's index, and the root
+  README's feature list and "What it's built around".
+- `FUTURE.md`: removed "One dark token block". Brief 14: the token note.
+
+### Follow-ups
+
+- **The card carries `yaml` (+104 KB)** just to parse two bundled files. Parsing them at build
+  time (a JSON import, or a small Vite transform) would drop it from the card and the window.
+- **The scanner skips test files wholesale.** A styled fixture inside a `.test.ts` would slip
+  through. Unlikely, but an allowlist of the files that hold model-text colors would be tighter.
+- **Contrast of Parley Light's `text-faint`** (2.66:1) is still under inn's 3:1 floor. That's out
+  of scope here, and it's the old color.
+- **Symlinked theme files** pointing outside the two folders may load as broken on fs 2.6
+  (unverified, as the brief said).

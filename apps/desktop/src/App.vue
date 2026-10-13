@@ -11,6 +11,7 @@ import ZoomControl from './ZoomControl.vue'
 import HistoryView from './history/HistoryView.vue'
 import { sourceLabel } from './asks/source'
 import { answer, dismiss, getRecord, queue, setDraft, type AskRecord } from './asks/store'
+import { themeError } from './theme'
 
 const view = ref<'queue' | 'history'>('queue')
 
@@ -91,37 +92,40 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKey))
 </script>
 
 <template>
-  <HistoryView v-if="view === 'history'" @back="view = 'queue'" />
-  <AskCard
-    v-else-if="shown"
-    :key="shown.id"
-    :form="shown.form"
-    :source="sourceLabel(shown.session)"
-    :created-at="shown.createdAt"
-    :expires-at="shown.expiresAt"
-    :position="position || undefined"
-    :total="queue.length"
-    :withdrawn="withdrawn"
-    :withdrawn-hint="shown.answeredIn === 'chat' ? 'Nothing was sent from here.' : undefined"
-    :initial-data="shown.draft?.data"
-    :initial-note="shown.draft?.note"
-    @change="setDraft(shown.id, { data: $event })"
-    @note="setDraft(shown.id, { note: $event })"
-    @submit="send"
-    @skip="skip"
-    @prev="step(-1)"
-    @next="step(1)"
-    @continue="advanceFrom(shown.id)"
-  >
-    <template #meta>
-      <ZoomControl />
-      <button type="button" class="history-button" tabindex="-1" title="History (⌘Y)" @click="view = 'history'">History <kbd>⌘Y</kbd></button>
-    </template>
-  </AskCard>
-  <main v-else class="empty-state">
-    <ZoomControl class="corner" />
-    <p>Nothing is waiting.</p>
-    <button type="button" class="button history-open" @click="view = 'history'">History <kbd class="key">⌘Y</kbd></button>
-    <p class="hints"><kbd>⌘Y</kbd> history · <kbd>esc</kbd> hide</p>
-  </main>
+  <div class="window">
+    <p v-if="themeError" class="theme-error" role="status">{{ themeError }}</p>
+    <HistoryView v-if="view === 'history'" @back="view = 'queue'" />
+    <AskCard
+      v-else-if="shown"
+      :key="shown.id"
+      :form="shown.form"
+      :source="sourceLabel(shown.session)"
+      :created-at="shown.createdAt"
+      :expires-at="shown.expiresAt"
+      :position="position || undefined"
+      :total="queue.length"
+      :withdrawn="withdrawn"
+      :withdrawn-hint="shown.answeredIn === 'chat' ? 'Nothing was sent from here.' : undefined"
+      :initial-data="shown.draft?.data"
+      :initial-note="shown.draft?.note"
+      @change="setDraft(shown.id, { data: $event })"
+      @note="setDraft(shown.id, { note: $event })"
+      @submit="send"
+      @skip="skip"
+      @prev="step(-1)"
+      @next="step(1)"
+      @continue="advanceFrom(shown.id)"
+    >
+      <template #meta>
+        <ZoomControl />
+        <button type="button" class="history-button" tabindex="-1" title="History (⌘Y)" @click="view = 'history'">History <kbd>⌘Y</kbd></button>
+      </template>
+    </AskCard>
+    <main v-else class="empty-state">
+      <ZoomControl class="corner" />
+      <p>Nothing is waiting.</p>
+      <button type="button" class="button history-open" @click="view = 'history'">History <kbd class="key">⌘Y</kbd></button>
+      <p class="hints"><kbd>⌘Y</kbd> history · <kbd>esc</kbd> hide</p>
+    </main>
+  </div>
 </template>

@@ -1,0 +1,39 @@
+# Parley Dark: the window's colors before themes (styles.css's dark token block, 2026-10-12).
+#
+# Cool charcoal greys and one soft blue. The blue does all three jobs, accent, highlight and link,
+# so nothing sets them apart. The slots Parley doesn't draw (base06, base07, base0A, base0C,
+# base0E, base0F, base10–base17) are filled to match, so the file reads sensibly in inn and Quire
+# too.
+system: "base24"
+name: "Parley Dark"
+author: "Logan Lopez"
+variant: "dark"
+palette:
+  base00: "#1b1b1d" # the window
+  base01: "#242427" # raised: option cards, inputs, lists
+  base02: "#38383c" # hairlines
+  base03: "#75746f" # faint text
+  base04: "#a3a29e" # muted text
+  base05: "#ececea" # text
+  base06: "#f4f4f2" # strong text
+  base07: "#fafaf9" # lightest
+  base08: "#f07a7f" # red: danger
+  base09: "#f0a35e" # orange: warning
+  base0A: "#e6c86e" # yellow
+  base0B: "#7ccf8f" # green: success
+  base0C: "#6fcfd0" # cyan
+  base0D: "#7d9cf5" # blue: accent, highlight, link, focus
+  base0E: "#c39af0" # purple
+  base0F: "#c9a27e" # brown
+  base10: "#151517" # chrome, a step darker than the window
+  base11: "#101012" # wells, shadows
+  base12: "#ff9ca0" # bright red
+  base13: "#f5dc90" # bright yellow
+  base14: "#9fe6ae" # bright green
+  base15: "#93e4e5" # bright cyan
+  base16: "#a3baff" # bright blue
+  base17: "#d9bbff" # bright purple
+overrides:
+  border-strong: "#4a4a50" # input and button outlines, between the hairline and faint text
+  accent-text: "#10131c" # near-black on the soft blue
+  warning: base09 # orange, so it never reads as a highlight

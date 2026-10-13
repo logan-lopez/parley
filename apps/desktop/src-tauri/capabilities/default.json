@@ -29,6 +29,29 @@
         { "path": "$APPDATA/captures" },
         { "path": "$APPDATA/captures/**" }
       ]
+    },
+    {
+      "identifier": "fs:allow-read-text-file",
+      "allow": [
+        { "path": "$HOME/.config/parley/settings.json" },
+        { "path": "$HOME/.config/parley/themes/*" },
+        { "path": "$HOME/.config/inn/themes/*" }
+      ]
+    },
+    {
+      "identifier": "fs:allow-read-dir",
+      "allow": [
+        { "path": "$HOME/.config/parley/themes" },
+        { "path": "$HOME/.config/inn/themes" }
+      ]
+    },
+    {
+      "identifier": "fs:allow-exists",
+      "allow": [
+        { "path": "$HOME/.config/parley/settings.json" },
+        { "path": "$HOME/.config/parley/themes" },
+        { "path": "$HOME/.config/inn/themes" }
+      ]
     }
   ]
 }

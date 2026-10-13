@@ -1,6 +1,6 @@
 // Colors in model text: what counts as one, and the lines of a ```palette
-// block. Hex and the CSS color functions only. A named color in a code span
-// (`red`, `transparent`) is as likely to be an identifier.
+// block. Hex and the CSS color functions only. A color name in a code span
+// (`transparent`, say) is as likely to be an identifier.
 
 const HEX = /^#(?:[0-9a-f]{3,4}|[0-9a-f]{6}|[0-9a-f]{8})$/i
 const FUNCTION = /^(?:rgba?|hsla?|hwb|lab|lch|oklab|oklch|color)\([^()]*\)$/i
@@ -13,8 +13,8 @@ export const PALETTE_MAX = 12
 
 export function isColor(value: string): boolean {
   if (!HEX.test(value) && !FUNCTION.test(value)) return false
-  // In the app, the engine has the last word (`rgb(nonsense)`). Tests run in
-  // Node, which has no CSS object.
+  // In the app, the engine has the last word (a function with nonsense
+  // inside). Tests run in Node, which has no CSS object.
   return typeof CSS === 'undefined' || CSS.supports('color', value)
 }
 
