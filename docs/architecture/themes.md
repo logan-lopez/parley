@@ -8,7 +8,7 @@ Dark under Claude's colors and reads no files.
 
 **Sources:** `apps/desktop/src/theme/`
 
-**History:** [brief 15](../briefs/15-themes.md)
+**History:** [brief 15](../briefs/15-themes.md), [brief 14](../briefs/14-fenced-previews.md) (the preview page's colors)
 
 `theme.ts` parses a theme file into tokens. `load.ts` lists the folders and picks the theme for
 each appearance. `setting.ts` is the `theme` setting's shape and resolution, the contract inn and
@@ -43,8 +43,10 @@ derived shades. All but `paint.ts`, `appearance.ts` and `index.ts` are pure and 
   toward a token, each wrapped in `light-dark()` with a smaller step for light themes than dark,
   because Parley's old dark shades were brighter steps than its light ones. `light-dark()` follows
   `color-scheme`, which `paint` sets from the theme's `variant`, not the system, so a light theme
-  shown in dark mode gets light steps. `--swatch-checker` is the one literal: a swatch's
-  checkerboard is grey on any theme.
+  shown in dark mode gets light steps. The literals are the ones that aren't the theme's:
+  `--swatch-checker`, since a swatch's checkerboard is grey on any theme, and `--preview-paper`
+  and `--preview-ink`, the white page and black text an HTML preview is drawn on in any theme
+  ([the card](card-ui.md)).
 - **Painting** (`paint`) sets every token and `color-scheme` on `document.documentElement.style`
   through the CSSOM, which the release CSP (`style-src 'self'`) lets through. Painting the same
   tokens again does nothing and returns false.

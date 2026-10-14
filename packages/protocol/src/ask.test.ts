@@ -117,6 +117,22 @@ describe('review validation', () => {
   })
 })
 
+describe('preview validation', () => {
+  const long = 'x'.repeat(10_001)
+
+  it('caps option and item previews at 10,000 characters', () => {
+    const options = [{ label: 'A', preview: 'x'.repeat(10_000) }, { label: 'B', preview: long }]
+    expect(issues({ questions: [{ header: 'Layout', question: 'Which?', options }] }))
+      .toEqual(['previews are 10,000 characters or fewer'])
+    expect(issues({ questions: [{ header: 'Icons', question: 'Keep?', type: 'review', items: [{ label: 'a', preview: long }] }] }))
+      .toEqual(['previews are 10,000 characters or fewer'])
+  })
+
+  it('leaves the question text uncapped', () => {
+    expect(issues({ questions: [{ header: 'Long', question: long, type: 'text' }] })).toEqual([])
+  })
+})
+
 describe('draft validation', () => {
   const q = { header: 'Commit', question: 'Message?', draft: 'fix: a thing' }
 

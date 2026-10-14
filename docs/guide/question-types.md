@@ -2,7 +2,7 @@
 
 The seven kinds of question an agent can put on a card, as you see them. The agent picks the type;
 each question has a short header chip and the question itself, which can include formatting,
-links, code and colors ([Answering a card](answering.md#colors)).
+links, code, colors and pictures ([Answering a card](answering.md#colors-and-pictures)).
 
 **Covers:** [The form spec](../architecture/form-spec.md), [The card](../architecture/card-ui.md), [Asks and history](../architecture/asks-and-history.md)
 
@@ -16,8 +16,8 @@ recommendation usually comes first, marked "(Recommended)". Press a number to pi
   where each number toggles.
 - **Your own answer.** Unless the agent turned it off, the last row is a text box: type in it and
   that's your answer instead of an option (in a multi-select, alongside your picks). The agent is told it's your own wording.
-- **Previews.** When options come with a preview (a code sketch, a diff), it shows below the list
-  for the focused option, or the picked one.
+- **Previews.** When options come with a preview (a code sketch, a diff, a picture of a layout),
+  it shows below the list for the focused option, or the picked one, so ↑/↓ flips between them.
 
 ## Text
 

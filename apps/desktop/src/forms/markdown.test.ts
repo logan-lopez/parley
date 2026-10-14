@@ -69,4 +69,30 @@ describe('renderMarkdown', () => {
     expect(html).toContain('data-copy')
     expect(html).not.toContain('class="palette"')
   })
+
+  it('wraps an html preview block in a figure around its code block', () => {
+    const html = renderMarkdown('```html preview height=240\n<div class="a">x</div>\n```')
+    expect(html).toBe('<figure class="md-preview" data-preview="html" data-width="400" data-height="240">'
+      + '<img class="md-preview-img" alt="Preview (HTML)">'
+      + '<figcaption><span class="md-preview-status">Preview</span>'
+      + '<button type="button" class="md-preview-toggle" data-preview-source tabindex="-1">Source</button></figcaption>'
+      + '<div class="md-preview-source"><div class="code-block"><pre><code class="language-html">'
+      + '&lt;div class=&quot;a&quot;&gt;x&lt;/div&gt;\n</code></pre>\n'
+      + '<button type="button" class="code-copy" data-copy tabindex="-1" aria-label="Copy the code">Copy</button></div>'
+      + '</div></figure>\n')
+  })
+
+  it('reads an svg preview and its size in any order', () => {
+    const html = renderMarkdown('```svg preview height=90 width=5000 dark\n<svg/>\n```')
+    expect(html).toContain('<figure class="md-preview" data-preview="svg" data-width="800" data-height="90">')
+    expect(html).toContain('alt="Preview (SVG)"')
+  })
+
+  it('leaves html and svg without the marker as code', () => {
+    for (const info of ['html', 'svg', 'html previewx', 'css preview']) {
+      const html = renderMarkdown(`\`\`\`${info}\n<b>x</b>\n\`\`\``)
+      expect(html).not.toContain('md-preview')
+      expect(html).toMatch(/^<div class="code-block"><pre><code class="language-\w+">&lt;b&gt;x&lt;\/b&gt;/)
+    }
+  })
 })

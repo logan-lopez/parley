@@ -9,6 +9,7 @@ paths:
   - "apps/desktop/src/asks/store.test.ts"
   - "apps/desktop/src/forms/schemas.test.ts"
   - "apps/desktop/src/forms/markdown.test.ts"
+  - "apps/desktop/src/forms/preview.test.ts"
 ---
 
 Before changing these files, read [Testing](../../docs/architecture/testing.md).

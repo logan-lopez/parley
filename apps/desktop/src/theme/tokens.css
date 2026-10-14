@@ -44,4 +44,9 @@
   --swatch-edge: color-mix(in srgb, var(--text) 25%, transparent);
   /* Behind a color swatch, to show its alpha. Not the theme's: a checkerboard is grey on any. */
   --swatch-checker: conic-gradient(#c8c8c8 25%, #fff 0 50%, #c8c8c8 0 75%, #fff 0) 0 0 / 6px 6px;
+  /* The page an HTML preview is drawn on (forms/preview.ts). Not the theme's either: agents write
+     previews for a browser's default page, setting backgrounds and leaving text to the default,
+     so on a dark theme's page their text vanished (brief 14's trial). */
+  --preview-paper: #ffffff;
+  --preview-ink: #000000;
 }

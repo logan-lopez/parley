@@ -91,8 +91,9 @@ How each part works, as you use it, is in [the guide](docs/guide/README.md).
   decisions, like Port / TODO / Skip), and capture (pasted output or a screenshot, which the agent
   gets as a file to read).
 - [Copy buttons](docs/guide/answering.md#code-in-a-question) on code in a question, for the
-  command the agent wants you to run, and [color swatches](docs/guide/answering.md#colors) on
-  colors and palettes.
+  command the agent wants you to run, [color swatches](docs/guide/answering.md#colors-and-pictures)
+  on colors and palettes, and [pictures](docs/guide/answering.md#colors-and-pictures) of the
+  layouts, mockups and icons an agent drew in HTML or SVG.
 - [Claude Code](docs/guide/claude-code.md) asks block until you answer, for up to an hour.
 - [Claude Desktop](docs/guide/claude-desktop.md) shows the card inline in the chat as well.
 - [History](docs/guide/history.md) of every ask for 30 days, searchable.

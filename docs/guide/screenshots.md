@@ -144,6 +144,13 @@ Options with a preview of the focused one, here code.
 | --- | --- |
 | ![previews, light](images/cards/previews-light.png) | ![previews, dark](images/cards/previews-dark.png) |
 
+Options whose previews are pictures of layouts, drawn from the agent's HTML
+([Answering a card](answering.md#colors-and-pictures)).
+
+| Light | Dark |
+| --- | --- |
+| ![previews visual, light](images/cards/previews-visual-light.png) | ![previews visual, dark](images/cards/previews-visual-dark.png) |
+
 A long question with headings, lists and a table.
 
 | Light | Dark |

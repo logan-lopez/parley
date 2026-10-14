@@ -6,7 +6,7 @@ Claude Desktop, and in the dev gallery.
 
 **Sources:** `apps/desktop/src/card/`, `apps/desktop/src/forms/`, `apps/desktop/src/platform.ts`, `apps/desktop/src/styles.css`, `apps/desktop/src/zoom.ts`, `apps/desktop/src/ZoomControl.vue`, `apps/desktop/src/App.vue`, `apps/desktop/src/main.ts`, `apps/desktop/src/gallery/`
 
-**History:** [brief 2](../briefs/archive/02-ask-tool-and-ui.md), [brief 5](../briefs/archive/05-review-question.md) (the review renderer), [brief 7](../briefs/archive/07-inline-cards.md) (the platform adapter, `html.inline`), [brief 11](../briefs/archive/11-review-decisions.md) (labelled review decisions), [brief 12](../briefs/archive/12-capture-question.md) (copy buttons, the capture renderer), [brief 13](../briefs/13-color-chips.md) (color chips, palettes), [brief 15](../briefs/15-themes.md) (tokens from themes)
+**History:** [brief 2](../briefs/archive/02-ask-tool-and-ui.md), [brief 5](../briefs/archive/05-review-question.md) (the review renderer), [brief 7](../briefs/archive/07-inline-cards.md) (the platform adapter, `html.inline`), [brief 11](../briefs/archive/11-review-decisions.md) (labelled review decisions), [brief 12](../briefs/archive/12-capture-question.md) (copy buttons, the capture renderer), [brief 13](../briefs/13-color-chips.md) (color chips, palettes), [brief 14](../briefs/14-fenced-previews.md) (HTML and SVG previews), [brief 15](../briefs/15-themes.md) (tokens from themes)
 
 `card/AskCard.vue` is the card. It knows nothing about the hub or Tauri. `App.vue` is the window
 around it: the queue, Send and Skip, history. `forms/` holds the renderers, their registration, the
@@ -87,6 +87,37 @@ keyboard contract and markdown. `platform.ts` is the one way renderers reach the
   `Markdown.vue`'s `paint()`, run on mount and after every render (`v-html` replaces the DOM),
   sets it as `--swatch` through the CSSOM. The webview never navigates: a capture-phase click
   handler in `main.ts` stops every link, and links open through `openExternal`.
+- **Previews** (`forms/preview.ts`): a fence whose info string is `html preview` or `svg preview`
+  (then optional `width=N` and `height=N`, clamped to 200–800 by 40–800, default 400×200;
+  `parsePreviewInfo`) renders as a `figure.md-preview` holding an `img` with no `src`, a caption
+  (a status and a Source button, `[data-preview-source]`) and the ordinary code block with its
+  copy button. A plain ```` ```html ```` or ```` ```svg ```` block stays code. `paint()` reads
+  the code block's text and calls `previewSrc`, which builds an SVG image as a
+  `data:image/svg+xml` URL: HTML is parsed with `DOMParser`, stripped of `script`, `iframe`,
+  `frame`, `object`, `embed`, `link`, `meta`, `base`, `on*` and attributes XML can't name,
+  given a base `<style>` first in `head` (the theme's tokens on `html` for `var()`, and a light
+  page whatever the theme: `color-scheme: light`, `--preview-paper` and `--preview-ink` from
+  `tokens.css` as the body's background and text, the 13 px font), serialized as XHTML and put
+  in a `<foreignObject>`. Models write previews for a browser's default page, setting
+  backgrounds and leaving text to the default, so a themed page left their text light on white
+  in a dark theme (brief 14's trial). SVG is parsed as XML (namespaces added to the root when
+  missing; a parse error or a root that isn't `svg` gives undefined), stripped of `script` and
+  `on*`, and given the tokens, the theme's `color-scheme`, `color: var(--text)` (so
+  `currentColor` icons follow the theme) and the font, a viewBox from its own size when it has
+  none, and the info string's size. The theme (`forms/theme-watch.ts`, `previewTheme`) is every
+  token's computed value (a host's `var()` comes back substituted), the body's font family,
+  `color-scheme` from `:root`, and the page colors. The
+  image is built at the size it's shown at, the column's width at most, and never scaled down by
+  CSS: WebKit draws a `foreignObject` image shrunk below its own size with positioned elements
+  left unscaled. So HTML is laid out at the info string's size and shrunk by `zoom` inside the
+  image, and the `img` keeps its natural size. Built URLs are cached (50, keyed by kind, size,
+  shown width, theme and source). A parse failure or the image's `error` adds `.failed`: the
+  status reads "Couldn't draw this preview" and the source shows. Source toggles
+  `.showing-source`, and a mousedown on it, or on a copy button, is prevented, so focus stays on
+  the option whose preview it is (the choice pane shows the focused option's preview).
+  Previews are drawn again when the theme changes, through one shared `MutationObserver` on
+  `:root`'s `style` and a `prefers-color-scheme` listener (`onThemeChange`), and when the
+  Markdown's width changes (a `ResizeObserver` per instance).
 - **The platform adapter** (`platform.ts`): `pickPaths` (the Tauri dialog, or `window.prompt`
   outside Tauri), `openExternal` (http(s) and mailto only; the opener plugin in Tauri, the
   host's `openLink` in the inline card through `setPlatform`, `window.open` in a plain browser),
@@ -121,6 +152,12 @@ keyboard contract and markdown. `platform.ts` is the one way renderers reach the
   isn't an editing key (`Cmd+Backspace` is). `Cmd+N` opens the note because plain `n` is No on a
   focused Yes/No. `Cmd+0` belongs to AeroSpace, so zoom reset is a click. Check
   `~/.config/keymap/keymap.md` before adding a chord.
+- **Model HTML reaches the screen only as an image the app builds.** Never as inline HTML, in a
+  shadow root, or in an iframe: an SVG used as an image runs no script and loads nothing, so it's
+  static by construction, and the CSP's `img-src data:` needs no change. In the inline card a
+  sanitizer miss would run script in a frame that can call `parley_submit`.
+- **Never scale a preview image down with CSS.** Build it at the shown size (`previewSrc`'s
+  `scale`); see Previews above.
 - **Never put a model-derived value in a `style` attribute.** The release CSP (`style-src 'self'`)
   drops it, while the dev header allows inline styles for Vite, so it looks right in the gallery
   and does nothing in the installed app. Set it through the CSSOM after render, as `paint()` does.

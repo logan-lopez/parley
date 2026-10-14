@@ -21,7 +21,7 @@ A code block in a question (a command to run, a snippet for the console) has a *
 its top right. Click it and it says "Copied" for a moment. Where the clipboard is off limits, it
 selects the code instead and says "Press ⌘C". It's for the mouse; there's no key for it.
 
-## Colors
+## Colors and pictures
 
 A color the agent writes as code, like `#38bdf8` or `oklch(70% 0.15 230)`, has a small swatch in
 front of it, so you see the color as well as its value. A see-through color shows a checkerboard
@@ -31,6 +31,20 @@ issue number written as code, like `#123`, is also a valid color and gets a swat
 An agent can also show a whole palette: a row of large swatches, each with its name and value
 under it. Hover a value that's cut off to see all of it. In a palette question, each option
 usually shows its colors as swatches on its own line, and its full palette as the preview.
+
+For anything bigger than a color, an agent can show a picture: a layout, a screen mockup, a card
+design, an icon. It sits in a thin frame with a caption under it. **Source**, at the caption's
+right, swaps the picture for the HTML or SVG it was drawn from (with its own Copy button), and
+**Preview** swaps it back. It's for the mouse; there's no key for it. In a layout question, each
+option's preview is usually a picture, so ↑/↓ flips between the layouts in one spot.
+
+A picture is only a picture: nothing in it is clickable, its buttons and fields don't work, and
+you can't select its text. An HTML picture is drawn on a plain white page with black text, the
+way a browser shows a page the agent didn't color, even in a dark theme: agents design for that
+page, and on a dark one their text disappeared. An SVG picture, an icon say, sits on the card
+and takes the theme's text color, so it follows light and dark. Either is drawn again when the
+theme changes. A wide one is shrunk to fit the card. If the agent's HTML or SVG can't be drawn, the caption says
+"Couldn't draw this preview" in red and the source shows instead.
 
 ## Keys
 

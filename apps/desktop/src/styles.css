@@ -246,6 +246,47 @@ kbd {
 .md .palette-name { font-weight: 600; }
 .md .palette-value { padding: 0; background: none; color: var(--text-muted); font-size: 10.5px; }
 
+/* Previews: an ```html preview or ```svg preview block, drawn as an image by
+   Markdown.vue (forms/preview.ts). The image is built at the size it's shown
+   at, the column's width at most, and never scaled by CSS: WebKit misdraws a
+   shrunk foreignObject. The frame hugs it. The source shows on request, or
+   when drawing fails. */
+.md .md-preview {
+  width: fit-content;
+  max-width: 100%;
+  margin: 0 0 8px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+.md .md-preview-img { display: block; }
+.md .md-preview figcaption {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  padding: 2px 8px;
+  border-top: 1px solid var(--border);
+  font-size: 11px;
+  color: var(--text-muted);
+}
+.md .md-preview-toggle {
+  margin-left: auto;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--link);
+  font: inherit;
+  cursor: pointer;
+}
+.md .md-preview-source { display: none; border-top: 1px solid var(--border); }
+.md .md-preview-source .code-block { margin: 0; }
+.md .md-preview-source pre { border-radius: 0; }
+.md .md-preview.showing-source .md-preview-source, .md .md-preview.failed .md-preview-source { display: block; }
+.md .md-preview.showing-source .md-preview-img { display: none; }
+.md .md-preview.showing-source, .md .md-preview.failed { width: auto; }
+.md .md-preview.failed .md-preview-img, .md .md-preview.failed .md-preview-toggle { display: none; }
+.md .md-preview.failed .md-preview-status { color: var(--danger); }
+
 /* Choice */
 
 .options { display: flex; flex-direction: column; gap: 4px; }

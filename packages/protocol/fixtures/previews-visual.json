@@ -1,0 +1,48 @@
+{
+  "title": "Settings screen and toolbar icons",
+  "questions": [
+    {
+      "header": "Layout",
+      "question": "Which layout for the settings screen? Each one uses the accent `#38bdf8` on ink `#0f172a`.",
+      "options": [
+        {
+          "label": "Sidebar (Recommended)",
+          "description": "Sections in a sidebar, accent `#38bdf8` on the picked one.",
+          "preview": "```html preview width=400 height=200\n<style>.field{display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid rgba(127,127,127,.25)}.toggle{width:28px;height:16px;border-radius:8px;background:#38bdf8;position:relative}.toggle::after{content:'';position:absolute;right:2px;top:2px;width:12px;height:12px;border-radius:50%;background:#fff}.toggle.off{background:rgba(127,127,127,.45)}.toggle.off::after{left:2px;right:auto}h1{font-size:14px;margin:0 0 8px}.app{display:flex;height:200px;font-size:12px}.side{width:112px;padding:10px 8px;background:rgba(127,127,127,.12);display:flex;flex-direction:column;gap:3px}.nav{padding:4px 8px;border-radius:5px}.nav.on{background:#38bdf8;color:#0f172a;font-weight:600}.main{flex:1;padding:12px 14px}</style>\n<div class=\"app\"><div class=\"side\"><div class=\"nav on\">General</div><div class=\"nav\">Account</div><div class=\"nav\">Notifications</div><div class=\"nav\">Advanced</div></div><div class=\"main\"><h1>General</h1><div class=\"field\">Launch at login<span class=\"toggle\"></span></div><div class=\"field\">Show in menu bar<span class=\"toggle\"></span></div><div class=\"field\">Play sounds<span class=\"toggle off\"></span></div></div></div>\n```\n\nRoom for more sections later. Costs 112 px of width on every page."
+        },
+        {
+          "label": "Tabs",
+          "description": "Tabs across the top, underlined in `#38bdf8`.",
+          "preview": "```html preview width=400 height=200\n<style>.field{display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid rgba(127,127,127,.25)}.toggle{width:28px;height:16px;border-radius:8px;background:#38bdf8;position:relative}.toggle::after{content:'';position:absolute;right:2px;top:2px;width:12px;height:12px;border-radius:50%;background:#fff}.toggle.off{background:rgba(127,127,127,.45)}.toggle.off::after{left:2px;right:auto}h1{font-size:14px;margin:0 0 8px}.app{font-size:12px}.tabs{display:flex;gap:16px;padding:0 14px;border-bottom:1px solid rgba(127,127,127,.3)}.tab{padding:9px 0 7px;color:rgba(127,127,127,1)}.tab.on{color:inherit;font-weight:600;border-bottom:2px solid #38bdf8}.main{padding:10px 14px}</style>\n<div class=\"app\"><div class=\"tabs\"><span class=\"tab on\">General</span><span class=\"tab\">Account</span><span class=\"tab\">Notifications</span><span class=\"tab\">Advanced</span></div><div class=\"main\"><div class=\"field\">Launch at login<span class=\"toggle\"></span></div><div class=\"field\">Show in menu bar<span class=\"toggle\"></span></div><div class=\"field\">Play sounds<span class=\"toggle off\"></span></div></div></div>\n```\n\nFamiliar from macOS. Four tabs fit at this width; a fifth would crowd it."
+        },
+        {
+          "label": "Single column",
+          "description": "Grey `#7f7f7f` headings and a `#38bdf8` Save button.",
+          "preview": "```html preview width=400 height=240\n<style>.app{padding:12px 14px;font-size:12px}h2{margin:0 0 6px;font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:rgba(127,127,127,1)}.grid{display:grid;grid-template-columns:1fr auto;gap:8px 12px;align-items:center;margin-bottom:14px}select,input{font:inherit;padding:2px 6px;border:1px solid rgba(127,127,127,.4);border-radius:5px;background:transparent;color:inherit}.save{grid-column:2;padding:4px 12px;border:0;border-radius:6px;background:#38bdf8;color:#0f172a;font:inherit;font-weight:600}</style>\n<div class=\"app\"><h2>General</h2><div class=\"grid\"><span>Launch at login</span><input type=\"checkbox\" checked=\"checked\" /><span>Theme</span><select><option>Follow the system</option></select></div><h2>Account</h2><div class=\"grid\"><span>Email</span><input value=\"logan@example.com\" /><span>Plan</span><span>Personal</span><span></span><button class=\"save\">Save</button></div></div>\n```\n\nEverything on one scrolling page, laid out with CSS grid. Simplest; gets long past three sections."
+        }
+      ]
+    },
+    {
+      "header": "Icons",
+      "question": "New toolbar icons. Approve the ones to ship.",
+      "type": "review",
+      "items": [
+        {
+          "label": "icons/sync.svg",
+          "detail": "Stroke icon in `currentColor`, so it follows the theme.",
+          "preview": "```svg preview width=200 height=80\n<svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M21 12a9 9 0 0 1-15.5 6.2\"/><path d=\"M3 12a9 9 0 0 1 15.5-6.2\"/><path d=\"M18 2v4h-4\"/><path d=\"M6 22v-4h4\"/></svg>\n```"
+        },
+        {
+          "label": "icons/pause.svg",
+          "detail": "Filled, `#38bdf8` with `#0f172a` bars.",
+          "preview": "```svg preview width=200 height=80\n<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\"><circle cx=\"12\" cy=\"12\" r=\"10\" fill=\"#38bdf8\"/><rect x=\"8.5\" y=\"7\" width=\"2.5\" height=\"10\" rx=\"1\" fill=\"#0f172a\"/><rect x=\"13\" y=\"7\" width=\"2.5\" height=\"10\" rx=\"1\" fill=\"#0f172a\"/></svg>\n```"
+        },
+        {
+          "label": "icons/frame.svg",
+          "detail": "Hand-edited; the path isn't closed, so it doesn't parse.",
+          "preview": "```svg preview width=200 height=80\n<svg viewBox=\"0 0 24 24\"><path d=\"M4 4h16v16H4z\" fill=\"none\" stroke=\"currentColor\">\n<circle cx=\"12\" cy=\"12\" r=\"3\"/>\n</svg>\n```"
+        }
+      ]
+    }
+  ]
+}

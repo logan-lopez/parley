@@ -54,7 +54,10 @@ app is the card: `McpApp.vue` around the same `AskCard` the window uses, and `th
   takes the host's look (`theme.ts`): Parley Light or Dark by the host's `theme`, its fonts, and
   its surface, text and border colors mapped over the tokens, again after each repaint. It never
   reads the window's theme setting ([themes](themes.md)). `html.inline` makes
-  it content height with no inner scroll, at most 640 px wide.
+  it content height with no inner scroll, at most 640 px wide. HTML and SVG previews work there
+  as in the window: they're `data:` images, which the MCP Apps default CSP allows (`img-src
+  'self' data:`), and they take the host's colors through the mapped tokens. Not yet checked in
+  Desktop itself (brief 14).
 - **The build.** `pnpm --filter @parley/desktop build:mcp-app` (Vite with `vite-plugin-singlefile`)
   writes `apps/desktop/dist-mcp-app/mcp-app.html`. `pnpm --filter @parley/server build` runs that
   first, then bundles the server with the card copied beside it as `dist/card.html`. Under tsx

@@ -13,15 +13,15 @@ and move to `archive/` when they're done. Ideas that aren't scheduled yet are in
   inputs drawn from real asks (10–12): drafts you edit in place, review with the agent's own
   decisions, and `capture` for pasted output and screenshots, with copy buttons on code. Seven
   question types.
-- In flight: briefs 13 (colors in card markdown) and 15 (themes from a config file, inn's format)
-  are done and awaiting review; 15 went first, since 14 hadn't started. 14 (HTML and SVG previews
-  drawn as pictures, plus the trial pass for 13–14) is written, not started, and now builds on
-  15's tokens.
-- Next: brief 14, then 16–18, written 2026-10-14 from an ideate on a "show" card: a `show` block
+- In flight: briefs 13 (colors in card markdown), 14 (HTML and SVG previews drawn as pictures,
+  plus the trial pass for 13–14) and 15 (themes from a config file, inn's format) are done and
+  awaiting review. 14 was checked headless only; its installed-build check is a spot check.
+- Next: briefs 16–18, written 2026-10-14 from an ideate on a "show" card: a `show` block
   from text or a project file (16), editing a shown file with the diff back and the file saved
   (17), and a card that follows the file while it's open (18, spike first). After those, the
-  [`FUTURE.md`](FUTURE.md) candidates are still "Hands-on runs" and the trial tune-ups, led by
-  `crash-output` never asking (0/3).
+  [`FUTURE.md`](FUTURE.md) candidates are still "Hands-on runs" and the trial tune-ups.
+  `crash-output` asked 2/3 in brief 14's pass (0/3 before); `sort-helpers` dropped `decisions`
+  in 2/3 and wants a rerun.
 - Loose ends waiting on Logan: the hand checks from briefs 10–12 (a draft and a copy button in
   Desktop's inline card, a screenshot pasted into the installed build, whether a real debugging
   session reaches for `capture`, the draft box's height, four long decision labels in the 440 px
@@ -32,7 +32,7 @@ and move to `archive/` when they're done. Ideas that aren't scheduled yet are in
 
 13. [`13-color-chips.md`](13-color-chips.md) (done, awaiting review): a color in a code span shows a swatch,
     and a ```` ```palette ```` block shows large labelled swatches, in every markdown surface.
-14. [`14-fenced-previews.md`](14-fenced-previews.md): blocks marked `html preview` and
+14. [`14-fenced-previews.md`](14-fenced-previews.md) (done, awaiting review): blocks marked `html preview` and
     `svg preview`, drawn as SVG images (static by construction, no CSP change),
     starting with a foreignObject spike; then the trial pass for 13–14.
 15. [`15-themes.md`](15-themes.md) (done, awaiting review): every window color from a base16/base24 theme, picked in
@@ -133,12 +133,12 @@ Don't relitigate these. If one turns out to be wrong in practice, stop and say s
 | Note for the agent | Every card has an optional note, sent with an answer or a skip, returned as `note` and quoted in the text. Additive, so the wire stays v1. | Covers "answer plus context", "skipped because…", and feedback on Parley itself (2026-10-09). |
 | Several sessions at once | One queue in one app, one card at a time, each labelled `client · project dir` | Two sessions ask at once on day one (MVP). |
 | `review` question | 1–30 items, each approved or rejected with an optional comment; `defaultDecision` approve, reject or none. The answer's `value` is the approved labels, with every item's decision in `review`. | The richer input coding agents would use daily (brief 5, 2026-10-10). A tuple array on the wire, so a raw-schema form could send the same. |
-| `'unsafe-eval'` in the CSP | Allowed | AJV (JSON Forms validation) compiles validators with `new Function`. Markdown renders without raw HTML, so model text can't inject script. |
+| `'unsafe-eval'` in the CSP | Allowed | AJV (JSON Forms validation) compiles validators with `new Function`. Markdown still renders without raw HTML, and model HTML becomes an SVG image (brief 14), which can't run script, so model text can't inject any. |
 | Drafts to edit | `draft` on `text` only. The answer is the final text plus `edited`; no diff in the message. | The "Commit as written / Not yet" cards took two round trips for a one-word change (Logan, 2026-10-10, brief 10). |
 | Review decisions | `review` takes 2–4 `decisions` of its own; without them it's approve/reject, unchanged. `value` is the labels given the first decision, so the answer union stays the same. Gaps under `none` fall back to the last decision, the most cautious one. | Per-item assignments were being crammed into multi-select plus Other (Logan, 2026-10-10, brief 11). |
 | Pasted screenshots | `capture` saves them as PNGs under `$APPDATA/captures/<day>/` and returns the paths. Window-only, like `path`; text-only captures work inline. Day folders go after 30 days; Clear deletes them all except those still in a waiting ask's draft. | Claude Code shows only `structuredContent` for tools with an `outputSchema`, so image content would likely be dropped, and a path is something the model can read (2026-10-10, brief 12). |
 | Colors in markdown | A color in a code span (hex or a CSS color function, no named colors) gets a swatch; a ```` ```palette ```` block draws labelled swatches. Set through the CSSOM, never a `style` attribute. | Prose `#123` is as often an issue number. The release CSP drops `style` attributes while dev allows them (Logan, 2026-10-11, brief 13). |
-| HTML and SVG previews | Opt-in ```` ```html preview ```` / ```` ```svg preview ```` fences, drawn as an SVG image from a `data:` URL at a size the agent gives. A sandboxed iframe is the fallback only if the spike fails. | Plain ```` ```html ```` is how agents show source. An image is static by construction and needs no CSP change in the window or the card; inline sanitized HTML would rest on the sanitizer alone in the card (Logan, 2026-10-11, brief 14). |
+| HTML and SVG previews | Opt-in ```` ```html preview ```` / ```` ```svg preview ```` fences, drawn as an SVG image from a `data:` URL at a size the agent gives. A sandboxed iframe is the fallback only if the spike fails. | Plain ```` ```html ```` is how agents show source. An image is static by construction and needs no CSP change in the window or the card; inline sanitized HTML would rest on the sanitizer alone in the card (Logan, 2026-10-11, brief 14). HTML is drawn on a plain light page in any theme; SVG takes the theme's text color: models write HTML for a browser's default page, and on a themed dark one their text vanished (Logan, 2026-10-14, brief 14's trial). |
 | Themes | inn's format (base16/base24 YAML with `overrides`, inn's token names), set as `theme` in `~/.config/parley/settings.json`: one id, or `{ light, dark }` following the macOS appearance live. Reads `~/.config/inn/themes/` in place and `~/.config/parley/themes/`. No settings page. Parley Light and Dark reproduce the old colors and are the default pair. | One theme file serves inn, Quire and Parley, and the pair's contract is written to be copied back into inn and Quire (Logan, 2026-10-12, brief 15). |
 | Derived theme shades | Mixed from the tokens in `src/theme/tokens.css`, each subtle shade a `light-dark()` pair of `color-mix()`es keyed to the theme's variant (through `color-scheme`), not the system. No color literal outside `src/theme/`, enforced by a test. | One percentage couldn't reproduce both old bundled sets: dark's steps were bigger (brief 15, 2026-10-12, [themes](../architecture/themes.md#decisions)). |
 | Themes and the inline card | The card keeps following Claude's surfaces and text over Parley Light or Dark; the server never reads `~/.config` | It sits in Claude's chat (Logan, 2026-10-12, brief 15). |

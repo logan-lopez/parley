@@ -20,18 +20,21 @@ import {
 export const DEFAULT_TIMEOUT_SECONDS = 1800
 export const QUESTION_TYPES = ['choice', 'text', 'number', 'boolean', 'path', 'review', 'capture'] as const satisfies readonly Widget[]
 
+// Previews are kept in history.jsonl, so they get a cap; question text doesn't.
+const preview = z.string().max(10_000, 'previews are 10,000 characters or fewer').optional()
+
 // Not `.describe()`d field by field: the tool description carries the shape
 // and an example, and per-field descriptions bloat every tools/list.
 const option = z.object({
   label: z.string().min(1).max(60, 'option labels are 60 characters or fewer; put detail in `description`'),
   description: z.string().max(300).optional(),
-  preview: z.string().optional(),
+  preview,
 })
 
 const reviewItem = z.object({
   label: z.string().min(1).max(120, 'item labels are 120 characters or fewer; put detail in `detail`'),
   detail: z.string().max(300).optional(),
-  preview: z.string().optional(),
+  preview,
 })
 
 const question = z.object({

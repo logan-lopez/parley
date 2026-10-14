@@ -20,12 +20,12 @@ the app renders and holds its types.
   has a `header` (a chip of 12 characters or fewer), the `question` (markdown), a `type` (default
   `choice`), optional `id` (snake_case) and `required` (default true), and the fields for its
   type:
-  - `choice`: 2–6 `options`, each `{ label (≤60), description?, preview? }`, plus `multiSelect`
+  - `choice`: 2–6 `options`, each `{ label (≤60), description?, preview? (≤10,000) }`, plus `multiSelect`
     and `allowOther` (default on).
   - `text`: `multiline`, `placeholder`, and `draft` (up to 4,000 characters), text the agent
     wrote for the user to edit in place. `number`: `min`, `max`, `integer`. `boolean`: nothing.
   - `path`: `pathKind` (`file` or `directory`), `multiple`, `extensions`.
-  - `review`: 1–30 `items`, each `{ label (≤120), detail?, preview? }`, optional `decisions`
+  - `review`: 1–30 `items`, each `{ label (≤120), detail?, preview? (≤10,000) }`, optional `decisions`
     (2–4 labels of 12 characters or fewer, used instead of approve and reject, the most cautious
     last), and `defaultDecision`: `approve`, `reject` or `none`, or with `decisions` one of them
     or `none`, defaulting to the first.
@@ -71,9 +71,12 @@ the app renders and holds its types.
   in the host's iframe, and nowhere to save an image). The server doesn't send it `inline`, and
   the card shows it read-only ([inline cards](inline-cards.md)).
 - **Markdown** in `description` and `x-preview` renders without raw HTML and without images
-  (`apps/desktop/src/forms/markdown.ts`). Colors in code spans get swatches, and a palette
-  fence (```` ```palette ````) draws swatches ([the card](card-ui.md)); the schema carries them as
-  plain markdown, so a client without Parley's renderer shows the text.
+  (`apps/desktop/src/forms/markdown.ts`): model HTML only ever reaches the screen as an image the
+  app builds. Colors in code spans get swatches, a palette fence (```` ```palette ````) draws
+  swatches, and an ```` ```html preview ```` or ```` ```svg preview ```` fence is drawn as a
+  picture ([the card](card-ui.md)); the schema carries them as plain markdown, so a client without
+  Parley's renderer shows the text. Previews are capped at 10,000 characters, since they're kept
+  in `history.jsonl`; question text isn't.
 - **The result** (`askResultSchema`): `status` (`answered`, `dismissed`, `timed_out`,
   `cancelled`), `message`, `answers` keyed by id, and `note`. Each answer has `header`, `value`
   (a string, strings, a number, a boolean, or null for an optional question left blank), `custom`
@@ -130,4 +133,5 @@ the app renders and holds its types.
   `'unsafe-eval'` ([the desktop shell](desktop-shell.md#rules-worth-keeping)).
 - **Rejected:** a compact markdown-ish DSL (fewer tokens, but the model relearns it from the tool
   description every call, and Parley would own a parser), and raw HTML components in a sandboxed
-  view (the most power, at the most security and consistency cost).
+  view (the most power, at the most security and consistency cost). That was about interactive
+  input; brief 14's previews, static pictures with nothing to answer, don't reopen it.
