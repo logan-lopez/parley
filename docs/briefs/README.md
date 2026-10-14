@@ -6,7 +6,7 @@ and move to `archive/` when they're done. Ideas that aren't scheduled yet are in
 
 ## Where things stand
 
-*Updated 2026-10-12.*
+*Updated 2026-10-14.*
 
 - Built: the hub, `ask`, the trial harness, history and `review` (briefs 1–5), inline cards in
   Claude Desktop (6–7), the window as a non-activating panel, menu-bar only (8–9), and three
@@ -17,8 +17,11 @@ and move to `archive/` when they're done. Ideas that aren't scheduled yet are in
   are done and awaiting review; 15 went first, since 14 hadn't started. 14 (HTML and SVG previews
   drawn as pictures, plus the trial pass for 13–14) is written, not started, and now builds on
   15's tokens.
-- Next: brief 14. After those, the [`FUTURE.md`](FUTURE.md) candidates are still "Hands-on runs" and
-  the trial tune-ups, led by `crash-output` never asking (0/3).
+- Next: brief 14, then 16–18, written 2026-10-14 from an ideate on a "show" card: a `show` block
+  from text or a project file (16), editing a shown file with the diff back and the file saved
+  (17), and a card that follows the file while it's open (18, spike first). After those, the
+  [`FUTURE.md`](FUTURE.md) candidates are still "Hands-on runs" and the trial tune-ups, led by
+  `crash-output` never asking (0/3).
 - Loose ends waiting on Logan: the hand checks from briefs 10–12 (a draft and a copy button in
   Desktop's inline card, a screenshot pasted into the installed build, whether a real debugging
   session reaches for `capture`, the draft box's height, four long decision labels in the 440 px
@@ -35,6 +38,14 @@ and move to `archive/` when they're done. Ideas that aren't scheduled yet are in
 15. [`15-themes.md`](15-themes.md) (done, awaiting review): every window color from a base16/base24 theme, picked in
     `~/.config/parley/settings.json` as one id or a light/dark pair that follows the system live;
     inn's themes load in place.
+
+16. [`16-show-blocks.md`](16-show-blocks.md): a `show` question type with nothing to answer, from
+    `content` or a project file's `path` read by the server, rendered in its own scrolling pane;
+    then a trial pass.
+17. [`17-editable-show.md`](17-editable-show.md): an `editable` show of a whole file, edited in a
+    textarea; the server saves it when the disk still matches and returns a diff; then a trial pass.
+18. [`18-live-show.md`](18-live-show.md) (spike first): the window's card follows a shown file
+    while the ask is open, by re-sending the ask with the same id; go or no-go before the build.
 
 ## Done
 
@@ -131,6 +142,9 @@ Don't relitigate these. If one turns out to be wrong in practice, stop and say s
 | Themes | inn's format (base16/base24 YAML with `overrides`, inn's token names), set as `theme` in `~/.config/parley/settings.json`: one id, or `{ light, dark }` following the macOS appearance live. Reads `~/.config/inn/themes/` in place and `~/.config/parley/themes/`. No settings page. Parley Light and Dark reproduce the old colors and are the default pair. | One theme file serves inn, Quire and Parley, and the pair's contract is written to be copied back into inn and Quire (Logan, 2026-10-12, brief 15). |
 | Derived theme shades | Mixed from the tokens in `src/theme/tokens.css`, each subtle shade a `light-dark()` pair of `color-mix()`es keyed to the theme's variant (through `color-scheme`), not the system. No color literal outside `src/theme/`, enforced by a test. | One percentage couldn't reproduce both old bundled sets: dark's steps were bigger (brief 15, 2026-10-12, [themes](../architecture/themes.md#decisions)). |
 | Themes and the inline card | The card keeps following Claude's surfaces and text over Parley Light or Dark; the server never reads `~/.config` | It sits in Claude's chat (Logan, 2026-10-12, brief 15). |
+| Show blocks | A `show` question type with no answer: `content` (markdown) or `path` (with `lines`). A form needs at least one other question; `question` stays required as the lead line. | A large body had no home but the question text or one option's preview, and a form of only shows would be `notify`, which is parked (Logan, 2026-10-14, brief 16). |
+| Files in shows | The server reads `path`, inside its cwd only (after `realpath`), refusing secret-looking names; no path when the cwd is `/` or home. The read text goes into the form, so history keeps a snapshot. The inline card gets it in the `ask` result's `_meta['parley/files']`. | Relative paths resolve the way the agent means them, the app's fs scope stays its own data dir, and the card compiles from tool input, so the server has to send it (Logan, 2026-10-14, brief 16). |
+| Editing a shown file | `editable` on a whole-file `path` show; a plain monospace textarea. The server writes the file when the disk still hashes to the version the edit started from (`base`) and returns a diff; otherwise it writes nothing and returns the diff as a conflict. | Echoing a long file back wastes context, and an answer after Claude Code backgrounds the call arrives HTML-escaped, so the agent shouldn't have to re-apply it (Logan, 2026-10-14, brief 17). `draft` keeps its full-text answer. |
 | `ask_async` / `collect` | Not built; parked in [`FUTURE.md`](FUTURE.md#parked) | Claude Code backgrounds a call still running after 2 min and delivers the answer when it lands; `collect()` would depend on the model remembering to poll (2026-10-10). |
 
 ## Not built

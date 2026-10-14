@@ -166,5 +166,8 @@ contract has settled.
   monitor that is (decided 2026-10-10). Following the focused screen or the cursor was left out as
   the bigger change. Brief 9's two-monitor check, which would have said whether that's a problem
   on the laptop plus the ultrawide, was waived. Revisit if Logan finds himself hunting for it.
+- **`path` in clients with no project directory:** Claude Desktop's chat starts Parley with cwd
+  `/`, so brief 16 turns `path` off there. MCP roots could name a project instead. Revisit if Logan
+  wants to show files from Desktop.
 - **Parley inside inn:** the card could later live as a component in inn, Logan's chat app, which
   is an MCP host. Nothing to do until inn wants model → user questions of its own.
