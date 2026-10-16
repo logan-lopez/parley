@@ -23,8 +23,8 @@ on the architecture page it's about.
 
 Logan's notes on Parley are in his Obsidian vault,
 `~/Writing/Books/TheBond/Development/Projects/Parley/`. They're his ideas (`Ideas.md`): read them as
-files, and leave them to him. `Guide/` there is a symlink to `docs/guide/`, so write the guide in
-the repo, and add nothing under `Guide/`.
+files, and leave them to him. `Docs/` there is a symlink to `docs/`, so write docs in the
+repo, and add nothing under `Docs/`.
 
 ### Commands
 
