@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { DEFAULT_THEME_SETTING, parseThemeSetting, resolveThemeSetting } from './setting'
-import { parseSettingsFile } from './settings'
+import { DEFAULT_SOUND, parseSettingsFile, soundNames, soundProblem } from './settings'
 
 describe('parseThemeSetting', () => {
   it('takes a theme id', () => {
@@ -54,28 +54,65 @@ describe('resolveThemeSetting', () => {
 
 describe('parseSettingsFile', () => {
   it('is no settings when the file is missing', () => {
-    expect(parseSettingsFile(null)).toEqual({ setting: DEFAULT_THEME_SETTING, problems: [] })
+    expect(parseSettingsFile(null)).toEqual({ theme: DEFAULT_THEME_SETTING, sound: DEFAULT_SOUND, problems: [] })
   })
 
-  it('reads theme', () => {
-    expect(parseSettingsFile('{ "theme": "telnet" }')).toEqual({ setting: 'telnet', problems: [] })
+  it('reads theme and sound', () => {
+    expect(parseSettingsFile('{ "theme": "telnet" }')).toEqual({ theme: 'telnet', sound: 'default', problems: [] })
+    expect(parseSettingsFile('{ "theme": "telnet", "sound": "Glass" }')).toEqual({
+      theme: 'telnet',
+      sound: 'Glass',
+      problems: [],
+    })
+    expect(parseSettingsFile('{ "sound": null }').sound).toBeNull()
   })
 
   it('lists an unknown key and keeps the theme', () => {
     expect(parseSettingsFile('{ "theme": "telnet", "thme": "x" }')).toEqual({
-      setting: 'telnet',
+      theme: 'telnet',
+      sound: DEFAULT_SOUND,
       problems: ['settings.json: unknown key "thme"'],
     })
   })
 
   it('shows the default pair for a file that isn’t JSON, or a bad theme', () => {
     const notJson = parseSettingsFile('{ theme: telnet }')
-    expect(notJson.setting).toEqual(DEFAULT_THEME_SETTING)
+    expect(notJson.theme).toEqual(DEFAULT_THEME_SETTING)
     expect(notJson.problems[0]).toMatch(/^settings\.json isn't JSON: /)
     expect(parseSettingsFile('[]').problems).toEqual(['settings.json must be a JSON object'])
     expect(parseSettingsFile('{ "theme": 3 }')).toEqual({
-      setting: DEFAULT_THEME_SETTING,
+      theme: DEFAULT_THEME_SETTING,
+      sound: DEFAULT_SOUND,
       problems: ['settings.json: "theme" must be a theme id, or { "light": "<id>", "dark": "<id>" }, got 3'],
     })
+  })
+
+  it('plays the default sound for a bad sound, and keeps the theme', () => {
+    for (const sound of ['false', '""', '3']) {
+      const parsed = parseSettingsFile(`{ "theme": "telnet", "sound": ${sound} }`)
+      expect(parsed.theme).toBe('telnet')
+      expect(parsed.sound).toBe(DEFAULT_SOUND)
+      expect(parsed.problems).toEqual([`settings.json: "sound" must be a sound's name, "default", or null, got ${sound}`])
+    }
+  })
+})
+
+describe('sounds', () => {
+  it('names the audio files in a folder', () => {
+    expect(soundNames(['Glass.aiff', 'Chime.wav', 'Bell.caf', 'notes.txt', '.DS_Store', 'Old.AIF'])).toEqual([
+      'Glass',
+      'Chime',
+      'Bell',
+      'Old',
+    ])
+  })
+
+  it('reports a name no folder has, matching without case', () => {
+    expect(soundProblem('glass', ['Glass'])).toBeNull()
+    expect(soundProblem('default', [])).toBeNull()
+    expect(soundProblem(null, [])).toBeNull()
+    expect(soundProblem('Glsas', ['Glass'])).toBe(
+      'settings.json: no sound "Glsas" in ~/Library/Sounds, /Library/Sounds, /System/Library/Sounds',
+    )
   })
 })

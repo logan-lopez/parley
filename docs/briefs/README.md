@@ -114,7 +114,7 @@ Don't relitigate these. If one turns out to be wrong in practice, stop and say s
 | Model-facing input | A questions array, shaped like `AskUserQuestion` and extended with a few input types | Models already write that shape reliably. Raw JSON Schema forms come later as a separate tool. |
 | Wire format for forms | JSON Schema + `x-widget`, compiled from the questions on the server | The app only renders JSON Schema, so a future `ask_form` passes schema straight through and nothing in the app changes. |
 | Transport | Unix socket with newline-delimited JSON | File permissions (0600) are the auth: no port, no token, and browsers can't reach it. Node's built-in `net` handles it. Windows would need named pipes later. |
-| New ask arrives | Notify only: system notification and tray count. The window doesn't open on its own. | No focus stealing. You open it with `Cmd+Ctrl+P` or the tray. |
+| New ask arrives | Notify only: system notification, with the `sound` from `settings.json` (macOS's by default), and tray count. The window doesn't open on its own. | No focus stealing. You open it with `Cmd+Ctrl+P` or the tray. |
 | Platform | macOS only for the MVP | Other platforms fail clearly. Don't silently half-work there. |
 | Inline asks in MCP Apps clients | "Show, then wait": `ask` returns an `askId` at once, and `ask_wait` blocks in 200 s slices. Registered only for clients that advertise MCP Apps. | Desktop mounts a view only after its call returns, and cuts local calls at 240 s (brief 6). Claude Code's tool list stays as it is. |
 | MCP Apps hosts | Claude Desktop only. claude.ai and ChatGPT need a remote (HTTP) server. | Desktop is the host that runs local stdio servers, and Logan is fine with it being the only one (brief 7, 2026-10-10). |
@@ -152,7 +152,7 @@ Don't relitigate these. If one turns out to be wrong in practice, stop and say s
 `ask_async`/`collect`, `notify`, raw-schema `ask_form`, rank/slider/A-B/annotate widgets, native
 elicitation, MCP Apps outside Claude Desktop (they need a remote server), the panel following the
 active screen, remote/headless channels, and for captures: dragging image files in, thumbnails in
-history, screen capture started from Parley, and images as MCP image content. For themes: a settings page or picker, and the inline card
+history, screen capture started from Parley, and images as MCP image content. A settings page or picker for themes and the notification sound, and the inline card
 following the theme. `FUTURE.md` says where most of these stand. Anything that collects secrets stays out for
 good.
 

@@ -42,7 +42,10 @@
       "identifier": "fs:allow-read-dir",
       "allow": [
         { "path": "$HOME/.config/parley/themes" },
-        { "path": "$HOME/.config/inn/themes" }
+        { "path": "$HOME/.config/inn/themes" },
+        { "path": "$HOME/Library/Sounds" },
+        { "path": "/Library/Sounds" },
+        { "path": "/System/Library/Sounds" }
       ]
     },
     {
@@ -50,7 +53,10 @@
       "allow": [
         { "path": "$HOME/.config/parley/settings.json" },
         { "path": "$HOME/.config/parley/themes" },
-        { "path": "$HOME/.config/inn/themes" }
+        { "path": "$HOME/.config/inn/themes" },
+        { "path": "$HOME/Library/Sounds" },
+        { "path": "/Library/Sounds" },
+        { "path": "/System/Library/Sounds" }
       ]
     }
   ]

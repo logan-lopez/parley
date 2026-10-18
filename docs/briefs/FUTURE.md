@@ -133,6 +133,15 @@ form in their `settings.json` parsers, and decide what their pickers write when 
 pair (Quire's ⇧⌘T steps through themes). Wait until brief 15 has been in daily use, so the
 contract has settled.
 
+## A settings window
+
+`settings.json` is the interface for the theme and the notification sound (2026-10-17). Logan
+would like a picker for the sound: the system sounds in a list, played as you move through it,
+and a way to add a file of your own. That's Parley's first settings window, so it wants more than
+one setting to justify it; the theme is the obvious second. Adding a sound file means Parley
+writing into `~/Library/Sounds` (or its own folder, which macOS won't look up by name), and
+writing `settings.json`, which Parley never does today.
+
 ## Parked
 
 - **Inline answers when the model never calls `ask_wait`:** with show-then-wait (brief 7), an answer

@@ -57,9 +57,18 @@ derived shades. All but `paint.ts`, `appearance.ts` and `index.ts` are pure and 
   pattern) or `{ light, dark }` with nothing else, and a missing value is the default pair
   (`DEFAULT_THEME_SETTING`, the one line that differs between apps). `resolveThemeSetting` picks
   the id for an appearance; a single id ignores it.
-- **settings.json** (`parseSettingsFile`): no file is no settings. A file that isn't a JSON object,
-  or a bad `theme`, shows the default pair and says why. `theme` is the only key, and any other is
-  reported but doesn't stop `theme` working. Parley never writes the file or creates the folder.
+- **settings.json** (`parseSettingsFile`): no file is no settings. A file that isn't a JSON object
+  means the defaults and says why. The keys are `theme` and `sound`; a bad one gets its default
+  and a problem without stopping the other, and any other key is reported. Parley never writes
+  the file or creates the folder. `settings.ts` is the whole file's parser, so it lives here only
+  because `theme` came first.
+- **`sound`** (`parseSoundSetting`): a sound's name, `"default"` (also what a missing key means)
+  or null; anything else is a problem and the default. Notifications read it
+  ([asks and history](asks-and-history.md)). Each refresh also lists `~/Library/Sounds`,
+  `/Library/Sounds` and `/System/Library/Sounds` (`soundNames`: the stems of `.aif`, `.aiff`,
+  `.wav`, `.caf`, `.m4a` and `.mp3` files) and puts a name none of them has in the banner
+  (`soundProblem`, without case, as the file system matches). Failing to list only loses that
+  check.
 - **Loading** (`loadThemes`, over a `{ list, read }` interface): the bundled themes, then
   `~/.config/inn/themes/`, then `~/.config/parley/themes/`; on the same id a later folder wins. A
   missing folder is none. Files are `<id>.yaml` with a theme id for a stem; anything else is
@@ -74,7 +83,8 @@ derived shades. All but `paint.ts`, `appearance.ts` and `index.ts` are pure and 
   sets `themeError`. A newer refresh supersedes one still reading. An appearance change repaints
   from what was last read at once, then reads again.
 - **The banner** (`App.vue`): `themeError` over whatever view is up, one problem a line, in the
-  warning colors, until a read finds nothing wrong. For a theme that doesn't load it names the
+  warning colors, until a read finds nothing wrong. It carries every `settings.json` problem,
+  `sound`'s included. For a theme that doesn't load it names the
   file and the problem and what shows instead: `Theme "harbour" didn't load: themes/harbour.yaml:
   palette.base0D is missing. Showing Parley Dark.` For the side of a pair not showing, it says
   which side, and that the bundled one stands in.
@@ -94,7 +104,9 @@ derived shades. All but `paint.ts`, `appearance.ts` and `index.ts` are pure and 
   only, never `index.ts`, so it has no Tauri, fs or settings.
 - **Reading files** goes through `@tauri-apps/plugin-fs` with `homeDir()`, under read-only grants
   scoped per command in `capabilities/default.json`: `read-text-file` on `settings.json` and both
-  theme folders' files, `read-dir` and `exists` on the folders (and `exists` on `settings.json`).
+  theme folders' files, `read-dir` and `exists` on the folders (and `exists` on `settings.json`),
+  and `read-dir` and `exists` on the three sound folders. `readSettingsText` is the one read of
+  `settings.json`, shared with notifications.
   The global `fs:scope` stays the app's data dir, so `~/.config` is never writable. Rust doesn't
   change.
 
@@ -118,7 +130,10 @@ derived shades. All but `paint.ts`, `appearance.ts` and `index.ts` are pure and 
 - **The pair follows the system live** (Logan, 2026-10-12), including Auto's own switches, with no
   reload. `setting.ts` and `appearance.ts` are written to be copied into inn and Quire
   ([`FUTURE.md`](../briefs/FUTURE.md#the-lightdark-pair-in-inn-and-quire)).
-- **No settings page or picker:** editing `settings.json` is the interface for now.
+- **No settings page or picker:** editing `settings.json` is the interface for now, for the
+  notification sound too (Logan, 2026-10-17). A custom sound goes in `~/Library/Sounds` and plays
+  as the notification's own sound, not played by Parley, so Focus and the per-app sound switch
+  keep working ([`FUTURE.md`](../briefs/FUTURE.md#a-settings-window)).
 - **`light-dark()` for the derived shades,** not one percentage: no single mix reproduced both of
   the old bundled sets (hover wanted 3% in light and 10% in dark). Parley Light lands within 9/255
   per channel of the old literals in every screenshot, Parley Dark within 14/255, the largest

@@ -8,13 +8,14 @@ import { loadThemes, pickThemes } from './load'
 import type { Painted } from './paint'
 import { BUNDLED, BUNDLED_THEMES, paint } from './paint'
 import type { Appearance } from './setting'
-import { parseSettingsFile } from './settings'
+import { parseSettingsFile, soundNames, soundProblem } from './settings'
 import { TOKEN_NAMES } from './theme'
 
 /**
  * The window's theme: `theme` in `~/.config/parley/settings.json`, from the bundled themes,
  * `~/.config/inn/themes/` and `~/.config/parley/themes/`, read again whenever the window gains
- * focus or the appearance changes. The gallery paints a bundled theme and reads nothing.
+ * focus or the appearance changes. The gallery paints a bundled theme and reads nothing. The
+ * banner also carries settings.json's other problems, such as a `sound` that isn't there.
  */
 
 /** Why the theme on screen isn't what settings.json asks for, one problem a line, or null. */
@@ -96,6 +97,19 @@ const tauriFs: ThemeFs = {
   read: (path) => readTextFile(path),
 }
 
+/** `~/.config/parley/settings.json`'s text, or null when there's no file. */
+export async function readSettingsText(): Promise<string | null> {
+  const path = await join(await homeDir(), '.config', 'parley', 'settings.json')
+  return (await exists(path)) ? readTextFile(path) : null
+}
+
+/** The sound names in the folders macOS looks them up in. */
+async function listSounds(home: string): Promise<string[]> {
+  const folders = [await join(home, 'Library', 'Sounds'), '/Library/Sounds', '/System/Library/Sounds']
+  const lists = await Promise.all(folders.map((folder) => tauriFs.list(folder)))
+  return lists.flatMap((files) => soundNames(files ?? []))
+}
+
 let generation = 0
 
 /** Read settings.json and the theme folders, then show what they say. */
@@ -105,7 +119,6 @@ export async function refreshTheme(): Promise<void> {
   try {
     const home = await homeDir()
     const config = await join(home, '.config')
-    const settingsPath = await join(config, 'parley', 'settings.json')
     const dirs: ThemeDir[] = [
       { path: await join(config, 'inn', 'themes'), source: 'inn', label: 'inn themes' },
       { path: await join(config, 'parley', 'themes'), source: 'yours', label: 'themes' },
@@ -113,15 +126,23 @@ export async function refreshTheme(): Promise<void> {
     let text: string | null = null
     const problems: string[] = []
     try {
-      if (await exists(settingsPath)) text = await readTextFile(settingsPath)
+      text = await readSettingsText()
     } catch (error) {
       problems.push(`settings.json couldn't be read: ${String(error)}`)
     }
     const settings = parseSettingsFile(text)
+    problems.push(...settings.problems)
+    try {
+      const sound = soundProblem(settings.sound, await listSounds(home))
+      if (sound) problems.push(sound)
+    } catch (error) {
+      // Not knowing which sounds there are only loses the typo check.
+      console.warn("sound folders couldn't be listed:", error)
+    }
     const entries = await loadThemes(tauriFs, dirs, BUNDLED_THEMES)
-    const { themes, problems: themeProblems } = pickThemes(settings.setting, entries, BUNDLED, dirs)
+    const { themes, problems: themeProblems } = pickThemes(settings.theme, entries, BUNDLED, dirs)
     if (mine !== generation) return
-    picked = { themes, problems: [...problems, ...settings.problems], themeProblems }
+    picked = { themes, problems, themeProblems }
     writeCache(themes)
   } catch (error) {
     if (mine !== generation) return

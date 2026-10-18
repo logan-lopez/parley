@@ -3,7 +3,7 @@
 Parley is a menu bar app with one floating window. It stays out of the way: a new question
 announces itself, and you open the window when you're ready.
 
-**Covers:** [The desktop shell](../architecture/desktop-shell.md), [Asks and history](../architecture/asks-and-history.md), [The card](../architecture/card-ui.md)
+**Covers:** [The desktop shell](../architecture/desktop-shell.md), [Asks and history](../architecture/asks-and-history.md), [The card](../architecture/card-ui.md), [Themes](../architecture/themes.md)
 
 ## Starting it
 
@@ -26,6 +26,26 @@ front, or for a question that's also showing inline in Claude Desktop's chat.
 
 Clicking a notification doesn't open the window; use the hotkey or the tray. The first launch asks
 for notification permission.
+
+### The sound
+
+A notification plays macOS's notification sound. To pick another, set `sound` in
+`~/.config/parley/settings.json` (the file [themes](themes.md) use; make the folder yourself):
+
+```json
+{ "sound": "Glass" }
+```
+
+The name is a file's name without its extension, from `/System/Library/Sounds` (Basso, Blow,
+Bottle, Frog, Funk, Glass, Hero, Morse, Ping, Pop, Purr, Sosumi, Submarine, Tink), `/Library/Sounds`
+or `~/Library/Sounds`. For a sound of your own, put an AIFF, WAV or CAF file in `~/Library/Sounds`
+and use its name. `"default"` is macOS's sound, and `null` is silence.
+
+Parley reads the file for each notification, so a change counts from the next one. A name that
+isn't in any of those folders plays nothing, and the window's banner says so the next time it
+comes up: `settings.json: no sound "Glsas" in ...`. The sound is the notification's own, so Focus
+and Parley's "Play sound for notifications" switch in System Settings → Notifications silence it
+with the banner.
 
 ## The window
 
@@ -51,4 +71,5 @@ zoom across launches. (Cmd+0 is AeroSpace's, so there's no reset key.)
 
 - Only macOS.
 - No way in from a notification click.
+- No picker for the sound: `settings.json` is the interface.
 - Agents on another machine or in the cloud can't reach it: the server has to run on this Mac.

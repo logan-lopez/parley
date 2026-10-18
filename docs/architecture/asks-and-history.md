@@ -57,7 +57,11 @@ when a new ask notifies.
 - **Notifications** (`notifications.ts`): a new, non-inline ask sends one, titled with the source
   label, with the form's title (or "New question") as the body, unless the window is visible and
   focused. A sessionStorage list of notified ids, which survives a webview reload, stops a re-sent
-  ask notifying twice. They never show or focus the window.
+  ask notifying twice. They never show or focus the window. Each one reads `settings.json` again
+  for its `sound` ([themes](themes.md)), so an edit counts while the window stays hidden; a file
+  that can't be read plays the default. The sound goes to the plugin by name, with `"default"`
+  sent as `NSUserNotificationDefaultSoundName` (mac-notification-sys's constant) and `null` as no
+  sound. It's the notification's own sound, so Focus silences it.
 - **The history view** (`history/`): ended records grouped by day, newest first. Filters (kept in
   `filter.ts`, so they survive a trip back to the queue): text over titles, headers, questions,
   answers or drafts, notes and the source; status (answered, skipped, withdrawn); has a note. The

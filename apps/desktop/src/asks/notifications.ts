@@ -2,6 +2,9 @@
 
 import { getCurrentWindow } from '@tauri-apps/api/window'
 import { isPermissionGranted, requestPermission, sendNotification } from '@tauri-apps/plugin-notification'
+import { readSettingsText } from '../theme'
+import type { SoundSetting } from '../theme/settings'
+import { DEFAULT_SOUND, parseSettingsFile } from '../theme/settings'
 import { sourceLabel } from './source'
 import type { AskRecord } from './store'
 
@@ -23,7 +26,27 @@ export async function notifyNewAsk(record: AskRecord) {
   if (!granted || !markNotified(record.id)) return
   const window = getCurrentWindow()
   if ((await window.isVisible()) && (await window.isFocused())) return
-  sendNotification({ title: sourceLabel(record.session), body: record.form.title ?? 'New question' })
+  sendNotification({
+    title: sourceLabel(record.session),
+    body: record.form.title ?? 'New question',
+    sound: notificationSound(await currentSound()),
+  })
+}
+
+// Read at each notification, so an edit to settings.json counts while the
+// window stays hidden. What's wrong with the file shows in the window's banner.
+async function currentSound(): Promise<SoundSetting> {
+  try {
+    return parseSettingsFile(await readSettingsText()).sound
+  } catch {
+    return DEFAULT_SOUND
+  }
+}
+
+// macOS takes a sound's name, or this constant for its own notification sound.
+function notificationSound(sound: SoundSetting): string | undefined {
+  if (sound === null) return undefined
+  return sound === 'default' ? 'NSUserNotificationDefaultSoundName' : sound
 }
 
 // False if this id already notified.

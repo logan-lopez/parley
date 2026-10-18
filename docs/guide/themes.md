@@ -32,8 +32,8 @@ To follow the system with themes of your own, give a pair:
 It switches when the appearance does while Parley runs: when you flip System Settings →
 Appearance, and when Auto switches at sunrise and sunset, with the window shown or hidden.
 
-`theme` is the only setting. Any other key gets a banner (`settings.json: unknown key "thme"`), so
-a typo shows.
+The file's other setting is `sound`, the [notification sound](the-app.md#the-sound). Any other key
+gets a banner (`settings.json: unknown key "thme"`), so a typo shows.
 
 ## Where themes come from
 

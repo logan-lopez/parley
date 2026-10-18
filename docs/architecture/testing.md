@@ -27,7 +27,7 @@ and when to reach for it.
     and failures, and the cache, each picture re-parsed as the image's XML would be
     (`preview.test.ts`, in jsdom). Themes: the bundled pair reproduces the old colors, inn's
     files parse, and errors name the file (`theme.test.ts`); folder precedence and fallbacks
-    (`load.test.ts`); the setting and `settings.json` (`setting.test.ts`); and no color literal
+    (`load.test.ts`); the setting, `settings.json` and its `sound` (`setting.test.ts`); and no color literal
     outside `src/theme/` (`no-color-literals.test.ts`) ([themes](themes.md)).
   - `apps/desktop/src-tauri` (`cargo test`): a line through the hub keeps its key order, which is
     the question order (`hub.rs`).
