@@ -1,10 +1,11 @@
+---
+covers: ["docs/architecture/themes.md", "docs/architecture/card-ui.md", "docs/architecture/desktop-shell.md"]
+---
 # Themes
 
 Every color in Parley's window comes from a theme, in the format inn and Quire use: a base16 or
 base24 scheme in a YAML file. Your inn themes work as they are, without copying anything. You pick
 one in a settings file; there's no settings page.
-
-**Covers:** [Themes](../architecture/themes.md), [The card](../architecture/card-ui.md), [The desktop shell](../architecture/desktop-shell.md)
 
 ## Without a setting
 

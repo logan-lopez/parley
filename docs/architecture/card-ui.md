@@ -1,10 +1,11 @@
+---
+sources: ["apps/desktop/src/card/", "apps/desktop/src/forms/", "apps/desktop/src/platform.ts", "apps/desktop/src/styles.css", "apps/desktop/src/zoom.ts", "apps/desktop/src/ZoomControl.vue", "apps/desktop/src/App.vue", "apps/desktop/src/main.ts", "apps/desktop/src/gallery/"]
+---
 # The card
 
 The ask card and the question renderers: one ask as a form, rendered by JSON Forms from the
 compiled schema, driven from the keyboard. The same card runs in the window, in the inline card in
 Claude Desktop, and in the dev gallery.
-
-**Sources:** `apps/desktop/src/card/`, `apps/desktop/src/forms/`, `apps/desktop/src/platform.ts`, `apps/desktop/src/styles.css`, `apps/desktop/src/zoom.ts`, `apps/desktop/src/ZoomControl.vue`, `apps/desktop/src/App.vue`, `apps/desktop/src/main.ts`, `apps/desktop/src/gallery/`
 
 **History:** [brief 2](../briefs/archive/02-ask-tool-and-ui.md), [brief 5](../briefs/archive/05-review-question.md) (the review renderer), [brief 7](../briefs/archive/07-inline-cards.md) (the platform adapter, `html.inline`), [brief 11](../briefs/archive/11-review-decisions.md) (labelled review decisions), [brief 12](../briefs/archive/12-capture-question.md) (copy buttons, the capture renderer), [brief 13](../briefs/13-color-chips.md) (color chips, palettes), [brief 14](../briefs/14-fenced-previews.md) (HTML and SVG previews), [brief 15](../briefs/15-themes.md) (tokens from themes)
 

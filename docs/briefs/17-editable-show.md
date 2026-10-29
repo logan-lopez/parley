@@ -1,3 +1,6 @@
+---
+status: not-started
+---
 # Brief 17: Edit a shown file, get a diff back
 
 Read `CLAUDE.md`, [`README.md`](README.md), [brief 16](16-show-blocks.md), [the form

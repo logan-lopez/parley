@@ -1,11 +1,12 @@
+---
+sources: ["apps/desktop/src-tauri/src/lib.rs", "apps/desktop/src-tauri/src/window.rs", "apps/desktop/src-tauri/src/tray.rs", "apps/desktop/src-tauri/src/shortcut.rs", "apps/desktop/src-tauri/tauri.conf.json", "apps/desktop/src-tauri/capabilities/", "apps/desktop/src-tauri/Cargo.toml", "apps/desktop/src-tauri/Info.plist", "apps/desktop/src-tauri/build.rs", "apps/desktop/vite.config.ts", "apps/desktop/scripts/install.sh"]
+---
 # The desktop shell
 
 The Rust side of the app: the tray, the global hotkey, the window (a non-activating panel on
 macOS), the plugins, the permissions and the CSP, and the installer. It stays small on purpose:
 the socket hub is the only other thing in Rust ([the hub](hub.md)), and everything else is in the
 webview.
-
-**Sources:** `apps/desktop/src-tauri/src/lib.rs`, `apps/desktop/src-tauri/src/window.rs`, `apps/desktop/src-tauri/src/tray.rs`, `apps/desktop/src-tauri/src/shortcut.rs`, `apps/desktop/src-tauri/tauri.conf.json`, `apps/desktop/src-tauri/capabilities/`, `apps/desktop/src-tauri/Cargo.toml`, `apps/desktop/src-tauri/Info.plist`, `apps/desktop/src-tauri/build.rs`, `apps/desktop/vite.config.ts`, `apps/desktop/scripts/install.sh`
 
 **History:** [brief 1](../briefs/archive/01-hub-and-lifecycle.md), [brief 8](../briefs/archive/08-nspanel-spike.md) (the panel), [brief 9](../briefs/archive/09-panel-window.md) (menu-bar only)
 

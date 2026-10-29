@@ -1,11 +1,12 @@
+---
+sources: ["packages/protocol/src/ask.ts", "packages/protocol/src/form.ts", "packages/protocol/fixtures/"]
+---
 # The form spec
 
 Two layers. The model writes a questions array, shaped like Claude's `AskUserQuestion`. The server
 compiles it to JSON Schema with `x-widget` hints, which is all the app renders. After the user
 answers, the same package shapes the answer back into a structured result and a line of text per
 question.
-
-**Sources:** `packages/protocol/src/ask.ts`, `packages/protocol/src/form.ts`, `packages/protocol/fixtures/`
 
 **History:** [brief 2](../briefs/archive/02-ask-tool-and-ui.md), [brief 5](../briefs/archive/05-review-question.md) (`review`), [brief 10](../briefs/archive/10-text-drafts.md) (`draft`), [brief 11](../briefs/archive/11-review-decisions.md) (review `decisions`), [brief 12](../briefs/archive/12-capture-question.md) (`capture`)
 

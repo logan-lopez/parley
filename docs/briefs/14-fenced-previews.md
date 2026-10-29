@@ -1,3 +1,6 @@
+---
+status: awaiting-review
+---
 # Brief 14: HTML and SVG previews, drawn as pictures
 
 Read `CLAUDE.md`, [`README.md`](README.md), [brief 13](13-color-chips.md), [the card](../architecture/card-ui.md),

@@ -1,10 +1,11 @@
+---
+sources: ["apps/server/scripts/", "apps/desktop/scripts/screenshots.ts", "apps/server/trials/", "apps/server/fixtures/", "packages/protocol/src/ask.test.ts", "apps/desktop/src/asks/persist.test.ts", "apps/desktop/src/asks/store.test.ts", "apps/desktop/src/forms/schemas.test.ts", "apps/desktop/src/forms/markdown.test.ts", "apps/desktop/src/forms/preview.test.ts"]
+---
 # Testing
 
 How Parley is checked without a person at the keyboard or a real client: unit tests for the pure
 parts, stand-ins for each side of the socket and for an MCP Apps host, and a harness that runs real
 models against a fake app.
-
-**Sources:** `apps/server/scripts/`, `apps/desktop/scripts/screenshots.ts`, `apps/server/trials/`, `apps/server/fixtures/`, `packages/protocol/src/ask.test.ts`, `apps/desktop/src/asks/persist.test.ts`, `apps/desktop/src/asks/store.test.ts`, `apps/desktop/src/forms/schemas.test.ts`, `apps/desktop/src/forms/markdown.test.ts`, `apps/desktop/src/forms/preview.test.ts`
 
 **History:** [brief 1](../briefs/archive/01-hub-and-lifecycle.md) (`fake-ask`), [brief 3](../briefs/archive/03-trial-harness.md) (`fake-hub`, trials), [brief 7](../briefs/archive/07-inline-cards.md) (`fake-host`), [brief 12](../briefs/archive/12-capture-question.md) (the `capture` scenario)
 

@@ -1,9 +1,10 @@
+---
+covers: ["docs/architecture/inline-cards.md"]
+---
 # From Claude Desktop
 
 In Claude Desktop the question appears as a card right in the chat, and in the Parley window at
 the same time. Answer in whichever is closer; the first answer wins.
-
-**Covers:** [Inline cards (show, then wait)](../architecture/inline-cards.md)
 
 ## What you see
 

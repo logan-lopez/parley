@@ -44,7 +44,7 @@ and move to `archive/` when they're done. Ideas that aren't scheduled yet are in
     then a trial pass.
 17. [`17-editable-show.md`](17-editable-show.md): an `editable` show of a whole file, edited in a
     textarea; the server saves it when the disk still matches and returns a diff; then a trial pass.
-18. [`18-live-show.md`](18-live-show.md) (spike first): the window's card follows a shown file
+18. [`18-live-show.md`](18-live-show.md): the window's card follows a shown file
     while the ask is open, by re-sending the ask with the same id; go or no-go before the build.
 
 ## Done

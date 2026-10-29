@@ -1,3 +1,6 @@
+---
+status: awaiting-review
+---
 # Brief 15: Themes, from a config file
 
 Read `AGENTS.md`, [`README.md`](README.md), [the card](../architecture/card-ui.md),

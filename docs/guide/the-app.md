@@ -1,9 +1,10 @@
+---
+covers: ["docs/architecture/desktop-shell.md", "docs/architecture/asks-and-history.md", "docs/architecture/card-ui.md", "docs/architecture/themes.md"]
+---
 # The app
 
 Parley is a menu bar app with one floating window. It stays out of the way: a new question
 announces itself, and you open the window when you're ready.
-
-**Covers:** [The desktop shell](../architecture/desktop-shell.md), [Asks and history](../architecture/asks-and-history.md), [The card](../architecture/card-ui.md), [Themes](../architecture/themes.md)
 
 ## Starting it
 

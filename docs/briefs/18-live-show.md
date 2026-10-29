@@ -1,3 +1,6 @@
+---
+status: not-started
+---
 # Brief 18: A show that follows its file (spike first)
 
 Read `CLAUDE.md`, [`README.md`](README.md), [brief 16](16-show-blocks.md), [brief

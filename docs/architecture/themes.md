@@ -1,3 +1,6 @@
+---
+sources: ["apps/desktop/src/theme/"]
+---
 # Themes
 
 Every color in the window comes from a theme: a base16 or base24 scheme in a YAML file, in inn's
@@ -5,8 +8,6 @@ format, picked as `theme` in `~/.config/parley/settings.json`. The setting is on
 light/dark pair that follows the macOS appearance while Parley runs. inn's themes in
 `~/.config/inn/themes/` load in place. The inline card in Claude Desktop takes Parley Light or
 Dark under Claude's colors and reads no files.
-
-**Sources:** `apps/desktop/src/theme/`
 
 **History:** [brief 15](../briefs/15-themes.md), [brief 14](../briefs/14-fenced-previews.md) (the preview page's colors)
 

@@ -1,9 +1,10 @@
+---
+covers: ["docs/architecture/card-ui.md", "docs/architecture/asks-and-history.md"]
+---
 # Answering a card
 
 Each ask is a card: one to four questions from an agent, answered from the keyboard in a few
 keys. Waiting asks queue up, and you answer them one at a time.
-
-**Covers:** [The card](../architecture/card-ui.md), [Asks and history](../architecture/asks-and-history.md)
 
 ## The card
 

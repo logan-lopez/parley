@@ -1,3 +1,6 @@
+---
+status: not-started
+---
 # Brief 16: Show blocks, from text or a file
 
 Read `CLAUDE.md`, [`README.md`](README.md), [brief 14](14-fenced-previews.md), [the form

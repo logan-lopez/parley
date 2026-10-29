@@ -1,10 +1,11 @@
+---
+covers: ["docs/architecture/card-ui.md", "docs/architecture/testing.md"]
+---
 # What it looks like
 
 Every card here is a fixture from `packages/protocol/fixtures/`, drawn by the real card in the
 gallery, in light and dark. Each frame is the window's size, so a long card is cut where the
 window would scroll it.
-
-**Covers:** [The card](../architecture/card-ui.md), [Testing](../architecture/testing.md)
 
 To redraw them after a change to the card or a fixture:
 

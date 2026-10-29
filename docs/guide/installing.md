@@ -1,9 +1,10 @@
+---
+covers: ["docs/architecture/desktop-shell.md", "docs/architecture/ask-tool.md", "docs/architecture/hub.md"]
+---
 # Installing and setting up
 
 Parley is two pieces: the app, installed once, and the MCP server, which each client starts for
 itself. Both build from the repo.
-
-**Covers:** [The desktop shell](../architecture/desktop-shell.md), [The ask tool](../architecture/ask-tool.md), [The hub and the wire protocol](../architecture/hub.md)
 
 ## The app
 

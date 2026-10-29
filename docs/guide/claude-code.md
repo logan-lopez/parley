@@ -1,9 +1,10 @@
+---
+covers: ["docs/architecture/ask-tool.md", "docs/architecture/hub.md"]
+---
 # From Claude Code
 
 In Claude Code, an agent that needs a decision calls Parley's `ask` and waits for your answer. You
 answer in the Parley window; Claude Code shows the call as running until you do.
-
-**Covers:** [The ask tool](../architecture/ask-tool.md), [The hub and the wire protocol](../architecture/hub.md)
 
 ## What you see
 

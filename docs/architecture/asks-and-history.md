@@ -1,10 +1,11 @@
+---
+sources: ["apps/desktop/src/asks/", "apps/desktop/src/history/", "apps/desktop/src/main.ts"]
+---
 # Asks and history
 
 The app's record of every ask: one store, keyed by ask id, that holds pending asks (the queue) and
 ended ones (history), persisted to a JSONL file and loaded before the hub starts. It also decides
 when a new ask notifies.
-
-**Sources:** `apps/desktop/src/asks/`, `apps/desktop/src/history/`, `apps/desktop/src/main.ts`
 
 **History:** [brief 1](../briefs/archive/01-hub-and-lifecycle.md), [brief 4](../briefs/archive/04-history-and-inbox.md), [brief 7](../briefs/archive/07-inline-cards.md) (`resolved`, `answeredIn`), [brief 12](../briefs/archive/12-capture-question.md) (screenshot cleanup)
 

@@ -1,11 +1,12 @@
+---
+sources: ["apps/server/src/index.ts", "apps/server/src/client-capabilities.ts", "apps/server/src/tools/ask.ts", "apps/server/src/ask-lifecycle.ts"]
+---
 # The ask tool
 
 What the model sees: the server instructions, the `ask` tool, and its result. Clients that render
 MCP Apps get a two-step version ([inline cards](inline-cards.md)); this page is the blocking `ask`
 every other client gets, how the server picks between them, and how long asks survive in Claude
 Code.
-
-**Sources:** `apps/server/src/index.ts`, `apps/server/src/client-capabilities.ts`, `apps/server/src/tools/ask.ts`, `apps/server/src/ask-lifecycle.ts`
 
 **History:** [brief 1](../briefs/archive/01-hub-and-lifecycle.md), [brief 2](../briefs/archive/02-ask-tool-and-ui.md), [brief 3](../briefs/archive/03-trial-harness.md) (`alwaysLoad`), [brief 7](../briefs/archive/07-inline-cards.md) (two surfaces)
 

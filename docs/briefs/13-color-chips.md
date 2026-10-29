@@ -1,3 +1,6 @@
+---
+status: awaiting-review
+---
 # Brief 13: Color chips and palette blocks
 
 Read `CLAUDE.md`, [`README.md`](README.md), [the card](../architecture/card-ui.md), [the form

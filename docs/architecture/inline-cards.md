@@ -1,11 +1,12 @@
+---
+sources: ["apps/server/src/tools/inline.ts", "apps/server/src/ask-lifecycle.ts", "apps/server/src/card.ts", "apps/server/tsdown.config.ts", "apps/desktop/src/mcp-app/", "apps/desktop/mcp-app.html", "apps/desktop/vite.mcp-app.config.ts"]
+---
 # Inline cards (show, then wait)
 
 In Claude Desktop the ask card renders inline in the chat, as an MCP Apps view, and races the
 Parley window: the first answer wins. Because Desktop mounts a view only after its tool call
 returns, `ask` can't block there. It shows the form and returns an `askId`, and `ask_wait` blocks
 for the answer.
-
-**Sources:** `apps/server/src/tools/inline.ts`, `apps/server/src/ask-lifecycle.ts`, `apps/server/src/card.ts`, `apps/server/tsdown.config.ts`, `apps/desktop/src/mcp-app/`, `apps/desktop/mcp-app.html`, `apps/desktop/vite.mcp-app.config.ts`
 
 **History:** [brief 6](../briefs/archive/06-mcp-apps-spike.md) (the spike), [brief 7](../briefs/archive/07-inline-cards.md), [brief 12](../briefs/archive/12-capture-question.md) (image captures, `clipboardWrite`)
 

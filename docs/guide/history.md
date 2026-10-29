@@ -1,9 +1,10 @@
+---
+covers: ["docs/architecture/asks-and-history.md"]
+---
 # History
 
 Every ask that has ended, answered, skipped or withdrawn, kept for 30 days. Use it to check what
 you told an agent, or to find something you typed into a card that never got sent.
-
-**Covers:** [Asks and history](../architecture/asks-and-history.md)
 
 ## Opening it
 

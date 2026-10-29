@@ -1,9 +1,10 @@
+---
+sources: ["packages/protocol/src/wire.ts", "apps/desktop/src-tauri/src/hub.rs", "apps/desktop/src/hub/", "apps/server/src/app-client.ts"]
+---
 # The hub and the wire protocol
 
 How a server process reaches the app: a unix socket the app owns, newline-delimited JSON on it, and
 the `AppClient` that hides both from tool code. Every ask goes through here.
-
-**Sources:** `packages/protocol/src/wire.ts`, `apps/desktop/src-tauri/src/hub.rs`, `apps/desktop/src/hub/`, `apps/server/src/app-client.ts`
 
 **History:** [brief 1](../briefs/archive/01-hub-and-lifecycle.md), [brief 7](../briefs/archive/07-inline-cards.md) (`resolved`, `inline`)
 
