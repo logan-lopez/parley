@@ -18,7 +18,8 @@ recommendation usually comes first, marked "(Recommended)". Press a number to pi
 - **Your own answer.** Unless the agent turned it off, the last row is a text box: type in it and
   that's your answer instead of an option (in a multi-select, alongside your picks). The agent is told it's your own wording.
 - **Previews.** When options come with a preview (a code sketch, a diff, a picture of a layout),
-  it shows below the list for the focused option, or the picked one, so ↑/↓ flips between them.
+  it shows below the list for the option you last moved to or picked, so ↑/↓ flips between them.
+  Clicking elsewhere in the card leaves it showing.
 
 ## Text
 
@@ -61,7 +62,8 @@ hurried Enter can't approve everything, and Send waits until each item has a dec
 | `c` | Comment on it. Esc leaves the comment; ↑/↓ move to the item above or below. |
 | Shift+`a`, Shift+`r` | Approve or reject them all. |
 
-If items come with previews, the focused item's shows below the list. The agent gets the
+If items come with previews, the one for the item you last moved to shows below the list, and stays
+when you click elsewhere. The agent gets the
 approved items, every decision, and your comments.
 
 ### The agent's own decisions

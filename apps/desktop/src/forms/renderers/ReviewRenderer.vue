@@ -146,16 +146,19 @@ function onCommentKey(event: KeyboardEvent, i: number) {
   closeComment(i)
 }
 
-// The focused row's preview, kept while focus stays inside the question.
+// The last focused row's preview. Kept when focus leaves, unlike the tab stop:
+// a click in the preview (a missed copy button) would swap it out from under
+// the pointer.
 const hasPreview = computed(() => items.value.some((item) => item['x-preview']))
+const viewed = ref<number | null>(null)
 const preview = computed(() => {
-  const item = focused.value === null ? undefined : items.value[focused.value]
+  const item = viewed.value === null ? undefined : items.value[viewed.value]
   return item?.['x-preview'] ? { label: item.title, source: item['x-preview'] } : undefined
 })
 
 function onFocusIn(event: FocusEvent) {
   const row = (event.target as HTMLElement).closest<HTMLElement>('[data-review-row]')
-  if (row) focused.value = Number(row.dataset.reviewRow)
+  if (row) focused.value = viewed.value = Number(row.dataset.reviewRow)
 }
 
 function onFocusOut(event: FocusEvent) {

@@ -45,8 +45,11 @@ keyboard contract and markdown. `platform.ts` is the one way renderers reach the
   by `widgetTester` so it beats the vanilla set, which stays as the fallback
   (`forms/renderers.ts`). `useQuestion` gives each one its schema, data and frame.
   - Choice: option cards as radios or checkboxes; with an Other branch, the last row is a text
-    input, and typing in it selects it. ↑/↓ move among options and Space picks. A focused option's
-    `x-preview` shows below the list.
+    input, and typing in it selects it. ↑/↓ move among options and Space picks. The `x-preview` of the
+    option last focused or picked shows below the list (the last picked one's before that). It
+    isn't cleared on blur, so a click in the preview, on a missed copy button say, doesn't swap it
+    out from under the pointer. The review renderer keeps its last focused row's preview the same
+    way.
   - Text, number: inputs with the schema's limits. A text question with `x-draft` writes the
     draft into the data on mount (not over data already there: a restored draft or history), sizes
     its textarea to the text, 4 to 12 lines (`field-sizing: content`, with a `rows` estimate as
@@ -115,7 +118,7 @@ keyboard contract and markdown. `platform.ts` is the one way renderers reach the
   shown width, theme and source). A parse failure or the image's `error` adds `.failed`: the
   status reads "Couldn't draw this preview" and the source shows. Source toggles
   `.showing-source`, and a mousedown on it, or on a copy button, is prevented, so focus stays on
-  the option whose preview it is (the choice pane shows the focused option's preview).
+  the option whose preview it is (the choice pane shows the last focused option's preview).
   Previews are drawn again when the theme changes, through one shared `MutationObserver` on
   `:root`'s `style` and a `prefers-color-scheme` listener (`onThemeChange`), and when the
   Markdown's width changes (a `ResizeObserver` per instance).

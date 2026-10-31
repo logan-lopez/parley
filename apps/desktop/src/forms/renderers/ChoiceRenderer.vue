@@ -46,6 +46,7 @@ function commit(nextPicked: string[]) {
 
 function choose(label: string) {
   if (!enabled.value) return
+  viewed.value = options.value.findIndex((o) => o.const === label)
   if (multi.value) {
     const has = picked.value.includes(label)
     commit(has ? picked.value.filter((l) => l !== label) : [...picked.value, label])
@@ -81,13 +82,15 @@ const primary = computed(() => {
   return i === -1 ? 0 : i
 })
 
-// Previews: the focused option's, else the (last) picked option's.
+// Previews: the last option focused or picked, else the (last) picked option's.
+// Not cleared on blur: a click in the preview (a missed copy button) would
+// swap it out from under the pointer.
 const hasPreview = computed(() => options.value.some((o) => o['x-preview']))
-const focused = ref<number | null>(null)
+const viewed = ref<number | null>(null)
 const preview = computed(() => {
   if (!hasPreview.value) return undefined
-  const option = focused.value !== null
-    ? options.value[focused.value]
+  const option = viewed.value !== null
+    ? options.value[viewed.value]
     : options.value.find((o) => o.const === picked.value[picked.value.length - 1])
   return option ? { label: option.title, source: option['x-preview'] } : undefined
 })
@@ -114,8 +117,7 @@ const preview = computed(() => {
         :data-primary="i === primary || undefined"
         @click="choose(option.const)"
         @keydown="onOptionKey($event, option.const)"
-        @focus="focused = i"
-        @blur="focused = null"
+        @focus="viewed = i"
       >
         <span class="indicator" :class="multi ? 'box' : 'dot'" aria-hidden="true" />
         <span class="option-body">
