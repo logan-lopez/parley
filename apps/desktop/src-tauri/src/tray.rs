@@ -1,4 +1,5 @@
 use tauri::{
+    include_image,
     menu::{Menu, MenuItem},
     tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent},
     App, AppHandle,
@@ -13,7 +14,11 @@ pub fn init(app: &App) -> tauri::Result<()> {
     let quit = MenuItem::with_id(app, "quit", "Quit", true, None::<&str>)?;
     let menu = Menu::with_items(app, &[&show, &quit])?;
 
-    let mut builder = TrayIconBuilder::with_id(TRAY)
+    TrayIconBuilder::with_id(TRAY)
+        // The flag in black; as a template image macOS tints it for the menu bar.
+        // Rendered from icons/tray.svg by `pnpm --filter @parley/desktop icons`.
+        .icon(include_image!("icons/tray.png"))
+        .icon_as_template(true)
         .tooltip("Parley")
         .menu(&menu)
         .show_menu_on_left_click(false)
@@ -31,13 +36,8 @@ pub fn init(app: &App) -> tauri::Result<()> {
             {
                 window::toggle(tray.app_handle());
             }
-        });
-
-    // TODO: a template (monochrome) tray icon instead of the app icon.
-    if let Some(icon) = app.default_window_icon() {
-        builder = builder.icon(icon.clone());
-    }
-    builder.build(app)?;
+        })
+        .build(app)?;
     Ok(())
 }
 

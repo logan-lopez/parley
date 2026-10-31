@@ -1,0 +1,10 @@
+<!-- The app icon: a white flag of truce on Parley's dark ground. macOS grid:
+     an 824 body on a 1024 canvas. Render with `pnpm --filter @parley/desktop icons`. -->
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
+  <rect x="100" y="100" width="824" height="824" rx="185" fill="#1d1d1d"/>
+  <rect x="100.5" y="100.5" width="823" height="823" rx="184.5" fill="none" stroke="#ffffff" stroke-opacity="0.08"/>
+  <g transform="translate(169.2 169.2) scale(6.9216)">
+    <rect x="25" y="14" width="7" height="74" rx="3.5" fill="#d97757"/>
+    <path d="M32 20 C46 12 58 30 76 20 L76 52 C58 62 46 44 32 52 Z" fill="#edede9"/>
+  </g>
+</svg>

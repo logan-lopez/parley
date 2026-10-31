@@ -1,5 +1,5 @@
 ---
-sources: ["apps/desktop/src-tauri/src/lib.rs", "apps/desktop/src-tauri/src/window.rs", "apps/desktop/src-tauri/src/tray.rs", "apps/desktop/src-tauri/src/shortcut.rs", "apps/desktop/src-tauri/tauri.conf.json", "apps/desktop/src-tauri/capabilities/", "apps/desktop/src-tauri/Cargo.toml", "apps/desktop/src-tauri/Info.plist", "apps/desktop/src-tauri/build.rs", "apps/desktop/vite.config.ts", "apps/desktop/scripts/install.sh"]
+sources: ["apps/desktop/src-tauri/src/lib.rs", "apps/desktop/src-tauri/src/window.rs", "apps/desktop/src-tauri/src/tray.rs", "apps/desktop/src-tauri/src/shortcut.rs", "apps/desktop/src-tauri/tauri.conf.json", "apps/desktop/src-tauri/capabilities/", "apps/desktop/src-tauri/Cargo.toml", "apps/desktop/src-tauri/Info.plist", "apps/desktop/src-tauri/build.rs", "apps/desktop/vite.config.ts", "apps/desktop/scripts/install.sh", "apps/desktop/icons/", "apps/desktop/scripts/icons.ts"]
 ---
 # The desktop shell
 
@@ -42,7 +42,13 @@ panel and `show`/`hide`/`toggle`. `tray.rs` is the tray icon, its menu and the p
   the webview's through a command would buy nothing.
 - **The tray.** A left click toggles the window; the menu has Show Parley and Quit.
   `set_pending_count` sets the number beside the icon (empty at zero); the store calls it whenever
-  the queue changes.
+  the queue changes. The icon is `src-tauri/icons/tray.png`, embedded with `include_image!` and
+  marked a template image, so macOS tints it for a light or dark menu bar.
+- **The icons.** The sources are SVGs in `apps/desktop/icons/`: `parley.svg` (the app icon, on
+  macOS's 824-on-1024 grid) and `tray.svg` (the same flag in black). `pnpm --filter
+  @parley/desktop icons` renders them in headless WebKit and runs `tauri icon` over the app icon,
+  which rewrites `src-tauri/icons/`; it deletes the iOS and Android sets that also come out. Edit
+  the SVGs, never the PNGs.
 - **The hotkey** is `Cmd+Ctrl+P`, registered globally, and toggles the window. A failure to
   register is logged, not fatal.
 - **Notifications** are sent from the webview ([asks and history](asks-and-history.md)).

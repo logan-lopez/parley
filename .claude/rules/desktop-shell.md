@@ -11,6 +11,8 @@ paths:
   - "apps/desktop/src-tauri/build.rs"
   - "apps/desktop/vite.config.ts"
   - "apps/desktop/scripts/install.sh"
+  - "apps/desktop/icons/**"
+  - "apps/desktop/scripts/icons.ts"
 ---
 
 Before changing these files, read [The desktop shell](../../docs/architecture/desktop-shell.md).

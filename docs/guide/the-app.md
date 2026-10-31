@@ -14,7 +14,7 @@ first and quits. To start it at login, add it under System Settings → General 
 
 ## The tray
 
-Parley's icon sits in the menu bar, with a number beside it while questions are waiting. Click it
+Parley's icon, a white flag, sits in the menu bar, with a number beside it while questions are waiting. Click it
 to show or hide the window. Its menu has **Show Parley** and **Quit**, and Quit is the only way to
 stop the app: the window's close button only hides it.
 

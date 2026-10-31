@@ -1,0 +1,6 @@
+<!-- The menu bar icon, the flag alone in black. The tray marks it a template
+     image, so macOS tints it for a light or dark menu bar. -->
+<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="11.5 12 78 78">
+  <rect x="25" y="14" width="7" height="74" rx="3.5" fill="#000000"/>
+  <path d="M32 20 C46 12 58 30 76 20 L76 52 C58 62 46 44 32 52 Z" fill="#000000"/>
+</svg>

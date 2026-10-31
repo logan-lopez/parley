@@ -12,7 +12,8 @@
     "install:app": "bash scripts/install.sh",
     "test": "vitest run",
     "build:mcp-app": "vite build --config vite.mcp-app.config.ts",
-    "screenshots": "node scripts/screenshots.ts"
+    "screenshots": "node scripts/screenshots.ts",
+    "icons": "node scripts/icons.ts"
   },
   "dependencies": {
     "@jsonforms/core": "3.8.0",
