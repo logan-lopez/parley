@@ -1,6 +1,6 @@
 ---
 description: "Vue 3 (Composition API, `<script setup>`), JSON Forms 3.x Vue bindings, the three `@jsonforms/*` at the same exact version"
-covers: []
+covers: ["docs/architecture/card-ui.md"]
 ---
 # UI stack
 

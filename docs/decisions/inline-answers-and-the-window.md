@@ -1,7 +1,7 @@
 ---
 description: "The window races the card quietly (no notification)"
 decided: 2026-10-10
-covers: []
+covers: ["docs/architecture/inline-cards.md", "docs/architecture/asks-and-history.md"]
 ---
 # Inline answers and the window
 

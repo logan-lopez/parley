@@ -1,6 +1,6 @@
 ---
 description: "A questions array, shaped like `AskUserQuestion` and extended with a few input types"
-covers: []
+covers: ["docs/architecture/form-spec.md"]
 ---
 # Model-facing input
 

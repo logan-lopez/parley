@@ -1,6 +1,6 @@
 ---
 description: "`x-widget` (and other `x-*` keys) inside the JSON Schema"
-covers: []
+covers: ["docs/architecture/form-spec.md"]
 ---
 # Widget hints
 

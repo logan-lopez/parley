@@ -2,7 +2,7 @@
 description: "Opt-in ```` ```html preview ```` / ```` ```svg preview ```` fences, drawn as an SVG image from a `data:` URL at a size the agent gives"
 decided: 2026-10-11
 by: "Logan"
-covers: []
+covers: ["docs/architecture/card-ui.md"]
 ---
 # HTML and SVG previews
 

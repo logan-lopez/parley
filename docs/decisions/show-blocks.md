@@ -2,7 +2,7 @@
 description: "A `show` question type with no answer: `content` (markdown) or `path` (with `lines`)"
 decided: 2026-10-14
 by: "Logan"
-covers: []
+covers: ["docs/architecture/form-spec.md"]
 ---
 # Show blocks
 

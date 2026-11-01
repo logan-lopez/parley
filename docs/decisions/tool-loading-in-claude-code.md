@@ -1,6 +1,6 @@
 ---
 description: "`ask` sets `_meta[\"anthropic/alwaysLoad\"]: true`"
-covers: []
+covers: ["docs/architecture/ask-tool.md"]
 ---
 # Tool loading in Claude Code
 

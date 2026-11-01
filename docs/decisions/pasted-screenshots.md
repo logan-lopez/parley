@@ -1,7 +1,7 @@
 ---
 description: "`capture` saves them as PNGs under `$APPDATA/captures/<day>/` and returns the paths"
 decided: 2026-10-10
-covers: []
+covers: ["docs/architecture/card-ui.md", "docs/architecture/asks-and-history.md"]
 ---
 # Pasted screenshots
 

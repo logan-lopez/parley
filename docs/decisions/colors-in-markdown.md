@@ -2,7 +2,7 @@
 description: "A color in a code span (hex or a CSS color function, no named colors) gets a swatch"
 decided: 2026-10-11
 by: "Logan"
-covers: []
+covers: ["docs/architecture/card-ui.md"]
 ---
 # Colors in markdown
 

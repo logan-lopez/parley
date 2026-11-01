@@ -1,7 +1,7 @@
 ---
 description: "Claude Desktop only"
 decided: 2026-10-10
-covers: []
+covers: ["docs/architecture/inline-cards.md"]
 ---
 # MCP Apps hosts
 

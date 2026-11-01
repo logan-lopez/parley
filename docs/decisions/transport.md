@@ -1,6 +1,6 @@
 ---
 description: "Unix socket with newline-delimited JSON"
-covers: []
+covers: ["docs/architecture/hub.md"]
 ---
 # Transport
 

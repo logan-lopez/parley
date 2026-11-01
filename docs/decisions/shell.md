@@ -1,6 +1,6 @@
 ---
 description: "Tauri 2, with capabilities-based permissions (not the Tauri 1 allowlist)"
-covers: []
+covers: ["docs/architecture/desktop-shell.md"]
 ---
 # Shell
 

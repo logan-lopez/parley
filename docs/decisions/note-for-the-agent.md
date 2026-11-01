@@ -1,7 +1,7 @@
 ---
 description: "Every card has an optional note, sent with an answer or a skip, returned as `note` and quoted in the text"
 decided: 2026-10-09
-covers: []
+covers: ["docs/architecture/form-spec.md", "docs/architecture/card-ui.md"]
 ---
 # Note for the agent
 

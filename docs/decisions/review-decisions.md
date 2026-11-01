@@ -2,7 +2,7 @@
 description: "`review` takes 2–4 `decisions` of its own"
 decided: 2026-10-10
 by: "Logan"
-covers: []
+covers: ["docs/architecture/form-spec.md", "docs/architecture/card-ui.md"]
 ---
 # Review decisions
 

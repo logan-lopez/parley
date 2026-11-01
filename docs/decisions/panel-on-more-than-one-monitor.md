@@ -2,7 +2,7 @@
 description: "Shows at its remembered position"
 decided: 2026-10-10
 by: "Logan"
-covers: []
+covers: ["docs/architecture/desktop-shell.md"]
 ---
 # Panel on more than one monitor
 

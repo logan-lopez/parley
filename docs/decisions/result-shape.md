@@ -1,7 +1,7 @@
 ---
 description: "`structuredContent` (with an `outputSchema`) plus a text block, and `message` in the structured result repeats the text"
 decided: 2026-10-09
-covers: []
+covers: ["docs/architecture/ask-tool.md", "docs/architecture/form-spec.md"]
 ---
 # Result shape
 

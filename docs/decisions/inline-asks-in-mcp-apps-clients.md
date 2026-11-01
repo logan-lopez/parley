@@ -1,6 +1,6 @@
 ---
 description: "\"Show, then wait\": `ask` returns an `askId` at once, and `ask_wait` blocks in 200 s slices"
-covers: []
+covers: ["docs/architecture/inline-cards.md"]
 ---
 # Inline asks in MCP Apps clients
 

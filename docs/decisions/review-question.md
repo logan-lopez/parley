@@ -1,7 +1,7 @@
 ---
 description: "1–30 items, each approved or rejected with an optional comment"
 decided: 2026-10-10
-covers: []
+covers: ["docs/architecture/form-spec.md", "docs/architecture/card-ui.md"]
 ---
 # `review` question
 

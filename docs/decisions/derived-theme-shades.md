@@ -1,7 +1,7 @@
 ---
 description: "Mixed from the tokens in `src/theme/tokens.css`, each subtle shade a `light-dark()` pair of `color-mix()`es keyed to the theme's variant (through `color-scheme`), not the system"
 decided: 2026-10-12
-covers: []
+covers: ["docs/architecture/themes.md"]
 ---
 # Derived theme shades
 

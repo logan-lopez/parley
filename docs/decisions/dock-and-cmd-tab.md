@@ -2,7 +2,7 @@
 description: "Menu-bar only (`ActivationPolicy::Accessory`)"
 decided: 2026-10-10
 by: "Logan"
-covers: []
+covers: ["docs/architecture/desktop-shell.md"]
 ---
 # Dock and Cmd+Tab
 

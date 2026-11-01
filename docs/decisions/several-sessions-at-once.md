@@ -1,6 +1,6 @@
 ---
 description: "One queue in one app, one card at a time, each labelled `client · project dir`"
-covers: []
+covers: ["docs/architecture/asks-and-history.md"]
 ---
 # Several sessions at once
 

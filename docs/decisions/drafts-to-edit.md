@@ -2,7 +2,7 @@
 description: "`draft` on `text` only"
 decided: 2026-10-10
 by: "Logan"
-covers: []
+covers: ["docs/architecture/form-spec.md"]
 ---
 # Drafts to edit
 

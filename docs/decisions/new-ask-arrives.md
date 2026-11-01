@@ -1,6 +1,6 @@
 ---
 description: "Notify only: system notification, with the `sound` from `settings.json` (macOS's by default), and tray count"
-covers: []
+covers: ["docs/architecture/asks-and-history.md", "docs/architecture/desktop-shell.md"]
 ---
 # New ask arrives
 

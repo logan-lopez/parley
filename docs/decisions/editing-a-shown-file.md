@@ -2,7 +2,7 @@
 description: "`editable` on a whole-file `path` show"
 decided: 2026-10-14
 by: "Logan"
-covers: []
+covers: ["docs/architecture/form-spec.md", "docs/architecture/ask-tool.md"]
 ---
 # Editing a shown file
 

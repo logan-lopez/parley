@@ -1,7 +1,7 @@
 ---
 description: "Not built"
 decided: 2026-10-10
-covers: []
+covers: ["docs/architecture/ask-tool.md"]
 ---
 # `ask_async` / `collect`
 

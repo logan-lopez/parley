@@ -1,7 +1,7 @@
 ---
 description: "On macOS the main window is a non-activating `NSPanel` (`tauri-nspanel`)"
 decided: 2026-10-10
-covers: []
+covers: ["docs/architecture/desktop-shell.md"]
 ---
 # AeroSpace workspace jump
 

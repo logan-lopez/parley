@@ -2,7 +2,7 @@
 description: "The card keeps following Claude's surfaces and text over Parley Light or Dark"
 decided: 2026-10-12
 by: "Logan"
-covers: []
+covers: ["docs/architecture/themes.md", "docs/architecture/inline-cards.md"]
 ---
 # Themes and the inline card
 

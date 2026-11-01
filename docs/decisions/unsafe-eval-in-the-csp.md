@@ -1,6 +1,6 @@
 ---
 description: "Allowed"
-covers: []
+covers: ["docs/architecture/desktop-shell.md"]
 ---
 # `'unsafe-eval'` in the CSP
 

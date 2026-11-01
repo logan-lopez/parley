@@ -1,6 +1,6 @@
 ---
 description: "Default 1800 s, at most 3600, with a progress notification every 15 s"
-covers: []
+covers: ["docs/architecture/ask-tool.md"]
 ---
 # Timeouts
 

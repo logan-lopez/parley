@@ -1,6 +1,6 @@
 ---
 description: "JSON Schema + `x-widget`, compiled from the questions on the server"
-covers: []
+covers: ["docs/architecture/form-spec.md"]
 ---
 # Wire format for forms
 

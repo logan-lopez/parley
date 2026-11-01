@@ -2,7 +2,7 @@
 description: "The server reads `path`, inside its cwd only (after `realpath`), refusing secret-looking names"
 decided: 2026-10-14
 by: "Logan"
-covers: []
+covers: ["docs/architecture/ask-tool.md", "docs/architecture/inline-cards.md"]
 ---
 # Files in shows
 
