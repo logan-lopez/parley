@@ -173,3 +173,79 @@ description, which grew by those two paragraphs' sentences; on top of 1f96382. F
   date-fns, you install") and the run did use date-fns; `refactor-reports` 0/3 as before.
 - Not recorded: a Codex baseline, still. Run `--client codex --runs 1` before the next
   model-facing change.
+
+## Real use
+
+2026-11-01, from `$APPDATA/history.jsonl` and `~/.claude/projects`. Refresh with
+`pnpm --filter @parley/server usage --transcripts`. Paste its default output only: projects are
+`project-1`, `project-2`… by ask count, and `--projects` (real names) and `--examples` (your own
+free-text answers and notes) are for reading locally, never for this file.
+
+### 1. Volume
+- **Asks:** 983 (2026-10-10 to 2026-11-01)
+- **Per ISO week:** 2026-W41: 180 (18.3%), 2026-W42: 287 (29.2%), 2026-W43: 266 (27.1%), 2026-W44: 250 (25.4%)
+- **Per client:** claude-code: 952 (96.8%), claude-ai: 10 (1.0%), copilot-cli: 10 (1.0%), fake-ask: 10 (1.0%), codex-mcp-client: 1 (0.1%)
+- **Per project (top 15):** project-1: 169 (17.2%), project-2: 168 (17.1%), project-3: 155 (15.8%), project-4: 77 (7.8%), project-5: 74 (7.5%), project-6: 63 (6.4%), project-7: 55 (5.6%), project-8: 46 (4.7%), project-9: 37 (3.8%), project-10: 22 (2.2%), project-11: 17 (1.7%), project-12: 16 (1.6%), project-13: 12 (1.2%), project-14: 10 (1.0%), project-15: 8 (0.8%)
+
+### 2. Outcomes
+- **answered:** 921 (93.7%)
+- **timed_out:** 40 (4.1%)
+- **cancelled:** 16 (1.6%)
+- **dismissed:** 3 (0.3%)
+- **orphaned:** 3 (0.3%)
+- **Timeouts on timed-out asks:** 30m (1800s): 25 (62.5%), 15m (900s): 7 (17.5%), 60m (3600s): 3 (7.5%), 5m (300s): 2 (5.0%), 20m (1200s): 2 (5.0%), 10m (600s): 1 (2.5%)
+
+### 3. Time to answer
+- **Percentiles (921 answered):** p25 32 s, median 83 s, p75 3 min 27 s, p90 7 min 47 s, p99 21 min 22 s
+- **Over 120 s (backgrounded in Claude Code):** 350 / 921 (38.0%)
+- **Over 10 min:** 71 / 921 (7.7%)
+
+### 4. Shape
+- **Questions:** 2160 across 983 asks
+- **With a title:** 906 / 983 (92.2%)
+- **Questions per ask:** 1: 406 (41.3%), 2: 213 (21.7%), 3: 128 (13.0%), 4: 236 (24.0%)
+- **By widget:** choice: 1791 (82.9%), text: 137 (6.3%), review: 126 (5.8%), boolean: 75 (3.5%), capture: 24 (1.1%), path: 6 (0.3%), number: 1 (0.0%)
+- **Choice mode:** single 1718 (95.9%), multi 73 (4.1%)
+- **Options per single choice:** 2: 797 (46.4%), 3: 835 (48.6%), 4: 82 (4.8%), 5: 4 (0.2%)
+
+### 5. Agreement
+- **Recommended option picked:** 1372 / 1490 (92.1%)
+- **First option picked:** 1474 / 1654 (89.1%)
+- **Free-text choice answers:** 69 / 1724 (4.0%)
+- **Review items given lead decision:** 926 / 988 (93.7%); reviews where every item got lead: 98 / 119 (82.4%); reviews with custom decisions: 32 / 126 (25.4%)
+- **Review decisions by label:** approve: 775 (78.4%), Pass: 64 (6.5%), reject: 24 (2.4%), Archive: 23 (2.3%), Worked: 20 (2.0%), Keep: 16 (1.6%), Brief: 14 (1.4%), Fine: 6 (0.6%), Port: 6 (0.6%), Take 2: 6 (0.6%), Take 3: 5 (0.5%), Fail: 4 (0.4%), Push+migrate: 4 (0.4%), Take 1: 4 (0.4%), Partial: 3 (0.3%), Accept: 2 (0.2%), Confirm: 2 (0.2%), Drop: 2 (0.2%), Off: 2 (0.2%), Change: 1 (0.1%), Failed: 1 (0.1%), None: 1 (0.1%), Not run: 1 (0.1%), Skip: 1 (0.1%), TODO: 1 (0.1%)
+- **Drafts:** 78 / 79 unchanged (98.7%), 1 edited (1.3%)
+- **Booleans:** 65 / 67 true (97.0%), 2 false (3.0%)
+- **Notes:** 30 / 983 (3.1%)
+- **Asks where nothing changed:** 638 / 921 (69.3%)
+
+### 6. Asked again (16 option sets in 3+ sessions)
+- **Commit / Not yet:** 17 asks across 14 sessions (project-1, project-17, project-3, project-4, project-6, project-7) — most common: Commit (16, 100.0%)
+- **Not now / Yes, run them:** 13 asks across 13 sessions (project-2) — most common: Yes, run them (12, 100.0%)
+- **24 LTS / 26 current:** 8 asks across 5 sessions (project-14, project-6) — most common: 26 current (2, 66.7%)
+- **Separate repos / Single package / Workspace:** 8 asks across 5 sessions (project-14, project-6) — most common: Single package (3, 100.0%)
+- **Go ahead / Not now:** 7 asks across 7 sessions (project-16, project-2, project-4, project-5) — most common: Go ahead (7, 100.0%)
+- **Run it now / Skip it:** 6 asks across 6 sessions (project-11, project-2, project-5, project-8, project-9) — most common: Run it now (3, 100.0%)
+- **Not now / Yes, run it:** 5 asks across 5 sessions (project-2, project-5) — most common: Yes, run it (4, 100.0%)
+- **Commit / Leave uncommitted:** 4 asks across 4 sessions (project-3, project-4, project-6) — most common: Commit (3, 100.0%)
+- **Don't commit yet / One commit / Two commits:** 4 asks across 4 sessions (project-1, project-7) — most common: Two commits (4, 100.0%)
+- **Not now / Yes, capture freely:** 4 asks across 4 sessions (project-2) — most common: Yes, capture freely (4, 100.0%)
+- **Run it / Skip it:** 4 asks across 4 sessions (project-2, project-3, project-5) — most common: Run it (3, 75.0%)
+- **Commit with this message / Not yet:** 3 asks across 3 sessions (project-1, project-7) — most common: Commit with this message (2, 100.0%)
+- **Don't launch / Launch it now:** 3 asks across 3 sessions (project-1) — most common: Launch it now (3, 100.0%)
+- **Go ahead / Wait:** 3 asks across 3 sessions (project-2, project-5) — most common: Go ahead (2, 100.0%)
+- **Go now / Not now:** 3 asks across 3 sessions (project-1, project-6) — most common: Not now (2, 66.7%)
+- **One brief / Three briefs / Two briefs:** 3 asks across 3 sessions (project-1, project-2, project-7) — most common: Three briefs (2, 66.7%)
+
+### Claude Code
+- **Calls:** 1037 (inline: 569, 54.9%; backgrounded: 394, 38.0%; bounced: 70, 6.8%; refused: 4, 0.4%)
+- **Bounces by Zod path and message** (bounces carrying each error, of 70; one bounce can carry several):
+  - `` questions.N.options.N.description: Too big: expected string to have <=300 characters ``: 30 (42.9%)
+  - `` questions.N.header: header is a short chip of 12 characters or fewer, like "Auth method"; the full question goes in `question` ``: 24 (34.3%)
+  - `` questions.N.items.N.detail: Too big: expected string to have <=300 characters ``: 10 (14.3%)
+  - `` questions.N.options.N.label: option labels are 60 characters or fewer; put detail in `description` ``: 5 (7.1%)
+  - `` questions.N.items.N.label: item labels are 120 characters or fewer; put detail in `detail` ``: 2 (2.9%)
+  - `` questions.N.options: a choice question needs at least 2 options ``: 1 (1.4%)
+  - `` questions.N.options.N.label: question N has an option labelled 'Other, after v2 (Recommended)'; leave it out, because choice questions already let the user type their own answer ``: 1 (1.4%)
+- **Backgrounded with notification:** 390 (99.0% of backgrounded); agent made tool calls before notification in 284 / 390 (72.8%); `Edit`/`Write` in 72 / 390 (18.5%, 216 calls total)
+- **Asks per session (679 sessions):** median 1, p90 2, max 23

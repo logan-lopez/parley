@@ -6,7 +6,7 @@ and move to `archive/` when they're done. Ideas that aren't scheduled yet are in
 
 ## Where things stand
 
-*Updated 2026-10-14.*
+*Updated 2026-11-01.*
 
 - Built: the hub, `ask`, the trial harness, history and `review` (briefs 1–5), inline cards in
   Claude Desktop (6–7), the window as a non-activating panel, menu-bar only (8–9), and three
@@ -16,16 +16,19 @@ and move to `archive/` when they're done. Ideas that aren't scheduled yet are in
 - In flight: briefs 13 (colors in card markdown), 14 (HTML and SVG previews drawn as pictures,
   plus the trial pass for 13–14) and 15 (themes from a config file, inn's format) are done and
   awaiting review. 14 was checked headless only; its installed-build check is a spot check.
-- Next: briefs 16–18, written 2026-10-14 from an ideate on a "show" card: a `show` block
+- Next: briefs 19–21, written 2026-11-01 from an ideate on three weeks of real use (956 asks):
+  a usage report (19), soft input limits for the 6.6% of calls that bounced (20), and "Don't ask
+  again here" for questions asked session after session (21). Then briefs 16–18, written
+  2026-10-14 from an ideate on a "show" card: a `show` block
   from text or a project file (16), editing a shown file with the diff back and the file saved
   (17), and a card that follows the file while it's open (18, spike first). After those, the
   [`FUTURE.md`](FUTURE.md) candidates are still "Hands-on runs" and the trial tune-ups.
   `crash-output` asked 2/3 in brief 14's pass (0/3 before); `sort-helpers` dropped `decisions`
   in 2/3 and wants a rerun.
 - Loose ends waiting on Logan: the hand checks from briefs 10–12 (a draft and a copy button in
-  Desktop's inline card, a screenshot pasted into the installed build, whether a real debugging
-  session reaches for `capture`, the draft box's height, four long decision labels in the 440 px
-  window). Brief 9's waived checks (two monitors, the Dock flash at launch) were never written
+  Desktop's inline card, a screenshot pasted into the installed build, the draft box's height, four long decision labels in the 440 px
+  window). Real use answered the `capture` one: agents reached for it 20 times by 2026-11-01, 11
+  with screenshots. Brief 9's waived checks (two monitors, the Dock flash at launch) were never written
   down either. Say so if any of them bothers you.
 
 ## Open
@@ -38,6 +41,10 @@ and move to `archive/` when they're done. Ideas that aren't scheduled yet are in
 15. [`15-themes.md`](15-themes.md) (done, awaiting review): every window color from a base16/base24 theme, picked in
     `~/.config/parley/settings.json` as one id or a light/dark pair that follows the system live;
     inn's themes load in place.
+
+19. [`19-usage-report.md`](19-usage-report.md) (done, awaiting review): `pnpm --filter @parley/server usage`, a report on
+    real asks from `history.jsonl` (and Claude Code's transcripts with `--transcripts`), with a
+    dated real-use baseline in the trials README.
 
 16. [`16-show-blocks.md`](16-show-blocks.md): a `show` question type with nothing to answer, from
     `content` or a project file's `path` read by the server, rendered in its own scrolling pane;

@@ -7,7 +7,7 @@ How Parley is checked without a person at the keyboard or a real client: unit te
 parts, stand-ins for each side of the socket and for an MCP Apps host, and a harness that runs real
 models against a fake app.
 
-**History:** [brief 1](../briefs/archive/01-hub-and-lifecycle.md) (`fake-ask`), [brief 3](../briefs/archive/03-trial-harness.md) (`fake-hub`, trials), [brief 7](../briefs/archive/07-inline-cards.md) (`fake-host`), [brief 12](../briefs/archive/12-capture-question.md) (the `capture` scenario)
+**History:** [brief 1](../briefs/archive/01-hub-and-lifecycle.md) (`fake-ask`), [brief 3](../briefs/archive/03-trial-harness.md) (`fake-hub`, trials), [brief 7](../briefs/archive/07-inline-cards.md) (`fake-host`), [brief 12](../briefs/archive/12-capture-question.md) (the `capture` scenario), [brief 19](../briefs/19-usage-report.md) (`usage`)
 
 The commands are in [`AGENTS.md`](../../AGENTS.md#commands). This page is what each one covers
 and when to reach for it.
@@ -61,6 +61,19 @@ and when to reach for it.
   it. Playwright is pinned exactly, since each release wants its own browser build
   (`pnpm exec playwright install webkit` if it's missing). The window shot
   (`docs/guide/images/app.png`) is taken by hand.
+- **`usage`** (`apps/server/scripts/usage.ts`) measures how Parley gets used in real work from
+  `$APPDATA/history.jsonl` (or `--history <file>`, synthetic fixture in
+  `apps/server/fixtures/usage-history.jsonl`), narrowed with `--since YYYY-MM-DD` (local time, as
+  are the dates it prints), as markdown or `--json`. It reports volume, outcomes, time to answer,
+  form shape, agreement (recommendations, lead review decisions, unchanged drafts, and asks where
+  nothing changed), option sets asked across 3+ sessions, and markdown features. `--transcripts
+  [<dir>]` reads Claude Code's session `.jsonl` files under `~/.claude/projects` for inline vs
+  backgrounded vs bounced calls, every error in each bounce by Zod path, tool calls made while an
+  ask was backgrounded, and asks per session (a subagent's transcript counts with its parent
+  session). Read-only. The default output is meant to be pasted into the repo, which is public:
+  projects show as `project-1`, `project-2`… by count, and home paths as `~`. `--projects` prints
+  the real names and `--examples` adds free-text choice answers and notes; both are for reading
+  locally.
 
 ## The trial harness
 
