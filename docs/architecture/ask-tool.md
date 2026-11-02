@@ -8,7 +8,7 @@ MCP Apps get a two-step version ([inline cards](inline-cards.md)); this page is 
 every other client gets, how the server picks between them, and how long asks survive in Claude
 Code.
 
-**History:** [brief 1](../briefs/archive/01-hub-and-lifecycle.md), [brief 2](../briefs/archive/02-ask-tool-and-ui.md), [brief 3](../briefs/archive/03-trial-harness.md) (`alwaysLoad`), [brief 7](../briefs/archive/07-inline-cards.md) (two surfaces), [brief 16](../briefs/16-show-blocks.md) (show files), [brief 17](../briefs/17-editable-show.md) (editable shows)
+**History:** [brief 1](../briefs/archive/01-hub-and-lifecycle.md), [brief 2](../briefs/archive/02-ask-tool-and-ui.md), [brief 3](../briefs/archive/03-trial-harness.md) (`alwaysLoad`), [brief 7](../briefs/archive/07-inline-cards.md) (two surfaces), [brief 16](../briefs/16-show-blocks.md) (show files), [brief 17](../briefs/17-editable-show.md) (editable shows), [brief 21](../briefs/21-dont-ask-again.md) ("Don't ask again here")
 
 `index.ts` holds the server instructions and picks the surface. `client-capabilities.ts` reads the
 client's first message. `tools/ask.ts` is the blocking `ask` and the tool description both
@@ -39,6 +39,11 @@ reads the files show blocks name, and `show-edits.ts` saves editable shows' edit
   1800 s, at most 3600), saves any editable show's edit (`applyShowEdits`, answers only), and
   returns `shapeAnswer`'s text as content and its structured result as `structuredContent`. A refused file or an unreachable app is an `isError` result with the reason
   ("Parley isn't running…"), and nothing is shown.
+- **Remembered answers.** `AppClient` passes the answer's `remember` ids (strings only, empty
+  left out) into the `answered` outcome, and `shapeAnswer` turns them into the instruction to draft
+  a line for `AGENTS.md` ([the form spec](form-spec.md)). Nothing server-side matches asks against
+  past answers or writes the line: the agent does, after Logan accepts a draft. The instruction is
+  in `message` because Claude Code shows the model only `structuredContent`.
 - **`runAsk`** sends the form through `AppClient` with the call's abort signal and the client's
   identity, and blocks until the outcome. When the request carries a `progressToken`, it sends a
   progress notification every 15 s while it waits.

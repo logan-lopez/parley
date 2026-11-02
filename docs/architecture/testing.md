@@ -7,7 +7,7 @@ How Parley is checked without a person at the keyboard or a real client: unit te
 parts, stand-ins for each side of the socket and for an MCP Apps host, and a harness that runs real
 models against a fake app.
 
-**History:** [brief 1](../briefs/archive/01-hub-and-lifecycle.md) (`fake-ask`), [brief 3](../briefs/archive/03-trial-harness.md) (`fake-hub`, trials), [brief 7](../briefs/archive/07-inline-cards.md) (`fake-host`), [brief 12](../briefs/archive/12-capture-question.md) (the `capture` scenario), [brief 19](../briefs/19-usage-report.md) (`usage`), [brief 16](../briefs/16-show-blocks.md) (the server's vitest, `show-file`), [brief 17](../briefs/17-editable-show.md) (`show-edits.test.ts`, `show-edit`)
+**History:** [brief 1](../briefs/archive/01-hub-and-lifecycle.md) (`fake-ask`), [brief 3](../briefs/archive/03-trial-harness.md) (`fake-hub`, trials), [brief 7](../briefs/archive/07-inline-cards.md) (`fake-host`), [brief 12](../briefs/archive/12-capture-question.md) (the `capture` scenario), [brief 19](../briefs/19-usage-report.md) (`usage`), [brief 16](../briefs/16-show-blocks.md) (the server's vitest, `show-file`), [brief 17](../briefs/17-editable-show.md) (`show-edits.test.ts`, `show-edit`), [brief 21](../briefs/21-dont-ask-again.md) ("Don't ask again here")
 
 The commands are in [`AGENTS.md`](../../AGENTS.md#commands). This page is what each one covers
 and when to reach for it.
@@ -57,7 +57,8 @@ and when to reach for it.
   capture gets `other:<text>` as pasted text, or 'as you see fit', and never a screenshot; a show
   gets nothing, except an editable one: `other:<text>` adds the text as the file's last line, and
   every other policy sends it unchanged, with its `base`). Each
-  ask takes the next `--reply`; the last repeats. `--old-app` rejects `resolved` as an app from
+  ask takes the next `--reply`; the last repeats. `remember:<policy>` answers as `<policy>` does
+  and sends `remember` for every choice and boolean question. `--old-app` rejects `resolved` as an app from
   before inline cards does. Point a server at it with `PARLEY_SOCKET` and `PARLEY_NO_LAUNCH=1`.
 - **`fake-host`** stands in for an MCP Apps host (Claude Desktop). It advertises the extension,
   spawns the server (from source, or `--server dist`) and a `fake-hub` per scenario, plays both the
@@ -99,7 +100,11 @@ and when to reach for it.
 `pnpm --filter @parley/server trial` runs the prompts in `apps/server/trials/prompts/` through
 real clients (Claude Code in print mode, Codex) against `fake-hub`, and scores each run: whether
 the model asked when it should and not when it shouldn't, whether its first call was valid,
-whether it used the answer, and whether it re-asked after a skip. `apps/server/trials/README.md`
+whether it used the answer, and whether it re-asked after a skip. For `standing-commit`, which
+replies `remember:first` and then `first`, it also scores whether the model drafted a line for
+`AGENTS.md` in a `text` question and saved it only after the draft was answered (the order comes
+from the client's event stream; the save itself from the diff). A prompt's `reply:` may repeat,
+one line per ask in order. `apps/server/trials/README.md`
 has the run options (including `--score` and `--summary` to re-score a saved run), what a run
 does, the prompts, the scoring and the baseline.
 

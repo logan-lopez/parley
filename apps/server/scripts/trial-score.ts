@@ -18,7 +18,8 @@ export interface RunMeta {
   client: Client
   run: number
   expect: 'ask' | 'no-ask'
-  reply: string
+  reply: string            // the first reply policy
+  replies?: string[]       // all of them, in the order the asks arrive, when the prompt has more than one
   match?: string           // searched for instead of the reply, when set
   model: string
   clientVersion: string
@@ -34,6 +35,12 @@ export interface AskCall {
   status: string | null    // answered | dismissed | timed_out | cancelled, from the result
 }
 
+// What happened in the run, in the order the client's stream says: a Parley ask got its result
+// (`draft`: it had a `text` question with a draft), or a file was written.
+export type Op =
+  | { kind: 'ask-result'; draft: boolean; answered: boolean }
+  | { kind: 'write'; path: string }
+
 export interface RunScore {
   asked: boolean
   askCount: number
@@ -42,6 +49,10 @@ export interface RunScore {
   used: boolean | null
   usedStrings: string[]
   reAskedAfterSkip: boolean | null
+  // Prompts whose replies include `remember:` (brief 21), else null:
+  drafted: boolean | null      // a later ask has a `text` question with a draft
+  saved: boolean | null        // the diff adds a line to AGENTS.md or CLAUDE.md
+  savedEarly: boolean | null   // ...before the draft was answered, or with no draft at all
   questions: { header: string; type: string }[][]
   hubAsks: number          // asks that reached fake-hub; fewer than askCount means rejected input
   toolLoaded: boolean | null // the client had the ask tool; null when its stream doesn't say (Codex)
@@ -66,7 +77,7 @@ export function scoreRun(dir: string): RunResult {
   const matchedExpect = asked === (meta.expect === 'ask')
 
   const replies = meta.match ? (hubReplied(hub) ? [meta.match] : []) : replyStrings(hub)
-  const haystack = normalize(stream.finalText + '\n' + addedLines(diff))
+  const haystack = normalize(stream.finalText + '\n' + addedLines(diff).join('\n'))
   const usedStrings = replies.filter((s) => normalize(s) && haystack.includes(normalize(s)))
   const used = replies.length ? usedStrings.length > 0 : null
 
@@ -74,6 +85,19 @@ export function scoreRun(dir: string): RunResult {
   if (meta.reply === 'skip' && asked) {
     const skipped = asks.findIndex((a) => a.status === 'dismissed')
     reAskedAfterSkip = skipped !== -1 && asks.length > skipped + 1
+  }
+
+  // "Don't ask again" runs: did the model draft the standing line, and save it only after the
+  // draft was answered? Saves are placed by the stream's order of events.
+  let drafted: boolean | null = null
+  let saved: boolean | null = null
+  let savedEarly: boolean | null = null
+  if ((meta.replies ?? [meta.reply]).some((r) => r.startsWith('remember:'))) {
+    drafted = asks.slice(1).some((a) => a.questions.some((q) => q.type === 'text+draft'))
+    saved = addedLines(diff, isInstructions).length > 0
+    const draftAnswered = stream.ops.findIndex((o) => o.kind === 'ask-result' && o.draft && o.answered)
+    const firstWrite = stream.ops.findIndex((o) => o.kind === 'write' && isInstructions(o.path))
+    savedEarly = !saved ? null : draftAnswered === -1 ? true : firstWrite === -1 ? false : firstWrite < draftAnswered
   }
 
   const failed: string[] = []
@@ -84,6 +108,9 @@ export function scoreRun(dir: string): RunResult {
   if (firstValid === false) failed.push('firstValid')
   if (used === false) failed.push('used')
   if (reAskedAfterSkip) failed.push('reAskedAfterSkip')
+  if (drafted === false) failed.push('notDrafted')
+  if (saved === false) failed.push('notSaved')
+  if (savedEarly) failed.push('savedEarly')
 
   return {
     ...meta,
@@ -95,6 +122,9 @@ export function scoreRun(dir: string): RunResult {
     used,
     usedStrings,
     reAskedAfterSkip,
+    drafted,
+    saved,
+    savedEarly,
     questions: asks.map((a) => a.questions),
     hubAsks: hub.filter((e) => e.type === 'ask').length,
     toolLoaded: stream.toolLoaded,
@@ -104,6 +134,7 @@ export function scoreRun(dir: string): RunResult {
 
 interface Stream {
   asks: AskCall[]
+  ops: Op[]
   finalText: string
   model?: string
   toolLoaded: boolean | null
@@ -112,6 +143,7 @@ interface Stream {
 // claude -p --output-format stream-json --verbose
 function readClaude(events: any[]): Stream {
   const calls = new Map<string, AskCall>()
+  const ops: Op[] = []
   let finalText = ''
   let lastAssistantText = ''
   let model: string | undefined
@@ -128,6 +160,9 @@ function readClaude(events: any[]): Stream {
         if (block.type === 'tool_use' && block.name === ASK_TOOL.claude) {
           calls.set(block.id, { questions: questionsOf(block.input), error: null, status: null })
         }
+        if (block.type === 'tool_use' && CLAUDE_WRITERS.has(block.name) && typeof block.input?.file_path === 'string') {
+          ops.push({ kind: 'write', path: block.input.file_path })
+        }
       }
       if (texts.length) lastAssistantText = texts.join('\n')
     }
@@ -137,31 +172,46 @@ function readClaude(events: any[]): Stream {
         if (!call) continue
         call.error = block.is_error === true
         call.status = statusOf(event.tool_use_result) ?? statusOf(textOf(block.content))
+        ops.push(askResult(call))
       }
     }
     if (event.type === 'result' && typeof event.result === 'string') finalText = event.result
   }
-  return { asks: [...calls.values()], finalText: finalText || lastAssistantText, model, toolLoaded }
+  return { asks: [...calls.values()], ops, finalText: finalText || lastAssistantText, model, toolLoaded }
 }
 
 // codex exec --json
 function readCodex(events: any[]): Stream {
   const calls = new Map<string, AskCall>()
+  const ops: Op[] = []
   let finalText = ''
   for (const event of events) {
     const item = event.item
     if (event.type !== 'item.completed' || !item) continue
     if (item.type === 'agent_message') finalText = item.text ?? ''
+    if (item.type === 'file_change') {
+      for (const change of Array.isArray(item.changes) ? item.changes : []) {
+        if (typeof change?.path === 'string') ops.push({ kind: 'write', path: change.path })
+      }
+    }
     if (item.type === 'mcp_tool_call' && item.server === ASK_TOOL.server && item.tool === ASK_TOOL.tool) {
       const result = item.result
-      calls.set(item.id, {
+      const call: AskCall = {
         questions: questionsOf(item.arguments),
         error: item.error != null || item.status === 'failed' || result?.is_error === true,
         status: statusOf(result?.structured_content) ?? statusOf(textOf(result?.content)),
-      })
+      }
+      calls.set(item.id, call)
+      ops.push(askResult(call))
     }
   }
-  return { asks: [...calls.values()], finalText, toolLoaded: null }
+  return { asks: [...calls.values()], ops, finalText, toolLoaded: null }
+}
+
+const CLAUDE_WRITERS = new Set(['Edit', 'Write', 'MultiEdit', 'NotebookEdit'])
+
+function askResult(call: AskCall): Op {
+  return { kind: 'ask-result', draft: call.questions.some((q) => q.type === 'text+draft'), answered: call.error === false && call.status === 'answered' }
 }
 
 function questionsOf(input: any): { header: string; type: string }[] {
@@ -217,8 +267,21 @@ function replyStrings(hub: any[]): string[] {
   return [...strings]
 }
 
-function addedLines(diff: string): string {
-  return diff.split('\n').filter((l) => l.startsWith('+') && !l.startsWith('+++')).join('\n')
+// The lines the diff adds, to the files `only` accepts (by path) or to every file.
+function addedLines(diff: string, only?: (path: string) => boolean): string[] {
+  const added: string[] = []
+  let counts = !only
+  for (const line of diff.split('\n')) {
+    const file = /^\+\+\+ (?:b\/)?(.*)$/.exec(line)
+    if (file) counts = !only || only(file[1]!)
+    else if (counts && line.startsWith('+')) added.push(line.slice(1))
+  }
+  return added
+}
+
+// The files a standing answer is saved to.
+function isInstructions(path: string): boolean {
+  return /(^|\/)(AGENTS|CLAUDE)\.md$/.test(path)
 }
 
 // Case, punctuation and markdown don't count against a match.
@@ -253,6 +316,7 @@ export interface Summary {
   underAsked: number
   reAsked: number
   errors: number
+  standing?: { drafted: number; saved: number; early: number }   // "Don't ask again" prompts only
 }
 
 export function summarize(results: RunResult[]): Summary[] {
@@ -274,18 +338,28 @@ export function summarize(results: RunResult[]): Summary[] {
     underAsked: rs.filter((r) => r.failed.includes('underAsked')).length,
     reAsked: rs.filter((r) => r.reAskedAfterSkip).length,
     errors: rs.filter((r) => r.failed.includes('timedOut') || r.failed.includes('exitCode')).length,
+    ...(rs.some((r) => r.drafted !== null) && {
+      standing: {
+        drafted: rs.filter((r) => r.drafted).length,
+        saved: rs.filter((r) => r.saved).length,
+        early: rs.filter((r) => r.savedEarly).length,
+      },
+    }),
   }))
 }
 
 // Markdown, so it pastes straight into trials/README.md.
 export function formatSummary(rows: Summary[]): string {
+  // The "Don't ask again" columns appear only when a prompt in the run has them.
+  const standing = rows.some((s) => s.standing)
   const lines = [
-    '| prompt | client | expect | asked | first call valid | used | over-asked | re-asked after skip | errors |',
-    '| --- | --- | --- | --- | --- | --- | --- | --- | --- |',
+    `| prompt | client | expect | asked | first call valid | used | over-asked | re-asked after skip |${standing ? ' drafted | saved | saved early |' : ''} errors |`,
+    `| --- | --- | --- | --- | --- | --- | --- | --- |${standing ? ' --- | --- | --- |' : ''} --- |`,
   ]
   for (const s of rows) {
+    const extra = standing ? ` ${s.standing ? `${s.standing.drafted}/${s.runs} | ${s.standing.saved}/${s.runs} | ${s.standing.early}` : '– | – | –'} |` : ''
     lines.push(
-      `| ${s.prompt} | ${s.client} | ${s.expect} | ${s.asked}/${s.runs} | ${s.asked ? `${s.validFirst}/${s.asked}` : '–'} | ${s.usedOf[1] ? `${s.usedOf[0]}/${s.usedOf[1]}` : '–'} | ${s.expect === 'no-ask' ? s.overAsked : '–'} | ${s.skip ? s.reAsked : '–'} | ${s.errors || ''} |`,
+      `| ${s.prompt} | ${s.client} | ${s.expect} | ${s.asked}/${s.runs} | ${s.asked ? `${s.validFirst}/${s.asked}` : '–'} | ${s.usedOf[1] ? `${s.usedOf[0]}/${s.usedOf[1]}` : '–'} | ${s.expect === 'no-ask' ? s.overAsked : '–'} | ${s.skip ? s.reAsked : '–'} |${extra} ${s.errors || ''} |`,
     )
   }
   return lines.join('\n')

@@ -263,6 +263,13 @@ export const askResultSchema = z.object({
     error: z.string().optional(),          // not saved: the write failed
   })).optional(),
   note: z.string().optional(),       // free text the user added for the agent, with an answer or a skip
+  // Questions the user doesn't want asked again in this project ("Don't ask again here"),
+  // each with the answer given. The text tells the agent what to do about it.
+  remember: z.array(z.object({
+    id: z.string(),
+    header: z.string(),
+    value: answerValue,
+  })).optional(),
 })
 
 export type AskResult = z.infer<typeof askResultSchema>
@@ -271,7 +278,7 @@ export type AnswerValue = Answer['value']
 export type ReviewOutcome = z.infer<typeof reviewOutcome>
 
 export type AskOutcome =
-  | { status: 'answered'; data: unknown; note?: string }
+  | { status: 'answered'; data: unknown; note?: string; remember?: string[] }
   | { status: 'dismissed'; note?: string }
   | { status: 'cancelled' }   // the MCP client cancelled the call
   | { status: 'timed_out' }
@@ -473,8 +480,8 @@ export function shapeAnswer(
   input: AskInput, outcome: AskOutcome, extra: { edits?: Record<string, ShowEdit>; files?: ShowFiles } = {},
 ): { structured: AskResult; text: string } {
   const note = 'note' in outcome ? outcome.note?.trim() || undefined : undefined
-  const text = (status: AskResult['status'], message: string, answers?: AskResult['answers']) => ({
-    structured: { status, message, ...(answers && { answers }), ...(note && { note }) },
+  const text = (status: AskResult['status'], message: string, answers?: AskResult['answers'], remember?: AskResult['remember']) => ({
+    structured: { status, message, ...(answers && { answers }), ...(remember?.length && { remember }), ...(note && { note }) },
     text: message,
   })
   switch (outcome.status) {
@@ -513,8 +520,49 @@ export function shapeAnswer(
       : q.type === 'capture' ? describeCapture(answer)
       : describe(answer, new Set(q.options?.map((o) => o.label))))
   })
+  const remember = rememberedAnswers(input, ids, answers, 'remember' in outcome ? outcome.remember : undefined)
+  if (remember.length) lines.push('', ...describeRemember(remember, input.questions, ids))
   if (note) lines.push('', 'They also left a note:', quote(note))
-  return text('answered', lines.join('\n'), answers)
+  return text('answered', lines.join('\n'), answers, remember)
+}
+
+// "Don't ask again here" is on single-select choice and boolean questions only. An id
+// that isn't one of those in this ask, or whose question was left blank, is dropped.
+function canRemember(q: Question): boolean {
+  const type = q.type ?? 'choice'
+  return type === 'boolean' || (type === 'choice' && !q.multiSelect)
+}
+
+function rememberedAnswers(
+  input: AskInput, ids: string[], answers: Record<string, Answer>, asked: unknown,
+): NonNullable<AskResult['remember']> {
+  if (!Array.isArray(asked)) return []
+  const out: NonNullable<AskResult['remember']> = []
+  input.questions.forEach((q, i) => {
+    const id = ids[i]!
+    const answer = answers[id]
+    if (!asked.includes(id) || !canRemember(q) || !answer || answer.value === null) return
+    out.push({ id, header: answer.header, value: answer.value })
+  })
+  return out
+}
+
+function describeRemember(remember: NonNullable<AskResult['remember']>, questions: Question[], ids: string[]): string[] {
+  const many = remember.length > 1
+  const lines = [
+    `They don't want to be asked ${many ? 'these' : 'this'} again in this project:`,
+    ...remember.map(({ id, header, value }) => {
+      const labels = new Set(questions[ids.indexOf(id)]?.options?.map((o) => o.label))
+      if (typeof value === 'boolean') return `- ${header}: ${value ? 'Yes' : 'No'}`
+      const own = typeof value === 'string' && labels.size > 0 && !labels.has(value)
+      return `- ${header}: ${own ? `"${value}" ${OWN_ANSWER}` : String(value)}`
+    }),
+    `Write ${many ? 'one line each' : 'one line'} for the project's agent instructions (AGENTS.md, or CLAUDE.md if there's no`,
+    `AGENTS.md) that makes ${many ? 'these standing answers' : 'this a standing answer'}, and show ${many ? 'the lines' : 'it'} to them with \`ask\` as a \`text\``,
+    `question with ${many ? 'the lines' : 'that line'} as its \`draft\` before you save ${many ? 'them' : 'it'}. Save ${many ? 'them' : 'it'} only if they accept ${many ? 'them' : 'it'} or`,
+    `edit ${many ? 'them' : 'it'}. Until then, act on the ${many ? 'answers' : 'answer'} above and don't ask ${many ? 'these' : 'it'} again in this session.`,
+  ]
+  return lines
 }
 
 function quote(text: string): string {

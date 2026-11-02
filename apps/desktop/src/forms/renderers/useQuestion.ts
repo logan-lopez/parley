@@ -20,6 +20,7 @@ export function useQuestion(props: RendererProps<ControlElement>) {
     schema,
     data: computed(() => control.value.data as unknown),
     frame: computed(() => ({
+      id: control.value.path,   // the question's id: the form's properties are keyed by it
       header: String(schema.value.title ?? control.value.label),
       question: schema.value.description as string | undefined,
       required: control.value.required,

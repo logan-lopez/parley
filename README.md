@@ -47,6 +47,8 @@ Every question type, in light and dark: [What it looks like](docs/guide/screensh
   in front of you, which you can edit in place. The server compiles them to JSON Schema, which is all the app renders.
 - **An inbox, not a modal.** One app, many agents. Asks from every session queue up, labelled with
   who's asking; nothing steals your focus, and every ask is kept in history with what you sent.
+- **Parley never answers for you.** A question you're tired of is retired in the project's own
+  instructions, in a line you approve, not by Parley matching new asks against old answers.
 - **Answers the model reads cleanly.** Structured JSON plus a summary, with your own wording marked
   as such, a note for the agent if you add one, and a sentence on what to do if you skip.
 - **One card, two places.** The same card runs in the window and, in Claude Desktop, inline in the
@@ -86,6 +88,9 @@ How each part works, as you use it, is in [the guide](docs/guide/README.md).
   you out of the app you're in.
 - [Cards built for the keyboard](docs/guide/answering.md): number keys to pick, Cmd+Enter to send,
   a note for the agent, drafts that survive a restart.
+- [Don't ask again here](docs/guide/answering.md#dont-ask-again-here) on a single-choice or yes/no
+  question: the agent drafts a line for your project's `AGENTS.md` and saves it only if you accept
+  it.
 - [Seven question types](docs/guide/question-types.md): choice (with your own answer), text (or a
   draft to edit in place), number, yes/no, path, review (approve and reject, or the agent's own
   decisions, like Port / TODO / Skip), and capture (pasted output or a screenshot, which the agent

@@ -6,7 +6,7 @@ sources: ["packages/protocol/src/wire.ts", "apps/desktop/src-tauri/src/hub.rs", 
 How a server process reaches the app: a unix socket the app owns, newline-delimited JSON on it, and
 the `AppClient` that hides both from tool code. Every ask goes through here.
 
-**History:** [brief 1](../briefs/archive/01-hub-and-lifecycle.md), [brief 7](../briefs/archive/07-inline-cards.md) (`resolved`, `inline`)
+**History:** [brief 1](../briefs/archive/01-hub-and-lifecycle.md), [brief 7](../briefs/archive/07-inline-cards.md) (`resolved`, `inline`), [brief 21](../briefs/21-dont-ask-again.md) ("Don't ask again here")
 
 `wire.ts` holds the message types and constants. `hub.rs` is the Rust listener, which forwards
 lines without reading them. `src/hub/client.ts` is the webview end, which owns the protocol.
@@ -24,8 +24,11 @@ lines without reading them. `src/hub/client.ts` is the webview end, which owns t
   `SessionInfo`: a random id, the MCP client's name and version, `cwd`, `pid`), `ask`, `cancel`
   (`client_cancelled` or `timed_out`), `resolved` (the user answered in the chat's card). App to
   server: `welcome`, `answer`, `dismissed`, `error` (`version_mismatch`, `invalid_message`,
-  `unknown_ask`). `answer` and `dismissed` carry an optional `note`, and `ask` an optional
-  `inline` flag; both were added without a version bump.
+  `unknown_ask`). `answer` and `dismissed` carry an optional `note`, `answer` an optional
+  `remember` (the ids of the questions whose "Don't ask again here" was on, left out when empty;
+  Rust forwards it unread, and `AppClient` passes the strings through), and `ask` an optional
+  `inline` flag; all were added without a version bump. `resolved` has no `remember`: the inline
+  card has no such toggle.
 - **The Rust hub** (`hub.rs`) binds the socket at startup. If the socket exists and something
   answers on it, another Parley owns it, and this one exits: that's how the app stays single
   instance. A socket nobody answers on is left over from a crash, and is removed. Each connection

@@ -19,6 +19,8 @@
 // 'as you see fit' otherwise. Never a screenshot. Show blocks get nothing:
 // there's nothing to answer. An editable show is sent back unchanged, and
 // under `other:<text>` with <text> as a new last line (the draft policies).
+//   remember:<policy>       answer as <policy> does, with "Don't ask again here" on for every
+//                           choice and boolean question (`remember:first`, `remember:other:x`)
 //   skip                    dismiss
 //   none                    never answer (let it time out or be cancelled)
 //   delay:<s>:<policy>      wait, then apply the policy
@@ -90,10 +92,21 @@ function serve(socket: Socket) {
       log({ at: new Date().toISOString(), type: 'dismissed', id })
       return send({ type: 'dismissed', id })
     }
+    const remembering = policy.startsWith('remember:')
+    if (remembering) policy = policy.slice('remember:'.length)
     const data = fill(form, policy)
-    log({ at: new Date().toISOString(), type: 'reply', id, policy, data })
-    send({ type: 'answer', id, data })
+    const remember = remembering ? rememberable(form) : []
+    log({ at: new Date().toISOString(), type: 'reply', id, policy, data, ...(remember.length && { remember }) })
+    send({ type: 'answer', id, data, ...(remember.length && { remember }) })
   }
+}
+
+// The ids "Don't ask again here" is offered on: choice and boolean questions.
+function rememberable(form: FormSpec): string[] {
+  const properties = (form.schema.properties ?? {}) as Record<string, Record<string, any>>
+  return Object.entries(properties)
+    .filter(([, prop]) => prop['x-widget'] === 'choice' || prop['x-widget'] === 'boolean')
+    .map(([key]) => key)
 }
 
 // Answers every question the way a hurried user would.

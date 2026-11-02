@@ -1,7 +1,7 @@
 ---
 size: M
 size-note: "card toggle, one additive wire field, result text, a trial prompt; model-facing, so a trial pass"
-status: not-started
+status: awaiting-review
 ---
 # Brief 21: "Don't ask again here"
 
@@ -185,3 +185,108 @@ with "Don't ask again" beside the chip. No filter chip.
 
 Then stop. Report the trial numbers next to brief 20's, and ask Logan before committing if the
 standing-commit prompt saved without a draft in any run.
+
+## Report
+
+**Built**
+- **Protocol** (`packages/protocol/src/wire.ts`, `ask.ts`): `answer` carries `remember?: string[]`;
+  the `answered` outcome too; `askResultSchema` gains `remember: { id, header, value }[]`.
+  `shapeAnswer` appends the "They don't want to be asked this again in this project:" block after
+  the answers and before the note, exactly as pinned for one question; `canRemember` limits it to
+  single-select choice and boolean. `apps/server/src/app-client.ts` passes the strings through.
+- **fake-hub** (`apps/server/scripts/fake-hub.ts`): `remember:<policy>`, with `remember` set to
+  every choice and boolean question's id.
+- **Card** (`apps/desktop/src/card/AskCard.vue`, `forms/remember.ts`,
+  `forms/renderers/QuestionFrame.vue`, `ChoiceRenderer.vue`, `BooleanRenderer.vue`,
+  `useQuestion.ts`, `styles.css`): the toggle with `aria-pressed`, the accent when on, and the hint
+  under the question. The card provides the toggled ids unless `embedded`, so the inline card has
+  none. `submit(data, note, remember)`.
+- **Store and history** (`asks/store.ts`, `App.vue`, `history/HistoryDetail.vue`,
+  `gallery/Gallery.vue`): `Draft.remember` and `AskRecord.remember`, sent with the answer (and
+  again on a re-send), dropped by `resolved`; history shows a "Don't ask again" mark beside the
+  header.
+- **Trial** (`apps/server/scripts/trial.ts`, `trial-score.ts`, `trials/prompts/standing-commit.md`,
+  `trials/project/AGENTS.md`): `reply:` may repeat; `drafted`, `saved` and `savedEarly` for prompts
+  with a `remember:` reply, ordered by the client's event stream.
+- **Tests:** a `remember` block in `ask.test.ts`; a store block in `store.test.ts`.
+
+**Deviations**
+- **Tab doesn't reach the toggle.** The brief says it does, but the card's `onKey` takes Tab and
+  moves between `[data-question]` roots, so an inner button is never a tab stop. The toggle is
+  mouse only (`tabindex="-1"`), like the copy buttons and Edit/View. No chord, per the default.
+  See Follow-ups.
+- **The prompt's wording.** "Check with me before you commit anything" got a `text` question with a
+  draft commit message, which has no toggle (one smoke run). The prompt now asks for a yes/no on
+  committing, which is the shape of the real repeats.
+- **The harness diffed against `HEAD`,** so a change the model committed vanished from
+  `diff.patch`, and `saved` would have read false. It diffs against the start commit now, which
+  also affects every prompt where a model commits.
+- **`remember` drops more than the brief listed:** an id whose answer was left blank, and a
+  multi-select choice, as well as unknown ids and other types. fake-hub still sends every choice
+  id; the shaper drops the multi-select ones.
+- **The plural text** ("these", "one line each", "the lines") is mine; the brief pinned only the
+  single form and "use 'these' for more than one". The trial covers the single form only.
+- **No separate `--prompt standing-commit --runs 3`.** The full pass at `--runs 3` includes it.
+- **`screenshots` rerun,** per the testing page: 16 PNGs under `docs/guide/images/cards/`, the
+  fixtures with a single-choice or boolean question. The other 26 re-rendered with different bytes
+  and no visible change; I restored them. The script also wrote `show-file-{light,dark}.png`,
+  which the repo has never tracked; I removed them.
+
+**Defaults taken**
+- No key chord. Choice (single) and boolean only. The window only, not the inline card.
+
+**Acceptance**
+- `pnpm --filter @parley/protocol test`: 129 passed (the five `remember` cases: a choice, a
+  boolean, a typed answer, dropped ids, a skip). `pnpm --filter @parley/desktop test`: 160 passed,
+  with the store block (record, `answer` message, re-send, draft, `resolved`).
+- `pnpm typecheck`, `pnpm --filter @parley/server build`, `pnpm --filter @parley/server fake-host`
+  (all 11 scenarios): pass.
+- `fake-ask choice` against `fake-hub --reply remember:first` (`PARLEY_SOCKET`,
+  `PARLEY_NO_LAUNCH=1`): `message` has the block (plural, for the fixture's two questions) and the
+  structured result has `remember`.
+- Trial, Claude `--runs 3`: **`standing-commit` drafted 3/3, saved 3/3, saved early 0.** Every run
+  asked a yes/no, got "Yes" with `remember`, committed, asked a `text` question with a `draft`,
+  and edited `AGENTS.md` only after it was accepted. None saved without a draft, so there was
+  nothing to ask about before committing. The full pass holds against brief 20's numbers except
+  `date-library` asking 2/3 (was 3/3: run 2 installed `date-fns` as the request said and never
+  asked, without reading `AGENTS.md`), and `used` on `prune-unused` 2/3 and `sort-helpers` 0/1
+  (the label problem). 40 of 40 calls valid. Tables in `apps/server/trials/README.md`, "After
+  "Don't ask again here" (brief 21)". Codex: not run (brief 20's pass is still missing its
+  baseline).
+- Gallery: headless WebKit, light and dark, on `four-questions`: the toggle on the single choice
+  and the boolean, none on the multi-select or the text; unpressed, pressed (accent), and the hint.
+  Looked at the screenshots by eye. A hover bug (the hover tint beat the pressed accent) turned up
+  and is fixed.
+
+**Size:** sized M, this session S (10 active min, 49 wall, 0 compactions), from `docket sessions`
+run before this report. The trial passes ran in the background.
+
+**Spot checks for Logan**
+- The gallery is already up at `http://localhost:1420/?gallery&fixture=four-questions` (a Vite
+  from this repo was already on 1420; it serves the working tree). Click **Don't ask again here**
+  on Scope and Keep API, send, and read the Text output.
+- In the installed build (`pnpm install:desktop`, then quit and reopen Parley from the tray; I
+  didn't, as that opens and closes GUI apps and needs your say-so): toggle it on a real commit
+  question; the agent should come back with a draft line for `AGENTS.md`; accepting it saves the
+  line; history shows the mark beside the header.
+- After a week: brief 19's "asked again" section for the projects where you used it.
+- Hover a toggled pill in the app: it keeps the accent (the first version lost it).
+
+**Docs updated:** architecture pages `form-spec.md`, `ask-tool.md`, `card-ui.md`,
+`asks-and-history.md`, `hub.md`, `testing.md`; guide `answering.md` (a new section), `history.md`,
+`README.md` there; the root README (a feature line, and "Parley never answers for you" under what
+it's built around); `apps/server/trials/README.md`. No Areas row: no new area. The decision
+(`docs/decisions/dont-ask-again.md`) already matched; no new decision.
+
+**Follow-ups**
+- **A way to reach the toggle from the keyboard.** Parley is built for it, and Tab can't get there.
+  A key on a focused choice or boolean question (a plain letter isn't taken on choice; boolean owns
+  `y` and `n`) or a chord, checked against `~/.config/keymap/keymap.md`. Logan's call.
+- **The drafted lines are broad.** Run 1's: "Once a change works, commit it without asking first."
+  The result text doesn't ask for a narrow one, and wording it to ("scope it to the question
+  asked") is model-facing, so a trial pass. Not done: he sees every line before it's saved.
+- **Which repeats come from skills.** Not looked at here; if `implement`'s commit question is the
+  main source, the fix is in `~/Dev/dotfiles`, and brief 19's report has the projects.
+- **`usage`** doesn't read `remember` yet; once there's a week of it, a count of remembered asks
+  next to "asked again" would show whether it's working.
+- **Codex baseline** is still missing (brief 20's follow-up).

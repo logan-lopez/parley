@@ -7,7 +7,7 @@ Start with [The app](the-app.md): everything else happens in its window or besid
 
 - [The app](the-app.md): the tray, notifications, the window and its hotkey, zoom.
 - [Answering a card](answering.md): the queue, picking and sending, copying code, skipping, the
-  note for the agent, and asks that end under you.
+  note for the agent, "Don't ask again here", and asks that end under you.
 - [Question types](question-types.md): choice, text, number, yes/no, path, review and capture,
   as you see them, and shows: a plan or a file to look at, with the questions about it.
 - [From Claude Code](claude-code.md): what happens while an ask waits, long asks, Esc, and the

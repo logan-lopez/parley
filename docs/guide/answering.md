@@ -1,5 +1,5 @@
 ---
-covers: ["docs/architecture/card-ui.md", "docs/architecture/asks-and-history.md"]
+covers: ["docs/architecture/card-ui.md", "docs/architecture/asks-and-history.md", "docs/architecture/form-spec.md"]
 ---
 # Answering a card
 
@@ -75,6 +75,26 @@ press Cmd+N or click it.
 
 What you've typed is kept as a draft as you go. If you hide the window, switch to another ask, or
 Parley restarts, the card comes back as you left it.
+
+## Don't ask again here
+
+Some questions you answer the same way every time: "Commit?", "Run the tests?". On a single-choice
+or yes/no question, **Don't ask again here** sits at the right of the question's top row. Click it
+to turn it on (it takes the accent color, and a line under the question says "The agent will
+draft a line for AGENTS.md for you to approve."), and click it again to turn it off. It's for the
+mouse; there's no key for it.
+
+Send as usual. Your answer goes back the way it always does, and the agent is also told you don't
+want that question again. It writes one line for the project's instructions (`AGENTS.md`, or
+`CLAUDE.md` if the project has no `AGENTS.md`) that makes your answer a standing one, and asks you
+about it: a text question with the line filled in. Accept it or edit it, and the agent saves it;
+skip it, and nothing is saved. Parley doesn't compare new questions with old answers or answer
+anything for you. The standing answer lives in the project's file, where every agent reads it.
+
+It's only on single-choice and yes/no questions, not multi-select, text, review, capture or path
+ones, and only in the window, not in the inline card in Claude Desktop. Skipping ignores it. It's
+kept with the rest of your draft until you send. In [History](history.md), a question you turned
+it on for shows "Don't ask again" beside its header.
 
 ## When an ask ends under you
 

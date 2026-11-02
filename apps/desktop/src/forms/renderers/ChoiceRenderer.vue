@@ -97,7 +97,7 @@ const preview = computed(() => {
 </script>
 
 <template>
-  <QuestionFrame v-bind="frame" :advance-on-pick="!multi">
+  <QuestionFrame v-bind="frame" :advance-on-pick="!multi" :rememberable="!multi">
     <div
       class="options"
       :role="multi ? 'group' : 'radiogroup'"

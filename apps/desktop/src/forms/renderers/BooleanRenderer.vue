@@ -31,7 +31,7 @@ function onKey(event: KeyboardEvent) {
 </script>
 
 <template>
-  <QuestionFrame v-bind="frame" advance-on-pick>
+  <QuestionFrame v-bind="frame" advance-on-pick rememberable>
     <div class="segmented" role="radiogroup" :aria-label="frame.header" @keydown="onKey">
       <button
         v-for="(choice, i) in choices"

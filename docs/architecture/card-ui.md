@@ -7,7 +7,7 @@ The ask card and the question renderers: one ask as a form, rendered by JSON For
 compiled schema, driven from the keyboard. The same card runs in the window, in the inline card in
 Claude Desktop, and in the dev gallery.
 
-**History:** [brief 2](../briefs/archive/02-ask-tool-and-ui.md), [brief 5](../briefs/archive/05-review-question.md) (the review renderer), [brief 7](../briefs/archive/07-inline-cards.md) (the platform adapter, `html.inline`), [brief 11](../briefs/archive/11-review-decisions.md) (labelled review decisions), [brief 12](../briefs/archive/12-capture-question.md) (copy buttons, the capture renderer), [brief 13](../briefs/13-color-chips.md) (color chips, palettes), [brief 14](../briefs/14-fenced-previews.md) (HTML and SVG previews), [brief 15](../briefs/15-themes.md) (tokens from themes), [brief 16](../briefs/16-show-blocks.md) (the show renderer, `[data-passive]`), [brief 17](../briefs/17-editable-show.md) (Edit and View)
+**History:** [brief 2](../briefs/archive/02-ask-tool-and-ui.md), [brief 5](../briefs/archive/05-review-question.md) (the review renderer), [brief 7](../briefs/archive/07-inline-cards.md) (the platform adapter, `html.inline`), [brief 11](../briefs/archive/11-review-decisions.md) (labelled review decisions), [brief 12](../briefs/archive/12-capture-question.md) (copy buttons, the capture renderer), [brief 13](../briefs/13-color-chips.md) (color chips, palettes), [brief 14](../briefs/14-fenced-previews.md) (HTML and SVG previews), [brief 15](../briefs/15-themes.md) (tokens from themes), [brief 16](../briefs/16-show-blocks.md) (the show renderer, `[data-passive]`), [brief 17](../briefs/17-editable-show.md) (Edit and View), [brief 21](../briefs/21-dont-ask-again.md) ("Don't ask again here")
 
 `card/AskCard.vue` is the card. It knows nothing about the hub or Tauri. `App.vue` is the window
 around it: the queue, Send and Skip, history. `forms/` holds the renderers, their registration, the
@@ -31,6 +31,17 @@ keyboard contract and markdown. `platform.ts` is the one way renderers reach the
 - **The header chip** (`QuestionFrame.vue`, `.chip`): clips with an ellipsis at `14ch` and carries
   the full header in `title`, so it shows on hover. The server accepts headers up to 24
   characters ([the form spec](form-spec.md)); the same renderer draws the inline card.
+- **"Don't ask again here"** (`forms/remember.ts`, `QuestionFrame.vue`): the card keeps the set
+  of toggled question ids, seeds it from `initialRemember` (the draft, or history), emits
+  `remember` on each change and passes it to `submit(data, note, remember)`; a skip ignores it.
+  It `provide`s the set unless `embedded`, so the inline card has none. `QuestionFrame` injects it
+  and, for a renderer that passes `rememberable` (single choice, not multi, and boolean) and the
+  question's `id` (`useQuestion`'s `frame.id`, the property key), draws a quiet pill at the right of
+  the header row: a button with `aria-pressed` and, when on, the accent and a hint under the
+  question ("The agent will draft a line for AGENTS.md for you to approve."). Locked (history,
+  withdrawn), a toggle that was on shows as a plain "Don't ask again" mark and one that wasn't
+  isn't drawn. The button is `tabindex="-1"`: the card owns Tab (it moves between questions), so
+  like the copy buttons it's mouse only. There's no chord.
 - **The note for the agent:** a collapsed textarea (2,000 characters) opened with `Cmd+N`, sent
   with an answer or a skip, and kept in the draft.
 - **Keys the card owns:** `1`–`9` pick in the active question, Tab and Shift+Tab move between

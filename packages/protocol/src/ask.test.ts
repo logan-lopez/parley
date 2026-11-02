@@ -597,6 +597,78 @@ describe('shapeAnswer', () => {
     expect(shapeAnswer(fixture('choice'), { status: 'dismissed', note: '  ' }).structured).not.toHaveProperty('note')
   })
 
+  describe('remember ("Don\'t ask again here")', () => {
+    const commit = parse({
+      questions: [
+        { header: 'Commit', question: 'Commit now?', options: [{ label: 'Commit (Recommended)' }, { label: 'Not yet' }] },
+        { header: 'Push', question: 'Push too?', type: 'boolean' },
+        { header: 'Checks', question: 'Which?', multiSelect: true, options: [{ label: 'Lint' }, { label: 'Test' }] },
+        { header: 'Name', question: 'Name?', type: 'text' },
+      ],
+    })
+    const data = { commit: 'Commit (Recommended)', push: true, checks: ['Lint'], name: 'x' }
+    const single = [
+      "They don't want to be asked this again in this project:",
+      '- Commit: Commit (Recommended)',
+      "Write one line for the project's agent instructions (AGENTS.md, or CLAUDE.md if there's no",
+      'AGENTS.md) that makes this a standing answer, and show it to them with `ask` as a `text`',
+      'question with that line as its `draft` before you save it. Save it only if they accept it or',
+      "edit it. Until then, act on the answer above and don't ask it again in this session.",
+    ].join('\n')
+
+    it('tells the agent to draft a line for a remembered choice, after the answers and before the note', () => {
+      const { structured, text } = shapeAnswer(commit, { status: 'answered', data, remember: ['commit'], note: 'Thanks.' })
+      expect(text).toBe([
+        'The user answered:',
+        '- Commit: Commit (Recommended)',
+        '- Push: Yes',
+        '- Checks: Lint',
+        '- Name: x',
+        '',
+        single,
+        '',
+        'They also left a note:',
+        '> Thanks.',
+      ].join('\n'))
+      expect(structured.remember).toEqual([{ id: 'commit', header: 'Commit', value: 'Commit (Recommended)' }])
+      expect(structured.message).toBe(text)
+      expect(askResultSchema.safeParse(structured).success).toBe(true)
+    })
+
+    it('remembers a boolean as Yes or No, and says "these" for more than one', () => {
+      const one = shapeAnswer(commit, { status: 'answered', data: { ...data, push: false }, remember: ['push'] })
+      expect(one.text).toContain("They don't want to be asked this again in this project:\n- Push: No\n")
+      expect(one.structured.remember).toEqual([{ id: 'push', header: 'Push', value: false }])
+
+      const two = shapeAnswer(commit, { status: 'answered', data, remember: ['push', 'commit'] })
+      expect(two.text).toContain("They don't want to be asked these again in this project:\n- Commit: Commit (Recommended)\n- Push: Yes\n")
+      expect(two.text).toContain("act on the answers above and don't ask these again in this session.")
+      // In question order, whatever order the ids came in.
+      expect(two.structured.remember!.map((r) => r.id)).toEqual(['commit', 'push'])
+    })
+
+    it('quotes a typed answer as theirs', () => {
+      const { text } = shapeAnswer(commit, { status: 'answered', data: { ...data, commit: 'Commit, then tag' }, remember: ['commit'] })
+      expect(text).toContain('- Commit: "Commit, then tag" (their own answer, not one of the options)\nWrite one line')
+    })
+
+    it('drops ids that are unknown, of another type, multi-select or left blank, and says nothing when none are left', () => {
+      const dropped = shapeAnswer(commit, { status: 'answered', data, remember: ['nope', 'name', 'checks'] })
+      expect(dropped.text).not.toContain('asked this again')
+      expect(dropped.structured).not.toHaveProperty('remember')
+      expect(shapeAnswer(commit, { status: 'answered', data, remember: [] }).structured).not.toHaveProperty('remember')
+
+      const blank = parse({ questions: [{ header: 'Push', question: '?', type: 'boolean', required: false }] })
+      expect(shapeAnswer(blank, { status: 'answered', data: {}, remember: ['push'] }).structured).not.toHaveProperty('remember')
+    })
+
+    it('ignores remember on a skip', () => {
+      const skipped = shapeAnswer(commit, { status: 'dismissed', remember: ['commit'] } as never)
+      expect(skipped.text).not.toContain('asked this again')
+      expect(skipped.structured).not.toHaveProperty('remember')
+    })
+  })
+
   describe('review', () => {
     const input = parse({
       questions: [{

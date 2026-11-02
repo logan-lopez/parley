@@ -1,11 +1,12 @@
 <script setup lang="ts">
 // One ask as a card: meta line, title, the questions, Skip and Send. It knows
 // nothing about the hub or Tauri, so the gallery renders it as-is.
-import { computed, nextTick, onBeforeUnmount, onMounted, ref, shallowRef } from 'vue'
+import { computed, nextTick, onBeforeUnmount, onMounted, provide, ref, shallowRef } from 'vue'
 import { JsonForms, type JsonFormsChangeEvent } from '@jsonforms/vue'
 import type { FormSpec } from '@parley/protocol'
 import { firstToAnswer, focusQuestion, questionsIn } from '../forms/keyboard'
 import { renderers } from '../forms/renderers'
+import { REMEMBER } from '../forms/remember'
 import { useNow } from './now'
 
 type ErrorObject = NonNullable<JsonFormsChangeEvent['errors']>[number]
@@ -23,12 +24,14 @@ const props = defineProps<{
   embedded?: boolean  // in a host's page (the MCP Apps card): no focus on mount, no esc hint
   initialData?: unknown
   initialNote?: string
+  initialRemember?: string[]   // question ids with "Don't ask again here" on
 }>()
 
 const emit = defineEmits<{
   change: [data: unknown]
   note: [note: string]
-  submit: [data: unknown, note: string]
+  remember: [ids: string[]]
+  submit: [data: unknown, note: string, remember: string[]]
   skip: [note: string]
   prev: []
   next: []
@@ -65,6 +68,20 @@ function onChange(event: JsonFormsChangeEvent) {
 
 const valid = computed(() => errors.value.length === 0)
 const locked = computed(() => props.readonly || !!props.withdrawn)
+
+// "Don't ask again here", per question. The inline card has no way to send it, so it offers none.
+const remember = ref<string[]>([...(props.initialRemember ?? [])])
+if (!props.embedded) {
+  provide(REMEMBER, {
+    ids: remember,
+    locked,
+    toggle(id) {
+      if (locked.value) return
+      remember.value = remember.value.includes(id) ? remember.value.filter((x) => x !== id) : [...remember.value, id]
+      emit('remember', remember.value)
+    },
+  })
+}
 
 // What stands between the user and Send, by question header.
 const problems = computed(() => {
@@ -109,7 +126,7 @@ function submit() {
     setTimeout(() => (nudge.value = false), 600)
     return
   }
-  emit('submit', data.value, note.value)
+  emit('submit', data.value, note.value, remember.value)
 }
 
 function skip() {

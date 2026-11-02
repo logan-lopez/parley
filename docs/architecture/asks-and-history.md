@@ -7,7 +7,7 @@ The app's record of every ask: one store, keyed by ask id, that holds pending as
 ended ones (history), persisted to a JSONL file and loaded before the hub starts. It also decides
 when a new ask notifies.
 
-**History:** [brief 1](../briefs/archive/01-hub-and-lifecycle.md), [brief 4](../briefs/archive/04-history-and-inbox.md), [brief 7](../briefs/archive/07-inline-cards.md) (`resolved`, `answeredIn`), [brief 12](../briefs/archive/12-capture-question.md) (screenshot cleanup)
+**History:** [brief 1](../briefs/archive/01-hub-and-lifecycle.md), [brief 4](../briefs/archive/04-history-and-inbox.md), [brief 7](../briefs/archive/07-inline-cards.md) (`resolved`, `answeredIn`), [brief 12](../briefs/archive/12-capture-question.md) (screenshot cleanup), [brief 21](../briefs/21-dont-ask-again.md) ("Don't ask again here")
 
 `asks/store.ts` is the store and the hub's handlers. `asks/persist.ts` is its disk.
 `asks/notifications.ts` sends the system notification, and `asks/source.ts` makes the
@@ -18,8 +18,9 @@ when a new ask notifies.
 - **A record** (`AskRecord`) holds the ask (`id`, `form`, `createdAt`, `expiresAt`, `inline`), the
   session it came from, the connection it's on (`conn`, 0 for a record loaded from disk), and its
   `status`: `pending`, `answered`, `dismissed`, `cancelled`, `timed_out` or `orphaned`. An ended
-  record has `endedAt`, maybe `endedReason`, the `data` and `note` it was sent with, and
-  `answeredIn: 'chat'` when the inline card won. `draft` is unsent input (`data` and `note`).
+  record has `endedAt`, maybe `endedReason`, the `data`, `note` and `remember` (the ids with "Don't
+  ask again here" on) it was sent with, and
+  `answeredIn: 'chat'` when the inline card won. `draft` is unsent input (`data`, `note` and `remember`).
 - **One store.** `queue` is the pending records, oldest first. `history` is the ended ones, newest
   first. Both are computed views over the same map; ended records stay in it. The queue length
   goes to the tray (`set_pending_count`).
@@ -32,11 +33,12 @@ when a new ask notifies.
     that owns it may cancel it.
   - `resolved`: the inline card won. The record ends answered or skipped with `answeredIn:
     'chat'`, and that overwrites an answer or skip sent from the window that lost the race, so
-    history matches what the agent got.
+    history matches what the agent got (including no `remember`).
   - `disconnected`: every pending record on that connection becomes `orphaned`. If the server
     re-sends within its 30 s reconnect window, it's pending again.
 - **Answer and skip** (`answer`, `dismiss`) end the record and send `answer` or `dismissed` with
-  the note. Answering drops the draft; a skip keeps it.
+  the note; an answer also carries `remember` when it isn't empty, and a skip never does.
+  Answering drops the draft; a skip keeps it.
 - **Drafts.** `setDraft` keeps what's typed, ignoring JSON Forms' empty data on mount. A draft is
   saved after a 500 ms pause, a status change at once, and anything pending on `pagehide`.
 - **The file** (`persist.ts`) is `$APPDATA/history.jsonl`: every save appends a full snapshot line
@@ -66,7 +68,8 @@ when a new ask notifies.
 - **The history view** (`history/`): ended records grouped by day, newest first. Filters (kept in
   `filter.ts`, so they survive a trip back to the queue): text over titles, headers, questions,
   answers or drafts, notes, the source, and shown files' paths (not their text); status (answered, skipped, withdrawn); has a note. The
-  detail is the card read-only, as answered or as far as it got, with what was sent. Clear history
+  detail is the card read-only, as answered or as far as it got, with what was sent; a question
+  with "Don't ask again here" on carries a "Don't ask again" mark beside its header. Clear history
   drops every ended record, on disk too. Keys: `j`/`k` or the arrows, `/` to filter, Enter to open,
   Esc goes back (detail → list → queue) and never hides.
 

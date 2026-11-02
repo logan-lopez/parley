@@ -168,6 +168,24 @@ kbd {
 }
 .optional { font-size: 11px; color: var(--text-faint); }
 
+/* "Don't ask again here": quiet until it's on, then the accent. Mouse only (tabindex -1), like the
+   card's other secondary controls; the card owns Tab. */
+.remember {
+  margin-left: auto;
+  padding: 1px 7px;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  background: none;
+  color: var(--text-faint);
+  font: inherit;
+  font-size: 11px;
+  cursor: pointer;
+}
+button.remember:not(.on):hover { background: var(--hover); color: var(--text-muted); }
+.remember.on { background: var(--accent-subtle); color: var(--accent); font-weight: 600; }
+span.remember { cursor: default; }
+.remember-hint { margin: 0; }
+
 .question-text { font-size: 13.5px; }
 
 .field-error { margin: 0; font-size: 12px; color: var(--danger); }

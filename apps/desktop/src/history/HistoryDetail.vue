@@ -42,6 +42,7 @@ const sent = computed(() => {
       :created-at="record.createdAt"
       :initial-data="answered ? record.data : record.draft?.data"
       :initial-note="noteOf(record)"
+      :initial-remember="answered ? record.remember : record.draft?.remember"
     >
       <template #meta><ZoomControl /></template>
       <template #footer>

@@ -14,6 +14,7 @@ export type AskStatus = 'pending' | 'answered' | 'dismissed' | 'cancelled' | 'ti
 export interface Draft {
   data?: unknown
   note?: string
+  remember?: string[]   // question ids with "Don't ask again here" on
 }
 
 export interface AskRecord {
@@ -29,6 +30,7 @@ export interface AskRecord {
   endedReason?: CancelReason | 'disconnected'
   data?: unknown
   note?: string   // the user's note for the agent, sent with the answer or skip
+  remember?: string[]   // the questions answered with "Don't ask again here" on
   draft?: Draft   // unsent input; dropped on answer, kept on a skip or withdrawal
   answeredIn?: 'chat'   // answered or skipped in the chat's inline card, not here
 }
@@ -97,8 +99,10 @@ export function setDraft(id: string, patch: Draft) {
   // JSON Forms reports its empty initial data on mount; that's not a draft.
   if (isEmptyObject(next.data)) delete next.data
   if (!next.note) delete next.note
+  if (!next.remember?.length) delete next.remember
   const before = record.draft ?? {}
-  if (next.note === before.note && JSON.stringify(next.data) === JSON.stringify(before.data)) return
+  if (next.note === before.note && JSON.stringify(next.data) === JSON.stringify(before.data)
+    && JSON.stringify(next.remember) === JSON.stringify(before.remember)) return
   record.draft = next
   clearTimeout(draftTimers.get(id))
   draftTimers.set(id, setTimeout(() => save(record), DRAFT_DEBOUNCE_MS))
@@ -116,12 +120,12 @@ window.addEventListener('pagehide', () => {
   }
 })
 
-export function answer(id: string, data: unknown, note?: string) {
+export function answer(id: string, data: unknown, note?: string, remember?: string[]) {
   const record = records.get(id)
   if (record?.status !== 'pending') return
   delete record.draft
-  end(record, { status: 'answered', data, ...withNote(note) })
-  void send(record.conn, { type: 'answer', id, data, ...withNote(note) })
+  end(record, { status: 'answered', data, ...withNote(note), ...withRemember(remember) })
+  void send(record.conn, { type: 'answer', id, data, ...withNote(note), ...withRemember(remember) })
 }
 
 export function dismiss(id: string, note?: string) {
@@ -133,6 +137,10 @@ export function dismiss(id: string, note?: string) {
 
 function withNote(note: string | undefined): { note?: string } {
   return note?.trim() ? { note: note.trim() } : {}
+}
+
+function withRemember(remember: string[] | undefined): { remember?: string[] } {
+  return remember?.length ? { remember: [...remember] } : {}
 }
 
 export const hubHandlers: HubHandlers = {
@@ -156,7 +164,7 @@ export const hubHandlers: HubHandlers = {
       save(existing)
     } else if (existing.status === 'answered') {
       // The answer was sent into a connection that had just died.
-      void send(conn, { type: 'answer', id: ask.id, data: existing.data, ...withNote(existing.note) })
+      void send(conn, { type: 'answer', id: ask.id, data: existing.data, ...withNote(existing.note), ...withRemember(existing.remember) })
     } else if (existing.status === 'dismissed') {
       void send(conn, { type: 'dismissed', id: ask.id, ...withNote(existing.note) })
     }
@@ -180,6 +188,7 @@ export const hubHandlers: HubHandlers = {
     delete record.endedReason
     delete record.data
     delete record.note
+    delete record.remember   // the chat's card has no such toggle
     if (outcome.status === 'answered') {
       delete record.draft
       end(record, { status: 'answered', answeredIn: 'chat', data: outcome.data, ...withNote(outcome.note) })

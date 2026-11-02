@@ -97,7 +97,7 @@ interface Prompt {
   name: string
   text: string
   expect: 'ask' | 'no-ask'
-  reply: string
+  replies: string[]   // fake-hub policies, in the order the asks arrive; the last repeats
   match?: string
 }
 
@@ -111,6 +111,7 @@ async function runOne(prompt: Prompt, client: Client, run: number): Promise<RunR
   git(work, 'init', '-q')
   git(work, 'add', '-A')
   git(work, '-c', 'user.name=trial', '-c', 'user.email=trial@localhost', '-c', 'commit.gpgsign=false', 'commit', '-qm', 'start')
+  const start = git(work, 'rev-parse', 'HEAD').trim()
 
   // Socket and MCP config live outside the copy, so they don't show in the diff.
   // macOS caps socket paths at 104 bytes.
@@ -118,19 +119,20 @@ async function runOne(prompt: Prompt, client: Client, run: number): Promise<RunR
   const socket = join(side, 'hub.sock')
   if (Buffer.byteLength(socket) > 103) throw new Error(`socket path too long: ${socket}`)
 
-  const hub = await startHub(socket, join(transcript, 'hub.jsonl'), prompt.reply)
+  const hub = await startHub(socket, join(transcript, 'hub.jsonl'), prompt.replies)
   const model = values.model ?? DEFAULT_MODELS[client]
   const startedAt = new Date()
   const { exitCode, timedOut } = await runClient(client, { prompt, work, side, socket, model, transcript })
   stop(hub)
 
-  writeFileSync(join(transcript, 'diff.patch'), diff(work))
+  writeFileSync(join(transcript, 'diff.patch'), diff(work, start))
   const meta: RunMeta = {
     prompt: prompt.name,
     client,
     run,
     expect: prompt.expect,
-    reply: prompt.reply,
+    reply: prompt.replies[0]!,
+    ...(prompt.replies.length > 1 ? { replies: prompt.replies } : {}),
     ...(prompt.match ? { match: prompt.match } : {}),
     model,
     clientVersion: versions[client],
@@ -230,9 +232,9 @@ function clientEnv(): NodeJS.ProcessEnv {
   return env
 }
 
-function startHub(socket: string, log: string, reply: string): Promise<ChildProcess> {
+function startHub(socket: string, log: string, replies: string[]): Promise<ChildProcess> {
   const tsx = createRequire(import.meta.url).resolve('tsx/cli')
-  const hub = spawn(process.execPath, [tsx, join(serverDir, 'scripts/fake-hub.ts'), socket, '--log', log, '--reply', reply], {
+  const hub = spawn(process.execPath, [tsx, join(serverDir, 'scripts/fake-hub.ts'), socket, '--log', log, ...replies.flatMap((r) => ['--reply', r])], {
     cwd: serverDir,
     stdio: ['ignore', 'ignore', 'pipe'],
     detached: true,
@@ -284,10 +286,11 @@ function git(cwd: string, ...args: string[]): string {
   return execFileSync('git', args, { cwd, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] })
 }
 
-// Everything the run changed, including new and deleted files.
-function diff(work: string): string {
+// Everything the run changed since the start commit, including new and deleted files and
+// anything the model committed itself.
+function diff(work: string, start: string): string {
   git(work, 'add', '-A')
-  return git(work, 'diff', '--cached', '--no-color', 'HEAD')
+  return git(work, 'diff', '--cached', '--no-color', start)
 }
 
 function version(client: Client): string {
@@ -301,16 +304,24 @@ function loadPrompts(names: string[] | undefined): Prompt[] {
   return names.map((n) => all.find((p) => p.name === n) ?? usage(`no prompt named ${n} (have: ${all.map((p) => p.name).join(', ')})`))
 }
 
-// Frontmatter is flat `key: value` lines; `#` starts a comment.
+// Frontmatter is flat `key: value` lines; `#` starts a comment. `reply` may repeat: one line per
+// ask, in the order the asks arrive.
 function parsePrompt(path: string): Prompt {
   const source = readFileSync(path, 'utf8')
   const match = /^---\n([\s\S]*?)\n---\n([\s\S]*)$/.exec(source)
   if (!match) throw new Error(`${path}: missing frontmatter`)
   const fields: Record<string, string> = {}
+  const replies: string[] = []
   for (const line of match[1]!.split('\n')) {
     const at = line.indexOf(':')
     if (at === -1) continue
-    fields[line.slice(0, at).trim()] = line.slice(at + 1).replace(/\s+#.*$/, '').trim()
+    const key = line.slice(0, at).trim()
+    const value = line.slice(at + 1).replace(/\s+#.*$/, '').trim()
+    if (key === 'reply') {
+      if (value) replies.push(value)
+    } else {
+      fields[key] = value
+    }
   }
   const expect = fields.expect
   if (expect !== 'ask' && expect !== 'no-ask') throw new Error(`${path}: expect must be ask or no-ask`)
@@ -318,7 +329,7 @@ function parsePrompt(path: string): Prompt {
     name: basename(path, '.md'),
     text: match[2]!.trim(),
     expect,
-    reply: fields.reply || 'first',
+    replies: replies.length ? replies : ['first'],
     ...(fields.match ? { match: fields.match } : {}),
   }
 }

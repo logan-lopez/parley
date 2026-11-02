@@ -64,10 +64,10 @@ function step(by: number) {
   if (next) selectedId.value = next.id
 }
 
-function send(data: unknown, note: string) {
+function send(data: unknown, note: string, remember: string[]) {
   const id = selectedId.value!
   advanceFrom(id)
-  answer(id, data, note)
+  answer(id, data, note, remember)
 }
 
 function skip(note: string) {
@@ -108,8 +108,10 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKey))
       :withdrawn-hint="shown.answeredIn === 'chat' ? 'Nothing was sent from here.' : undefined"
       :initial-data="shown.draft?.data"
       :initial-note="shown.draft?.note"
+      :initial-remember="shown.draft?.remember"
       @change="setDraft(shown.id, { data: $event })"
       @note="setDraft(shown.id, { note: $event })"
+      @remember="setDraft(shown.id, { remember: $event })"
       @submit="send"
       @skip="skip"
       @prev="step(-1)"

@@ -8,7 +8,7 @@ compiles it to JSON Schema with `x-widget` hints, which is all the app renders. 
 answers, the same package shapes the answer back into a structured result and a line of text per
 question.
 
-**History:** [brief 2](../briefs/archive/02-ask-tool-and-ui.md), [brief 5](../briefs/archive/05-review-question.md) (`review`), [brief 10](../briefs/archive/10-text-drafts.md) (`draft`), [brief 11](../briefs/archive/11-review-decisions.md) (review `decisions`), [brief 12](../briefs/archive/12-capture-question.md) (`capture`), [brief 16](../briefs/16-show-blocks.md) (`show`), [brief 17](../briefs/17-editable-show.md) (`editable`)
+**History:** [brief 2](../briefs/archive/02-ask-tool-and-ui.md), [brief 5](../briefs/archive/05-review-question.md) (`review`), [brief 10](../briefs/archive/10-text-drafts.md) (`draft`), [brief 11](../briefs/archive/11-review-decisions.md) (review `decisions`), [brief 12](../briefs/archive/12-capture-question.md) (`capture`), [brief 16](../briefs/16-show-blocks.md) (`show`), [brief 17](../briefs/17-editable-show.md) (`editable`), [brief 21](../briefs/21-dont-ask-again.md) ("Don't ask again here")
 
 `ask.ts` is the `@parley/protocol/ask` entry: the tool's Zod input schema (`askInputSchema`), the
 result schema, `compileQuestions` and `shapeAnswer`. They're pure functions, shared by the server,
@@ -134,7 +134,7 @@ with no Zod, so the window can import it from the root entry.
   over it never arrives: the hub closes the connection, and the server re-sends its pending asks
   on reconnect.
 - **The result** (`askResultSchema`): `status` (`answered`, `dismissed`, `timed_out`,
-  `cancelled`), `message`, `answers` keyed by id, and `note`. Each answer has `header`, `value`
+  `cancelled`), `message`, `answers` keyed by id, `remember` and `note`. Each answer has `header`, `value`
   (a string, strings, a number, a boolean, or null for an optional question left blank), `custom`
   (the user's own text when it isn't an option) and, for a review, `review`: every item's
   `{ label, decision, comment? }` in order, while `value` is the labels of the items given the
@@ -150,6 +150,12 @@ with no Zod, so the window can import it from the root entry.
   Past 20,000 characters a saved edit's diff is left out for `changedLines` (`SHOW_DIFF_MAX`);
   an unsaved one keeps it, since it's the only copy of the edit. `ShowEdit` (`show.ts`) is what
   the server hands `shapeAnswer` in `extra.edits`.
+- **Remembered answers** ([decision](../decisions/dont-ask-again.md)): `remember` is a list of
+  `{ id, header, value }`, one per question the user turned "Don't ask again here" on for, in
+  question order, with `value` the answer given. Only a single-select choice or a boolean
+  qualifies (`canRemember`); an id that isn't a question in the ask, is of another type, or whose
+  answer was left blank is dropped, and so is all of it on a skip. The key is left out when
+  nothing is left.
 - **The text** (`shapeAnswer`) leads with "The user answered:" and one line per question. Own
   answers are quoted and marked as not one of the options. A draft reads "accepted the draft as
   written", or "edited the draft:" with the final text indented below, or "(cleared the
@@ -159,7 +165,13 @@ with no Zod, so the window can import it from the root entry.
   other decisions' items grouped by decision, then majority items with a comment. A capture fences its
   text verbatim, indented under the line ("pasted 24 lines:"), with a fence longer than any run
   of backticks in it; one line of 120 characters or fewer is quoted instead (`pasted "v2.1.296"`).
-  Screenshots follow as paths, one per line, introduced as PNG files the agent can read. A note is quoted after the answers.
+  Screenshots follow as paths, one per line, introduced as PNG files the agent can read. A
+  remembered answer follows the answers: "They don't want to be asked this again in this
+  project:" ("these" for more than one) and a line per question, then the instruction: write one
+  line for the project's agent instructions (`AGENTS.md`, or `CLAUDE.md` if there's no
+  `AGENTS.md`), show it with `ask` as a `text` question with that line as its `draft`, save it
+  only if they accept or edit it, and until then act on the answer without asking again in this
+  session. A note is quoted after that.
   A show has no entry in `answers` and no line; its id is still taken in `questionIds`, so the
   ids around it don't shift. An editable one does: "left docs/plan.md unchanged", "edited
   docs/plan.md, and Parley saved it:" with the diff fenced as ```` ```diff ```` and indented, or

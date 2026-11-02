@@ -27,7 +27,8 @@ pnpm --filter @parley/server trial --summary <results.jsonl>  # re-print a summa
 1. Builds the server once per invocation. Runs use `dist/index.mjs`, the bundle that ships, not
    `tsx`.
 2. Copies `project/` to a fresh dir under `$TMPDIR` and commits it in a throwaway git repo, so the
-   diff shows only what the run changed.
+   diff shows only what the run changed. The diff is against that start commit, so what the model
+   commits itself still shows.
 3. Starts `fake-hub` on a socket in its own short dir under `$TMPDIR` (macOS caps socket paths at
    104 bytes), with the prompt's `reply` policy and `--log`.
 4. Runs the client in the copy, in its own process group, and kills the group on timeout or exit, so
@@ -60,7 +61,8 @@ Ctrl-C kills the run in flight and cleans up.
 ```markdown
 ---
 expect: ask          # ask | no-ask
-reply: first         # a fake-hub policy: first | second | other:<text> | skip | none
+reply: first         # a fake-hub policy: first | second | other:<text> | skip | none | remember:<policy>
+                     # `reply:` may repeat: one line per ask, in the order the asks arrive (the last repeats)
 match: zephyrExport  # optional: what to search for instead of the reply
 ---
 Add a way to export the ledger.
@@ -91,6 +93,7 @@ A changed prompt resets the comparison for that prompt.
 | report-look | ask | first | a visual choice: should preview layouts or colors (`html preview`, chips, a palette) |
 | plan-check | ask | first | a plan to check: should put the file in front of the user (`show` with `path`) and ask about it |
 | config-tweak | ask | other:… | a file for the user to adjust: should be a `show` with `path` and `editable` |
+| standing-commit | ask | remember:first, then first | "Don't ask again here" on a commit question: the model should draft a line for `AGENTS.md` as a `text` question with a `draft`, and save it only after the draft is answered |
 
 The question types are in the `questions` field of each result, not scored. Check them by eye for
 `prune-unused`, `config-format`, `changelog-draft`, `sort-helpers` and `crash-output`; a text question with a
@@ -103,11 +106,22 @@ re-applied a change Parley had already saved: a `written: true` answer means the
 without the agent touching the file, so the diff check finds `EUR` either way. Read the
 transcript for a second write of the same line.
 
+`standing-commit` scores two more things (brief 21): **drafted** (a later ask has a `text` question with a
+`draft`) and **saved** (the diff adds a line to `AGENTS.md` or `CLAUDE.md`), and fails a run that
+**saved early**: wrote one of those files before the draft was answered, or saved with no draft at
+all. The order comes from the client's event stream (a file write against the draft ask's result),
+the save from the diff. Its first reply, `remember:first`, answers the commit question as `first`
+does and turns "Don't ask again here" on for it. The prompt asks for a yes/no on committing: the
+first version, which said only to check first, got a `text` question with a draft commit message,
+which has no toggle.
+
 `project/` is `tally`, a small expense-CSV CLI with a planted sign bug in `fromCents`, unused
 helpers, unwired `reports/monthly.ts` and `reports/yearly.ts`, a superseded `utils/format-old.ts`
 and `parse-tsv.ts`, unused `constants.ts`, a v0.1 `data/sample-v1.csv`, and a one-off
 `scripts/migrate-v1.ts` that still imports `utils/dates.ts`. That's about 11 deletion candidates,
-counting unused exports, for `prune-unused`. It has no `node_modules` and runs have
+counting unused exports, for `prune-unused`. It has an `AGENTS.md` with two ordinary rules, so a
+standing answer has a file to land in; Claude Code's runs load `CLAUDE.md`, not `AGENTS.md`, so the
+model finds it by looking, as the result text tells it to. It has no `node_modules` and runs have
 no network, so `tsc` can't find `@types/node` in a run. Models often say so; it's expected.
 
 ## Scoring
@@ -123,10 +137,11 @@ check go in `results/<timestamp>/<prompt>.<client>.<run>/`: `events.jsonl`, `hub
 | `matchedExpect` | `asked` agrees with `expect` |
 | `used` | a choice answer fake-hub sent (minus " (Recommended)"), or `match`, appears in the final message or the diff's added lines, ignoring case and punctuation. Null when there was no choice answer to use. |
 | `reAskedAfterSkip` | `reply: skip` only: another `ask` after the first dismissed one |
+| `drafted`, `saved`, `savedEarly` | prompts with a `remember:` reply only, else null. A later ask has a `text` question with a `draft`; the diff adds a line to `AGENTS.md` or `CLAUDE.md`; that save came before the draft was answered, or there was no draft. |
 | `questions` | the headers and types the model wrote, per call, for reading by eye |
 | `hubAsks` | asks that reached fake-hub. Fewer than `askCount` means rejected input. |
 | `toolLoaded` | Claude only: `mcp__parley__ask` was in the init event's tool list. Codex doesn't report one, so it's null. |
-| `failed` | the checks the run failed: `overAsked`, `underAsked`, `firstValid`, `used`, `reAskedAfterSkip`, `toolMissing`, `timedOut`, `exitCode` |
+| `failed` | the checks the run failed: `overAsked`, `underAsked`, `firstValid`, `used`, `reAskedAfterSkip`, `notDrafted`, `notSaved`, `savedEarly`, `toolMissing`, `timedOut`, `exitCode` |
 
 **`used` is approximate, on purpose.** It's a string search, so it misses paraphrases, and
 `reply: first` makes that worse: models write short generic labels (`Keep`, `Remove all`), then
@@ -269,6 +284,57 @@ history):
   codex-cli 0.166.0). The three that ran: all asked, all first call valid; `changelog-draft` was
   one `text+draft`, `sort-helpers` one `review`, `config-format` two `choice` questions. Rerun the
   whole set once the limit resets before calling it a baseline.
+
+## After "Don't ask again here" (brief 21)
+
+2026-11-02, Claude Code 2.1.316, `claude-opus-5-5`, `--runs 3 --keep`, with the remembered-answer
+text in the result, `AGENTS.md` added to `project/`, the new `standing-commit` prompt, and the
+harness diffing against the start commit. From `results/2026-11-02T20-17-04-551Z.jsonl`. Compared
+with brief 20's pass, above (`config-tweak` and `plan-check` weren't in it; they're compared with
+the baseline's rows):
+
+| prompt | expect | asked | first call valid | used | was (brief 20) |
+| --- | --- | --- | --- | --- | --- |
+| changelog-draft | ask | 3/3 | 3/3 | 3/3 | same |
+| config-format | ask | 2/3 | 2/2 | 0/2 | same |
+| config-tweak | ask | 3/3 | 3/3 | 3/3 | same as the baseline |
+| crash-output | ask | 0/3 | – | – | same |
+| date-library | ask | 2/3 | 2/2 | 2/2 | asked 3/3, used 3/3 |
+| dead-code-cleanup | ask | 3/3 | 3/3 | 0/2 | used 0/3 |
+| explain-by-category | no-ask | 0/3 | – | – | same |
+| export-sentinel | ask | 3/3 | 3/3 | 3/3 | same |
+| fix-negative-cents | no-ask | 0/3 | – | – | same |
+| json-flag | no-ask | 0/3 | – | – | same |
+| naming-skip | ask | 3/3 | 3/3 | – | same |
+| plan-check | ask | 3/3 | 3/3 | 0/3 | same as the baseline |
+| prune-unused | ask | 3/3 | 3/3 | 2/3 | used 3/3 |
+| refactor-reports | ask | 3/3 | 3/3 | 0/3 | same |
+| report-look | ask | 3/3 | 3/3 | 3/3 | same |
+| sort-helpers | ask | 3/3 | 3/3 | 0/1 | used 1/1 |
+| standing-commit | ask | 3/3 | 3/3 | – | new: drafted 3/3, saved 3/3, saved early 0 |
+
+- **`standing-commit`: the mechanism works.** Every run asked a yes/no (a `boolean` each time) about
+  committing, got "Yes" back with `remember`, committed, then asked a `text` question with a
+  `draft` for the `AGENTS.md` line, got it back "accepted the draft as written", and only then
+  edited `AGENTS.md`. No run saved before the draft was answered, and none saved without one.
+  `used` is `–` because the answers were booleans, which `used` doesn't read.
+- **What it drafted is broad.** The first run's line was "Once a change works, commit it without
+  asking first." The question was "commit this change?", and the line generalises it to every
+  change in the project. That's the agent's wording, shown to Logan before it's saved; the result
+  text doesn't ask for a narrow one. Not tuned, since the draft is where he decides.
+- **The first version of the prompt didn't reach the toggle.** "Check with me before you commit
+  anything" got one `text` question with a draft commit message, which has no toggle. The prompt now
+  asks for a yes/no on committing, which is the shape of the real repeats.
+- **`date-library` asked 2/3.** Run 2 read the project, tried `npm install date-fns`, and wrote
+  the change without asking, because the request says to pull in a date library. It never read
+  `AGENTS.md`. This prompt has moved between 2/3 and 3/3 before, so it reads as the same noise.
+- **The other `used` misses** (`prune-unused` run 1, `sort-helpers` run 2) are the label problem,
+  on counts of 1 to 3. First call valid: every call that was made, 40 of 40 across the pass.
+- **`AGENTS.md` in `project/` moved nothing else.** Asking and validity are the same on every
+  prompt except `date-library` run 2 above, and only `standing-commit` runs edited it. Two
+  `plan-check` plans cite it ("per AGENTS.md"), so the models do read it when it's relevant.
+- **Not run:** Codex. Brief 20's Codex pass hit the account's usage limit and still has no
+  baseline, and this brief's check is Claude's.
 
 ## Real use
 

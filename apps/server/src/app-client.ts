@@ -233,7 +233,7 @@ class SocketAppClient implements AppClient {
         log(`connected to Parley ${message.appVersion}`)
         return
       case 'answer':
-        this.pending.get(message.id)?.settle({ status: 'answered', data: message.data, ...note(message.note) })
+        this.pending.get(message.id)?.settle({ status: 'answered', data: message.data, ...note(message.note), ...remember(message.remember) })
         return
       case 'dismissed':
         this.pending.get(message.id)?.settle({ status: 'dismissed', ...note(message.note) })
@@ -281,6 +281,12 @@ class SocketAppClient implements AppClient {
 
 function note(value: unknown): { note?: string } {
   return typeof value === 'string' && value.trim() ? { note: value } : {}
+}
+
+// Question ids from an app that sent `remember`; anything else is dropped, and so is an empty list.
+function remember(value: unknown): { remember?: string[] } {
+  const ids = Array.isArray(value) ? value.filter((v): v is string => typeof v === 'string') : []
+  return ids.length ? { remember: ids } : {}
 }
 
 function tryConnect(path: string): Promise<Socket> {

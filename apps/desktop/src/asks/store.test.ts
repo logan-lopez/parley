@@ -27,7 +27,7 @@ vi.mock('./notifications', () => ({ notifyNewAsk: vi.fn(async () => {}) }))
 vi.mock('./persist', () => ({ append: vi.fn(), rewrite: vi.fn(async () => {}) }))
 
 const { startHub } = await import('../hub/client')
-const { answer, getRecord, hubHandlers } = await import('./store')
+const { answer, dismiss, getRecord, hubHandlers, setDraft } = await import('./store')
 const { notifyNewAsk } = await import('./notifications')
 
 const CONN = 7
@@ -121,5 +121,57 @@ describe('inline asks', () => {
     const id = ask()
     expect(getRecord(id)).not.toHaveProperty('inline')
     expect(notifyNewAsk).toHaveBeenCalledOnce()
+  })
+})
+
+describe("Don't ask again here", () => {
+  it('reaches the record and the answer message', () => {
+    const id = ask()
+    answer(id, { commit: 'Commit' }, 'ok', ['commit'])
+    expect(getRecord(id)).toMatchObject({ status: 'answered', data: { commit: 'Commit' }, note: 'ok', remember: ['commit'] })
+    expect(tauri.sent).toEqual([
+      { conn: CONN, message: { type: 'answer', id, data: { commit: 'Commit' }, note: 'ok', remember: ['commit'] } },
+    ])
+  })
+
+  it('is left off the message and the record when nothing was toggled', () => {
+    const id = ask()
+    answer(id, { commit: 'Commit' }, '', [])
+    expect(getRecord(id)).not.toHaveProperty('remember')
+    expect(tauri.sent[0]!.message).not.toHaveProperty('remember')
+  })
+
+  it('is sent again with the answer when the server re-sends the ask', () => {
+    const id = ask()
+    answer(id, { commit: 'Commit' }, undefined, ['commit'])
+    tauri.sent.length = 0
+    deliver({ type: 'ask', id, form: { schema: { type: 'object', properties: {} } }, createdAt: Date.now() })
+    expect(tauri.sent[0]!.message).toMatchObject({ type: 'answer', id, remember: ['commit'] })
+  })
+
+  it('is part of the unsent draft, kept on a skip and dropped on an answer', () => {
+    const id = ask()
+    setDraft(id, { remember: ['commit'] })
+    expect(getRecord(id)!.draft).toEqual({ remember: ['commit'] })
+    setDraft(id, { remember: [] })
+    expect(getRecord(id)).not.toHaveProperty('draft.remember')
+
+    setDraft(id, { remember: ['commit'] })
+    dismiss(id)
+    expect(getRecord(id)!.draft).toEqual({ remember: ['commit'] })
+    expect(tauri.sent[0]!.message).toEqual({ type: 'dismissed', id })   // a skip isn't an answer to remember
+    expect(getRecord(id)).not.toHaveProperty('remember')
+
+    const other = ask()
+    setDraft(other, { remember: ['commit'] })
+    answer(other, {}, undefined, ['commit'])
+    expect(getRecord(other)).not.toHaveProperty('draft')
+  })
+
+  it("is dropped when the chat's answer replaces the window's", () => {
+    const id = ask({ inline: true })
+    answer(id, { q: 'window' }, undefined, ['q'])
+    deliver({ type: 'resolved', id, outcome: { status: 'answered', data: { q: 'chat' } } })
+    expect(getRecord(id)).not.toHaveProperty('remember')
   })
 })

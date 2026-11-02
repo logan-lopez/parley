@@ -35,7 +35,8 @@ you go back to the queue and return.
 Opening one shows the card read-only, as you answered it, or as far as you got. A line above it
 says what was sent: "Sent.", "Sent with a note.", "Only the note was sent." for a skip with a note,
 "Answered in the chat" for one answered in Claude Desktop, or "Nothing was sent. This is what you
-had typed." for an ask that ended with a draft in it.
+had typed." for an ask that ended with a draft in it. A question you turned "Don't ask again here"
+on for shows "Don't ask again" beside its header.
 
 ## Clearing it
 

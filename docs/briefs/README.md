@@ -47,7 +47,7 @@ and move to `archive/` when they're done. Ideas that aren't scheduled yet are in
     dated real-use baseline in the trials README.
 20. [`20-input-limits.md`](20-input-limits.md) (done, awaiting review): soft input limits, so near-miss headers and
     descriptions stop bouncing (6.6% of real calls); then the full trial pass and the Codex baseline.
-21. [`21-dont-ask-again.md`](21-dont-ask-again.md): a per-question "Don't ask again here" toggle;
+21. [`21-dont-ask-again.md`](21-dont-ask-again.md) (done, awaiting review): a per-question "Don't ask again here" toggle;
     the agent drafts a standing line for `AGENTS.md` for Logan to approve; then a trial pass.
 
 16. [`16-show-blocks.md`](16-show-blocks.md) (done, awaiting review): a `show` question type with nothing to answer, from

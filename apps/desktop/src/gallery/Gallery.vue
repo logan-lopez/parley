@@ -89,7 +89,7 @@ function finish(outcome: AskOutcome) {
         :expires-at="loadedAt + (input?.timeoutSeconds ?? DEFAULT_TIMEOUT_SECONDS) * 1000"
         :position="1"
         :total="1"
-        @submit="(data, note) => finish({ status: 'answered', data, note })"
+        @submit="(data, note, remember) => finish({ status: 'answered', data, note, remember })"
         @skip="(note) => finish({ status: 'dismissed', note })"
       >
         <template #meta><ZoomControl /></template>
