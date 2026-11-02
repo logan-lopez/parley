@@ -1,9 +1,10 @@
 ---
-covers: ["docs/architecture/form-spec.md", "docs/architecture/card-ui.md", "docs/architecture/asks-and-history.md"]
+covers: ["docs/architecture/form-spec.md", "docs/architecture/card-ui.md", "docs/architecture/asks-and-history.md", "docs/architecture/ask-tool.md"]
 ---
 # Question types
 
-The seven kinds of question an agent can put on a card, as you see them. The agent picks the type;
+The eight kinds of question an agent can put on a card, as you see them, counting the one that
+isn't a question: a show, something to look at. The agent picks the type;
 each question has a short header chip (a long one is cut short with an ellipsis and shows in full
 when you hover it) and the question itself, which can include formatting, links, code, colors and
 pictures ([Answering a card](answering.md#colors-and-pictures)).
@@ -110,3 +111,24 @@ the box, or pasted into an ask you then skipped, stays until its folder ages out
 A capture that takes screenshots can only be answered in the Parley window, not in Claude
 Desktop's inline card; a text-only one works in both. History shows the text and the screenshots'
 file names, without thumbnails.
+
+## Show
+
+Something to look at, with nothing to answer: a plan, a file, a design. It has a header chip and a
+lead line like any question, then the body in a pane of its own with a thin border. The questions
+about it come after it on the same card, so you read the plan and answer "Go ahead?" in one go.
+
+- **The pane scrolls inside.** It's at most about half the window tall (480 px in Claude Desktop's
+  inline card). Tab reaches it like a question; then ↑/↓, Page Up/Down and Space scroll it.
+  Number keys do nothing there.
+- **Files.** The agent can name a file in its project instead of pasting it in, so you see the file
+  as it is on disk. Markdown files render, HTML and SVG files are drawn as pictures, and anything
+  else shows as code (plain monospace, with a Copy button). A caption under the pane names the file
+  and, for part of one, the lines: `src/index.ts · lines 10–80 of 212`.
+- **Nothing to answer.** A show never holds up Send, and the card's first focus skips it and lands
+  on the first question. The agent's answer has no line for it.
+
+Parley reads only files inside the project the agent runs in, and never ones that look like they
+hold secrets (`.env`, keys, anything under `.git` or `.ssh`). In Claude Desktop's chat there's no
+project, so a show there has the text pasted in. History keeps the file as you saw it then, and
+the filter finds a show by its file's path, not its text.

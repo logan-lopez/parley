@@ -46,16 +46,17 @@ export function apply(records: AskRecord[]): AskRecord[] {
   )
 }
 
-// Titles, headers, answers (or the draft) and notes, lowercased. An ended
-// record only changes if it's revived and ends again, so it's cached per end.
+// Titles, headers, answers (or the draft), notes and shown files' paths (not
+// their text), lowercased. An ended record only changes if it's revived and
+// ends again, so it's cached per end.
 const haystacks = new WeakMap<AskRecord, { at: number; text: string }>()
 
 function haystack(record: AskRecord): string {
   const cached = haystacks.get(record)
   if (cached?.at === endedAt(record)) return cached.text
-  const properties = (record.form.schema.properties ?? {}) as Record<string, { title?: string; description?: string }>
+  const properties = (record.form.schema.properties ?? {}) as Record<string, { title?: string; description?: string; 'x-source'?: { path?: string } }>
   const parts = [record.form.title, sourceLabel(record.session), noteOf(record)]
-  for (const p of Object.values(properties)) parts.push(p.title, p.description)
+  for (const p of Object.values(properties)) parts.push(p.title, p.description, p['x-source']?.path)
   collect(record.data ?? record.draft?.data, parts)
   const text = parts.filter(Boolean).join('\n').toLowerCase()
   haystacks.set(record, { at: endedAt(record), text })

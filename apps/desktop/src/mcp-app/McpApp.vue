@@ -4,10 +4,12 @@
 // and its result carries the askId. The card answers through the server's
 // app-only `parley_submit`, and long-polls `parley_status` to learn when the
 // ask ends elsewhere (the Parley window, a cancel, the timeout). The window
-// shows the same ask, and the first answer wins.
+// shows the same ask, and the first answer wins. A show's file comes with the
+// result too (`_meta['parley/files']`): the server reads it, and the card
+// holds a form with a path-backed show until it arrives.
 import { computed, ref, shallowRef } from 'vue'
 import { App } from '@modelcontextprotocol/ext-apps'
-import { isWindowOnly } from '@parley/protocol'
+import { isWindowOnly, type ShowFiles } from '@parley/protocol'
 import { askInputSchema, compileQuestions, DEFAULT_TIMEOUT_SECONDS, type AskInput, type AskOutcome } from '@parley/protocol/ask'
 import AskCard from '../card/AskCard.vue'
 import { setPlatform } from '../platform'
@@ -23,6 +25,8 @@ const shownAt = Date.now()
 const input = shallowRef<AskInput>()
 const inputError = ref<string>()
 const askId = ref<string>()
+const files = shallowRef<ShowFiles>()
+const resultError = ref<string>()   // `ask` itself failed (a show's file refused, say): nothing was shown
 const status = shallowRef<Status>({ state: 'open' })
 const cancelled = ref(false)    // the host cancelled `ask` itself, so there's no askId
 const sending = shallowRef<{ data?: unknown; note: string }>()
@@ -31,7 +35,12 @@ const draft: { data?: unknown; note?: string } = {}
 const sendError = ref<string>()
 const host = ref('Claude')
 
-const form = computed(() => (input.value ? compileQuestions(input.value) : undefined))
+// A path-backed show has no content until the result brings its file.
+const waitsForFiles = computed(() => !!input.value?.questions.some((q) => q.type === 'show' && q.path !== undefined))
+const form = computed(() => {
+  if (!input.value || (waitsForFiles.value && !files.value)) return undefined
+  return compileQuestions(input.value, files.value)
+})
 // No file picker or screenshot saving in the host's iframe: the window answers these.
 const windowOnly = computed(() => !!form.value && isWindowOnly(form.value))
 
@@ -52,6 +61,12 @@ app.ontoolinput = ({ arguments: args }) => {
 }
 
 app.ontoolresult = (result) => {
+  if (result.isError) {
+    resultError.value = textOf(result) || "Parley couldn't show this ask."
+    return
+  }
+  const shown = (result._meta as Record<string, unknown> | undefined)?.['parley/files']
+  if (shown && typeof shown === 'object' && !files.value) files.value = shown as ShowFiles
   const id = (result.structuredContent as { askId?: unknown } | undefined)?.askId
     ?? (result._meta as Record<string, unknown> | undefined)?.['parley/askId']
   if (typeof id !== 'string' || askId.value) return
@@ -147,7 +162,8 @@ const expiresAt = computed(() => shownAt + (input.value?.timeoutSeconds ?? DEFAU
 
 <template>
   <p v-if="inputError" class="inline-message danger">Parley couldn't read this ask: {{ inputError }}</p>
-  <p v-else-if="!form" class="inline-message">Loading the question…</p>
+  <p v-else-if="resultError" class="inline-message danger">{{ resultError }}</p>
+  <p v-else-if="!form" class="inline-message">{{ cancelled ? 'Cancelled.' : 'Loading the question…' }}</p>
   <template v-else>
     <!-- Keyed by state, so the read-only card mounts fresh with the answers it ended with. -->
     <AskCard

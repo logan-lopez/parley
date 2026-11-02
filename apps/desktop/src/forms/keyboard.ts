@@ -7,6 +7,9 @@
 // - `[data-primary]` is where focus lands when the question becomes active.
 // - `[data-advance-on-pick]` on the root moves focus to the next question
 //   after a number-key pick (single choice, boolean).
+// - `[data-passive]` on the root: nothing to answer (a show). Tab still stops
+//   on it (its `[data-primary]` is the pane, which then scrolls with the arrow
+//   keys), but the card's first focus skips it, and it has no `[data-pick]`.
 //
 // The card claims digits, Enter, Tab and Cmd chords; the window claims Esc
 // (hide). Other plain keys are the renderer's own, handled on its elements
@@ -22,6 +25,11 @@ export const QUESTION = '[data-question]'
 
 export function questionsIn(root: ParentNode): HTMLElement[] {
   return [...root.querySelectorAll<HTMLElement>(QUESTION)]
+}
+
+// The first question with something to answer, else the first.
+export function firstToAnswer(questions: HTMLElement[]): HTMLElement | undefined {
+  return questions.find((q) => !q.hasAttribute('data-passive')) ?? questions[0]
 }
 
 export function focusQuestion(question: HTMLElement | undefined) {

@@ -5,6 +5,7 @@ import ChoiceRenderer from './renderers/ChoiceRenderer.vue'
 import NumberRenderer from './renderers/NumberRenderer.vue'
 import PathRenderer from './renderers/PathRenderer.vue'
 import ReviewRenderer from './renderers/ReviewRenderer.vue'
+import ShowRenderer from './renderers/ShowRenderer.vue'
 import TextRenderer from './renderers/TextRenderer.vue'
 import { widgetTester } from './renderers/useQuestion'
 
@@ -19,4 +20,5 @@ export const renderers = Object.freeze([
   { tester: widgetTester('path'), renderer: PathRenderer },
   { tester: widgetTester('review'), renderer: ReviewRenderer },
   { tester: widgetTester('capture'), renderer: CaptureRenderer },
+  { tester: widgetTester('show'), renderer: ShowRenderer },
 ])

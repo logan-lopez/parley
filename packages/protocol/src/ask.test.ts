@@ -3,7 +3,8 @@ import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import { z } from 'zod'
 import { askInputSchema, askResultSchema, compileQuestions, questionIds, shapeAnswer, type AskInput } from './ask.ts'
-import { isWindowOnly } from './form.ts'
+import { isWindowOnly, type ShowFiles } from './form.ts'
+import { fileMarkdown } from './show.ts'
 
 const fixturesDir = join(import.meta.dirname, '../fixtures')
 const fixtures = Object.fromEntries(
@@ -27,7 +28,7 @@ describe('fixtures', () => {
   it('covers every question type, the maximum and previews', () => {
     const all = Object.values(fixtures).map(parse)
     const types = new Set(all.flatMap((f) => f.questions.map((q) => q.type)))
-    expect([...types].sort()).toEqual(['boolean', 'capture', 'choice', 'number', 'path', 'review', 'text'])
+    expect([...types].sort()).toEqual(['boolean', 'capture', 'choice', 'number', 'path', 'review', 'show', 'text'])
     expect(all.some((f) => f.questions.length === 4)).toBe(true)
     expect(all.some((f) => f.questions.some((q) => q.options?.every((o) => o.preview)))).toBe(true)
   })
@@ -889,5 +890,127 @@ describe('shapeAnswer', () => {
       retries: { header: 'Retries', value: null },
       budget: { header: 'Budget', value: null },
     })
+  })
+})
+
+describe('show blocks', () => {
+  const show = { header: 'Plan', question: "Here's the plan.", type: 'show' as const }
+  const go = { header: 'Go ahead?', question: 'Start?', type: 'boolean' as const }
+  const file: ShowFiles[string] = { path: 'src/index.ts', text: 'const a = 1\n', lines: [3, 3], totalLines: 12, sha256: 'ab'.repeat(32) }
+
+  it('takes content or a path, with lines', () => {
+    expect(issues({ questions: [{ ...show, content: '# Plan' }, go] })).toEqual([])
+    expect(issues({ questions: [{ ...show, path: 'docs/plan.md', lines: [10, 80] }, go] })).toEqual([])
+    expect(issues({ questions: [{ ...show, path: 'docs/plan.md', required: false }, go] })).toEqual([])
+  })
+
+  it('explains content and path together, and neither', () => {
+    expect(issues({ questions: [{ ...show, content: 'x', path: 'a.md' }, go] }))
+      .toEqual([expect.stringContaining('both `content` and `path`; give one')])
+    expect(issues({ questions: [show, go] }))
+      .toEqual([expect.stringContaining('a show with nothing to show; give `content` (markdown) or `path`')])
+  })
+
+  it('explains lines without a path, and backwards lines', () => {
+    expect(issues({ questions: [{ ...show, content: 'x', lines: [1, 2] }, go] }))
+      .toEqual([expect.stringContaining('has `lines` but no `path`')])
+    expect(issues({ questions: [{ ...show, path: 'a.ts', lines: [9, 3] }, go] }))
+      .toEqual([expect.stringContaining('lines [9, 3], which start after they end')])
+    expect(issues({ questions: [{ ...show, path: 'a.ts', lines: [0, 3] }, go] })).toHaveLength(1)
+  })
+
+  it('caps content at 20,000 characters and points at path', () => {
+    expect(issues({ questions: [{ ...show, content: 'x'.repeat(20_001) }, go] }))
+      .toEqual([expect.stringContaining('give its `path` instead')])
+  })
+
+  it('rejects show fields on other types', () => {
+    expect(issues({ questions: [{ ...go, content: 'x' }] }))
+      .toEqual([expect.stringContaining("question 1 has `content` but type 'boolean'; `content` only applies to type 'show'")])
+    expect(issues({ questions: [{ ...go, path: 'a.md', lines: [1, 2] }] })).toEqual([
+      expect.stringContaining("has `path` but type 'boolean'"),
+      expect.stringContaining("has `lines` but type 'boolean'"),
+    ])
+  })
+
+  it('rejects required on a show, and other types\' fields', () => {
+    expect(issues({ questions: [{ ...show, content: 'x', required: true }, go] }))
+      .toEqual([expect.stringContaining('show blocks have nothing to answer; drop `required`')])
+    expect(issues({ questions: [{ ...show, content: 'x', options: [{ label: 'A' }, { label: 'B' }] }, go] }))
+      .toEqual([expect.stringContaining("question 1 has type 'show' but also has options")])
+    expect(issues({ questions: [{ ...show, content: 'x', draft: 'y' }, go] }))
+      .toEqual([expect.stringContaining("question 1 has a draft but type 'show'")])
+  })
+
+  it('needs a question besides the shows', () => {
+    expect(issues({ questions: [{ ...show, content: 'x' }, { ...show, header: 'More', content: 'y' }] }))
+      .toEqual(['a show block has nothing to answer; add at least one question about it in the same call'])
+  })
+
+  it('compiles content to x-content, never required', () => {
+    const { schema } = compileQuestions(parse({ questions: [{ ...show, content: '# Plan' }, go] }))
+    expect((schema.properties as Record<string, unknown>).plan).toEqual({
+      'x-widget': 'show', title: 'Plan', description: "Here's the plan.", type: 'null', 'x-content': '# Plan',
+    })
+    expect(schema.required).toEqual(['go_ahead'])
+  })
+
+  it('compiles a path without its file to x-source alone', () => {
+    const input = parse({ questions: [{ ...show, path: 'src/index.ts', lines: [3, 9] }, go] })
+    expect(props(input).plan).toEqual({
+      'x-widget': 'show', title: 'Plan', description: "Here's the plan.", type: 'null',
+      'x-source': { path: 'src/index.ts', lines: [3, 9] },
+    })
+  })
+
+  it('compiles a path with its file to markdown and the range shown', () => {
+    const input = parse({ questions: [{ ...show, path: 'src/index.ts', lines: [3, 9] }, go] })
+    const plan = (compileQuestions(input, { plan: file }).schema.properties as Record<string, Record<string, unknown>>).plan!
+    expect(plan['x-content']).toBe('```ts\nconst a = 1\n```')
+    expect(plan['x-source']).toEqual({ path: 'src/index.ts', lines: [3, 3], totalLines: 12 })
+  })
+
+  it('gives a show no answer and no line, without shifting the other ids', () => {
+    const input = parse({ questions: [{ ...show, content: 'x' }, go, { ...go, header: 'Plan' }] })
+    expect(questionIds(input.questions)).toEqual(['plan', 'go_ahead', 'plan_2'])
+    const { structured, text } = shapeAnswer(input, { status: 'answered', data: { go_ahead: true, plan_2: false } })
+    expect(Object.keys(structured.answers!)).toEqual(['go_ahead', 'plan_2'])
+    expect(text).toBe('The user answered:\n- Go ahead?: Yes\n- Plan: No')
+  })
+
+  it('is not window-only', () => {
+    expect(isWindowOnly(compileQuestions(fixture('show')))).toBe(false)
+  })
+})
+
+describe('fileMarkdown', () => {
+  it('passes markdown through', () => {
+    expect(fileMarkdown('docs/plan.md', '# Plan\n')).toBe('# Plan\n')
+    expect(fileMarkdown('README.MARKDOWN', 'x')).toBe('x')
+    expect(fileMarkdown('page.mdx', 'x')).toBe('x')
+  })
+
+  it('draws HTML and SVG as previews', () => {
+    expect(fileMarkdown('ui/card.html', '<p>Hi</p>')).toBe('```html preview width=640 height=480\n<p>Hi</p>\n```')
+    expect(fileMarkdown('ui/card.HTM', '<p>Hi</p>\n')).toBe('```html preview width=640 height=480\n<p>Hi</p>\n```')
+    expect(fileMarkdown('icons/tray.svg', '<svg/>')).toBe('```svg preview width=640 height=480\n<svg/>\n```')
+  })
+
+  it('fences code in its language', () => {
+    expect(fileMarkdown('src/a.ts', 'x')).toBe('```ts\nx\n```')
+    expect(fileMarkdown('src-tauri/src/lib.rs', 'x')).toBe('```rust\nx\n```')
+    expect(fileMarkdown('Config.YML', 'x')).toBe('```yaml\nx\n```')
+    expect(fileMarkdown('fix.patch', 'x')).toBe('```diff\nx\n```')
+  })
+
+  it('leaves an unknown language off', () => {
+    expect(fileMarkdown('notes.txt', 'x')).toBe('```\nx\n```')
+    expect(fileMarkdown('Makefile', 'x')).toBe('```\nx\n```')
+    expect(fileMarkdown('.gitignore', 'x')).toBe('```\nx\n```')
+  })
+
+  it('fences longer than any backtick run in the text', () => {
+    expect(fileMarkdown('a.ts', 'const s = `x`')).toBe('```ts\nconst s = `x`\n```')
+    expect(fileMarkdown('a.ts', 'a ```` b')).toBe('`````ts\na ```` b\n`````')
   })
 })

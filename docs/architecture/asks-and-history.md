@@ -65,7 +65,7 @@ when a new ask notifies.
   sound. It's the notification's own sound, so Focus silences it.
 - **The history view** (`history/`): ended records grouped by day, newest first. Filters (kept in
   `filter.ts`, so they survive a trip back to the queue): text over titles, headers, questions,
-  answers or drafts, notes and the source; status (answered, skipped, withdrawn); has a note. The
+  answers or drafts, notes, the source, and shown files' paths (not their text); status (answered, skipped, withdrawn); has a note. The
   detail is the card read-only, as answered or as far as it got, with what was sent. Clear history
   drops every ended record, on disk too. Keys: `j`/`k` or the arrows, `/` to filter, Enter to open,
   Esc goes back (detail → list → queue) and never hides.

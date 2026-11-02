@@ -89,12 +89,14 @@ A changed prompt resets the comparison for that prompt.
 | sort-helpers | ask | first | a per-item assignment: should be one `review` with `decisions` |
 | crash-output | ask | other:… | output only the user can get: should be one `capture` |
 | report-look | ask | first | a visual choice: should preview layouts or colors (`html preview`, chips, a palette) |
+| plan-check | ask | first | a plan to check: should put the file in front of the user (`show` with `path`) and ask about it |
 
 The question types are in the `questions` field of each result, not scored. Check them by eye for
 `prune-unused`, `config-format`, `changelog-draft`, `sort-helpers` and `crash-output`; a text question with a
 draft shows as `text+draft`, and a review with its own decisions as `review+decisions`. For
 `report-look`, read the questions themselves in the transcript: which of chips, a palette, an
-`html preview` and an `svg preview` they use.
+`html preview` and an `svg preview` they use. For `plan-check`, whether a `show` appears and
+whether it used `path` or `content`.
 
 `project/` is `tally`, a small expense-CSV CLI with a planted sign bug in `fromCents`, unused
 helpers, unwired `reports/monthly.ts` and `reports/yearly.ts`, a superseded `utils/format-old.ts`
@@ -132,54 +134,58 @@ the answer. Trust it more on `export-sentinel`, where the string is distinctive.
 
 ## Baseline
 
-2026-10-14, Claude Code 2.1.299, `claude-opus-5-5`, `--runs 3`: the first full pass with color
-chips and palettes (brief 13) and `html preview`/`svg preview` blocks (brief 14) in the tool
-description, which grew by those two paragraphs' sentences; on top of 1f96382. From
-`results/2026-10-14T14-07-12-828Z.jsonl`, plus `--keep` reruns for reading by eye
-(`2026-10-14T14-39-33-419Z`, `report-look` ×3, and `2026-10-14T14-41-59-854Z`, every prompt ×1):
+2026-11-02, Claude Code 2.1.316, `claude-opus-5-5`, `--runs 3 --keep`: the first full pass with
+`show` blocks (brief 16) in the tool description, which grew by one bullet, and the new
+`plan-check` prompt. On top of the soft input limits (brief 20). From
+`results/2026-11-02T05-54-19-377Z.jsonl`, every transcript kept. Compared with brief 20's pass
+(the section below), the last one before this change; brief 14's baseline of 2026-10-14 is in
+git history:
 
-| prompt | expect | asked | first call valid | used | over-asked | re-asked after skip | was (2026-10-11) |
+| prompt | expect | asked | first call valid | used | over-asked | re-asked after skip | was (2026-11-02, brief 20) |
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | changelog-draft | ask | 3/3 | 3/3 | 3/3 | – | – | same |
-| config-format | ask | 1/3 | 1/1 | 1/1 | – | – | asked 2/3 |
-| crash-output | ask | 2/3 | 2/2 | 2/2 | – | – | asked 0/3 |
-| date-library | ask | 3/3 | 3/3 | 2/3 | – | – | used 3/3 |
-| dead-code-cleanup | ask | 3/3 | 3/3 | 1/2 | – | – | used 0/3 |
+| config-format | ask | 2/3 | 2/2 | 0/2 | – | – | same |
+| crash-output | ask | 0/3 | – | – | – | – | same |
+| date-library | ask | 3/3 | 3/3 | 1/3 | – | – | used 3/3 |
+| dead-code-cleanup | ask | 3/3 | 3/3 | 0/3 | – | – | same |
 | explain-by-category | no-ask | 0/3 | – | – | 0 | – | same |
 | export-sentinel | ask | 3/3 | 3/3 | 3/3 | – | – | same |
 | fix-negative-cents | no-ask | 0/3 | – | – | 0 | – | same |
 | json-flag | no-ask | 0/3 | – | – | 0 | – | same |
 | naming-skip | ask | 3/3 | 3/3 | – | – | 0 | same |
-| prune-unused | ask | 3/3 | 3/3 | 3/3 | – | – | used 2/3 |
+| plan-check | ask | 3/3 | 3/3 | 0/3 | – | – | new |
+| prune-unused | ask | 3/3 | 3/3 | 3/3 | – | – | same |
 | refactor-reports | ask | 3/3 | 3/3 | 0/3 | – | – | same |
-| report-look | ask | 3/3 | 3/3 | 3/3 | – | – | new |
-| sort-helpers | ask | 3/3 | 3/3 | 2/2 | – | – | first call valid 2/3 |
+| report-look | ask | 3/3 | 3/3 | 3/3 | – | – | same |
+| sort-helpers | ask | 3/3 | 3/3 | 0/1 | – | – | used 1/1 |
 
-- **`report-look`:** every run, the three in the pass and four with `--keep`, asked one `choice`
-  ("Look") whose options each carried an `html preview`, mostly `width=400 height=220`, beside a
-  second choice for where the file goes. Twelve previews read by eye, all HTML with inline
-  `style` attributes: no chips, no palette, no `svg preview`. The model set backgrounds and left
-  text to the default, which is why HTML previews are now drawn on a light page in any theme.
-- **No `html preview` where code was meant.** None appeared outside `report-look` in the 14
-  `--keep` runs or the 8 failed runs' transcripts, and no plain `html` or `svg` fences either.
-- **Ask rates are within noise.** `config-format` asked 1/3 (2/3 last time, 0/3 the time before),
-  always with `choice`. `crash-output` asked for the first time, 2/3 here and 1/1 with `--keep`,
-  twice with a `capture` and once with a `choice` offering the error; it was 0/3.
-- **`sort-helpers` regressed in shape.** Last time it was a `review` with `decisions` in all three
-  runs. Here, runs 1 and 3 asked four `choice` questions, one per helper file, and run 2 a plain
-  `review`; the `--keep` run used `review+decisions` again. One more paragraph in the description
-  may be crowding the review example; rerun before reading much into three runs.
-- `used` misses are the label problem again: `date-library` run 3's label was a sentence ("Use
-  date-fns, you install") and the run did use date-fns; `refactor-reports` 0/3 as before.
-- Not recorded: a Codex baseline, still. Run `--client codex --runs 1` before the next
-  model-facing change.
+- **`plan-check`: `show` with `path` in all three runs.** Each wrote `docs/csv-plan.md` (49 to 55
+  lines), then asked once: a `show` of the file by `path`, no `lines`, with a one-line lead
+  ("Here's the plan I wrote."), then an "Approve" `choice`, and in two runs two more choices on
+  details the plan left open. None pasted the plan as `content`. `used` 0/3 is the label problem:
+  every run said "you approved it" and implemented the plan.
+- **`show` elsewhere, three times, always `content`.** `dead-code-cleanup` runs 1 and 3 opened
+  with a "Plan" show listing what they'd remove anyway (331 and 692 characters), before choices
+  on the doubtful files. That's a sign-off list, which a `review` fits better, but it's context
+  for the questions, not a stand-in for one. `changelog-draft` run 3 opened with a "Note" show
+  (455 characters, "The fix isn't in the code yet") before the draft: a heads-up a line of
+  question text would carry, so that one is `show` where a plain question would do. No run used
+  `show` alone, and every show came before the questions about it.
+- **Ask rates and first-call validity held.** Every prompt asked as often as in brief 20's pass,
+  and every call was valid and reached the hub, 33 of 33. `crash-output` is still 0/3.
+- **`used` misses are the label problem,** read in the transcripts: `date-library` runs 1 and 3
+  answered with a sentence ("Declare date-fns, you install") and did exactly that; `sort-helpers`
+  run 2's review was all approved and the run sorted the files that way. `sort-helpers` shapes:
+  run 1 `review+decisions`, runs 2 and 3 a plain `review`, about the same mix as before.
+- Not recorded: a Codex baseline, still (brief 20 hit the usage limit).
 
 ## After soft input limits (brief 20)
 
 2026-11-02, Claude Code 2.1.316, `claude-opus-5-5`, `--runs 3`, on top of the soft limits (header
 and description limits widened on the server, the description naming each limit). From
 `results/2026-11-02T04-47-48-862Z.jsonl`. The tool description grew by the limits in the choice and
-review lines. Compared with the 2026-10-14 baseline above:
+review lines. Compared with brief 14's baseline of 2026-10-14, the one before it (now in git
+history):
 
 | prompt | expect | asked | first call valid | used | was (2026-10-14) |
 | --- | --- | --- | --- | --- | --- |

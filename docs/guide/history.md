@@ -25,7 +25,8 @@ Answered, Skipped, Withdrawn, Timed out or Disconnected.
 | Enter | Open the selected ask. |
 | Esc | Back: out of the filter box, out of an open ask, then to the queue. It never hides the window. |
 
-**Filtering.** The box searches titles, questions, answers, notes and who asked. The chips narrow
+**Filtering.** The box searches titles, questions, answers, notes and who asked, and the paths
+of files a show put in front of you (not their text). The chips narrow
 it to Answered, Skipped or Withdrawn, or to asks with a note. The filter stays as you left it when
 you go back to the queue and return.
 

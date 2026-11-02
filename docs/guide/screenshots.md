@@ -129,6 +129,16 @@ Pasted text only.
 | --- | --- |
 | ![capture text, light](images/cards/capture-text-light.png) | ![capture text, dark](images/cards/capture-text-dark.png) |
 
+## Show
+
+How it works: [Question types](question-types.md#show).
+
+A plan in its own scrolling pane, then a choice and a review about it.
+
+| Light | Dark |
+| --- | --- |
+| ![show, light](images/cards/show-light.png) | ![show, dark](images/cards/show-dark.png) |
+
 ## In the question text
 
 How it works: [Answering a card](answering.md#code-in-a-question).

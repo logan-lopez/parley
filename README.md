@@ -42,9 +42,9 @@ Every question type, in light and dark: [What it looks like](docs/guide/screensh
   it does.
 - **A form language models already write.** Questions are an array shaped like Claude's built-in
   `AskUserQuestion`, with more types: text, number, yes/no, file and folder paths, a review that
-  gives each item of a list a decision (approve or reject, or the agent's own labels), and a
-  capture box for pasted output and screenshots. The server compiles them to JSON Schema, which is
-  all the app renders.
+  gives each item of a list a decision (approve or reject, or the agent's own labels), a
+  capture box for pasted output and screenshots, and a show block to put a plan or a project file
+  in front of you. The server compiles them to JSON Schema, which is all the app renders.
 - **An inbox, not a modal.** One app, many agents. Asks from every session queue up, labelled with
   who's asking; nothing steals your focus, and every ask is kept in history with what you sent.
 - **Answers the model reads cleanly.** Structured JSON plus a summary, with your own wording marked
@@ -89,7 +89,9 @@ How each part works, as you use it, is in [the guide](docs/guide/README.md).
 - [Seven question types](docs/guide/question-types.md): choice (with your own answer), text (or a
   draft to edit in place), number, yes/no, path, review (approve and reject, or the agent's own
   decisions, like Port / TODO / Skip), and capture (pasted output or a screenshot, which the agent
-  gets as a file to read).
+  gets as a file to read). And [shows](docs/guide/question-types.md#show): a plan, a design or a
+  file from the project, which the server reads, in its own scrolling pane above the questions
+  about it.
 - [Copy buttons](docs/guide/answering.md#code-in-a-question) on code in a question, for the
   command the agent wants you to run, [color swatches](docs/guide/answering.md#colors-and-pictures)
   on colors and palettes, and [pictures](docs/guide/answering.md#colors-and-pictures) of the

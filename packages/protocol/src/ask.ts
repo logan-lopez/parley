@@ -14,11 +14,15 @@ import {
   type ReviewDecision,
   type ReviewItemSchema,
   type CaptureAccept,
+  type ShowFile,
+  type ShowFiles,
+  type ShowSource,
   type Widget,
 } from './form.ts'
+import { fileMarkdown, SHOW_CONTENT_MAX } from './show.ts'
 
 export const DEFAULT_TIMEOUT_SECONDS = 1800
-export const QUESTION_TYPES = ['choice', 'text', 'number', 'boolean', 'path', 'review', 'capture'] as const satisfies readonly Widget[]
+export const QUESTION_TYPES = ['choice', 'text', 'number', 'boolean', 'path', 'review', 'capture', 'show'] as const satisfies readonly Widget[]
 
 // Previews are kept in history.jsonl, so they get a cap; question text doesn't.
 const preview = z.string().max(10_000, 'previews are 10,000 characters or fewer').optional()
@@ -82,6 +86,12 @@ const question = z.object({
   defaultDecision: z.string().optional(),
   // capture
   accept: z.enum(['text', 'image', 'any']).optional(),
+  // show
+  content: z.string().min(1)
+    .max(SHOW_CONTENT_MAX, 'show content is 20,000 characters or fewer; for a longer file, give its `path` instead')
+    .optional(),
+  path: z.string().min(1).optional(),
+  lines: z.tuple([z.number().int().min(1), z.number().int().min(1)]).optional(),
 })
 
 export const askInputSchema = z.object({
@@ -180,7 +190,34 @@ export const askInputSchema = z.object({
     if (q.type === 'number' && q.min !== undefined && q.max !== undefined && q.min > q.max) {
       ctx.addIssue({ code: 'custom', path: at('min'), message: `question ${n} has min ${q.min} above max ${q.max}` })
     }
+
+    if (q.type === 'show') {
+      if (q.content !== undefined && q.path !== undefined) {
+        ctx.addIssue({ code: 'custom', path: at('content'), message: `question ${n} is a show with both \`content\` and \`path\`; give one: \`path\` for a file in the project, or \`content\` for markdown you wrote` })
+      } else if (q.content === undefined && q.path === undefined) {
+        ctx.addIssue({ code: 'custom', path: at('content'), message: `question ${n} is a show with nothing to show; give \`content\` (markdown) or \`path\` (a file in the project)` })
+      }
+      if (q.lines && q.path === undefined) {
+        ctx.addIssue({ code: 'custom', path: at('lines'), message: `question ${n} has \`lines\` but no \`path\`; lines pick part of a file, so give its \`path\`, or drop \`lines\`` })
+      } else if (q.lines && q.lines[0] > q.lines[1]) {
+        ctx.addIssue({ code: 'custom', path: at('lines'), message: `question ${n} has lines [${q.lines[0]}, ${q.lines[1]}], which start after they end; give [start, end] with start ≤ end` })
+      }
+      // `required: false` is true of a show already, so only `true` is a mistake.
+      if (q.required === true) {
+        ctx.addIssue({ code: 'custom', path: at('required'), message: `question ${n}: show blocks have nothing to answer; drop \`required\`` })
+      }
+    } else {
+      for (const field of ['content', 'path', 'lines'] as const) {
+        if (q[field] !== undefined) {
+          ctx.addIssue({ code: 'custom', path: at(field), message: `question ${n} has \`${field}\` but type '${q.type}'; \`${field}\` only applies to type 'show', so set type to 'show' and ask about it in a question after it, or drop it` })
+        }
+      }
+    }
   })
+
+  if (input.questions.length && input.questions.every((q) => q.type === 'show')) {
+    ctx.addIssue({ code: 'custom', path: ['questions'], message: 'a show block has nothing to answer; add at least one question about it in the same call' })
+  }
 })
 
 export type AskInput = z.input<typeof askInputSchema>
@@ -249,13 +286,16 @@ function slug(text: string): string {
 
 const OTHER: OtherOptionSchema = { type: 'string', minLength: 1, title: 'Other' }
 
-export function compileQuestions(input: AskInput): FormSpec {
+// `files`: the shows' files the server read, keyed by question id. Without
+// them a path-backed show compiles with `x-source` and no `x-content`.
+export function compileQuestions(input: AskInput, files?: ShowFiles): FormSpec {
   const ids = questionIds(input.questions)
   const properties: Record<string, JsonSchema> = {}
   const required: string[] = []
   input.questions.forEach((q, i) => {
-    properties[ids[i]!] = compileQuestion(q)
-    if (q.required !== false) required.push(ids[i]!)
+    properties[ids[i]!] = compileQuestion(q, files?.[ids[i]!])
+    // A show has nothing to answer, so it's never required.
+    if (q.required !== false && q.type !== 'show') required.push(ids[i]!)
   })
   return {
     ...(input.title && { title: input.title }),
@@ -263,7 +303,7 @@ export function compileQuestions(input: AskInput): FormSpec {
   }
 }
 
-function compileQuestion(q: Question): JsonSchema {
+function compileQuestion(q: Question, file?: ShowFile): JsonSchema {
   const required = q.required !== false
   const base = { title: q.header, description: q.question }
 
@@ -369,6 +409,17 @@ function compileQuestion(q: Question): JsonSchema {
         ...filled,
       }
     }
+    case 'show': {
+      // `type: 'null'` with no data: nothing to answer, and nothing for AJV to check.
+      const show = { 'x-widget': 'show', ...base, type: 'null' }
+      if (q.path === undefined) return { ...show, ...(q.content !== undefined && { 'x-content': q.content }) }
+      if (!file) return { ...show, 'x-source': { path: q.path, ...(q.lines && { lines: q.lines }) } satisfies ShowSource }
+      return {
+        ...show,
+        'x-content': fileMarkdown(file.path, file.text),
+        'x-source': { path: file.path, ...(file.lines && { lines: file.lines }), totalLines: file.totalLines } satisfies ShowSource,
+      }
+    }
   }
 }
 
@@ -403,6 +454,8 @@ export function shapeAnswer(input: AskInput, outcome: AskOutcome): { structured:
   const answers: Record<string, Answer> = {}
   const lines = ['The user answered:']
   input.questions.forEach((q, i) => {
+    // A show has no answer. Its id is still taken, so the others' don't shift.
+    if (q.type === 'show') return
     const id = ids[i]!
     const answer = readAnswer(q, data[id])
     answers[id] = answer
@@ -480,6 +533,8 @@ function readAnswer(q: Question, raw: unknown): Answer {
       const images = (Array.isArray(entry.images) ? entry.images : []).filter(isFilled)
       return { header, value: isFilled(entry.text) ? entry.text : null, ...(images.length && { images }) }
     }
+    case 'show':
+      return blank   // never read: shapeAnswer skips shows
   }
 }
 

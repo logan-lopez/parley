@@ -17,6 +17,7 @@ import { parseArgs } from 'node:util'
 import type { FormSpec } from '@parley/protocol'
 import { askInputSchema, compileQuestions, DEFAULT_TIMEOUT_SECONDS, shapeAnswer } from '@parley/protocol/ask'
 import { getAppClient } from '../src/app-client.ts'
+import { readShowFiles } from '../src/show-files.ts'
 
 const { values, positionals } = parseArgs({
   allowPositionals: true,
@@ -53,7 +54,8 @@ try {
     }
     // --timeout overrides the input's, and the shaped text should say so.
     const input = { ...parsed.data, timeoutSeconds: seconds(parsed.data.timeoutSeconds) }
-    const outcome = await ask(compileQuestions(input), input.timeoutSeconds)
+    // Shows' files resolve against where the user ran it, as the server's do against its cwd.
+    const outcome = await ask(compileQuestions(input, await readShowFiles(input)), input.timeoutSeconds)
     const { structured, text } = shapeAnswer(input, outcome)
     console.log(text)
     console.log(JSON.stringify(structured, null, 2))

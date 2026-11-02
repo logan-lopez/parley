@@ -34,6 +34,11 @@ or a capture that takes screenshots, shows in the chat read-only, with a pointer
 window, and the window notifies for it as usual. Answer it there. A capture that takes only text
 works in the chat.
 
+A show works in the chat when the agent pastes its text in. A show of a project file doesn't:
+Desktop's chat starts Parley outside any project, so the agent gets an error saying so and nothing
+is shown. It can try again with the text. The pane in the chat is at most 480 px tall and scrolls
+inside.
+
 ## Things to know
 
 - Desktop caches the card when it starts Parley's server. After rebuilding Parley's server, quit

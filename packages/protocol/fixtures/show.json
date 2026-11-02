@@ -1,0 +1,33 @@
+{
+  "title": "Plan: a --json flag for status",
+  "questions": [
+    {
+      "header": "Plan",
+      "question": "Here's the plan. The questions below are about it.",
+      "type": "show",
+      "content": "## Goal\n\n`status --json` prints the same report as one JSON object, so scripts stop parsing the table.\n\n## Steps\n\n1. **Split the report from the table.** `collectStatus()` returns a `StatusReport`; `renderTable()` takes one.\n2. **Add the flag.** `--json` writes `JSON.stringify(report, null, 2)` and nothing else to stdout.\n3. **Errors stay on stderr,** with the same exit codes, so `status --json | jq` never sees a warning.\n4. **Tests.** A snapshot of the JSON for the fixture repo, and one for an empty repo.\n5. **Docs.** A line in the README's command table, and the shape below in `docs/status.md`.\n\n## The shape\n\n```ts\ninterface StatusReport {\n  branch: string\n  ahead: number\n  behind: number\n  changed: { path: string; state: 'added' | 'modified' | 'deleted' }[]\n}\n```\n\n## Not in this change\n\n- A `--format` flag with other formats. JSON covers the scripts we know about.\n- Colors in the table. That's its own change.\n\n## Risks\n\n- `changed` can be long in a big repo. The table truncates at 50 rows; the JSON doesn't, which is the point, but it's worth a note in the docs."
+    },
+    {
+      "header": "Go ahead?",
+      "question": "Should I start on this plan?",
+      "options": [
+        { "label": "Yes, as written (Recommended)", "description": "Start with step 1 and commit after each step." },
+        { "label": "Yes, but skip the docs step", "description": "Leave `docs/status.md` for later." },
+        { "label": "Not yet", "description": "Wait; I'll say what to change in the note." }
+      ]
+    },
+    {
+      "header": "Steps",
+      "question": "Anything to change or cut, step by step?",
+      "type": "review",
+      "decisions": ["Pass", "Change", "Cut"],
+      "items": [
+        { "label": "Split the report from the table" },
+        { "label": "Add the flag" },
+        { "label": "Errors stay on stderr" },
+        { "label": "Tests" },
+        { "label": "Docs" }
+      ]
+    }
+  ]
+}

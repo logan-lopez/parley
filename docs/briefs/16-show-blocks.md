@@ -1,5 +1,5 @@
 ---
-status: not-started
+status: awaiting-review
 ---
 # Brief 16: Show blocks, from text or a file
 
@@ -357,3 +357,154 @@ By hand, for Logan:
   own?
 
 Then stop. Ask Logan before committing.
+
+## Report
+
+Built 2026-11-02, every step. Acceptance 7 (the installed build) wasn't run: it waits on Logan.
+
+### Built
+
+- **Protocol** (`packages/protocol`). `show` in `QUESTION_TYPES` and `WIDGETS`; `content` (Zod max
+  20,000 with the brief's message), `path` and `lines` on `question`, with the `superRefine`
+  messages from §1 (`ask.ts`). `ShowFile`, `ShowFiles` and `ShowSource` in `form.ts`, and the
+  vocabulary comment, no downgrade included. `compileQuestions(input, files?)` compiles a show to
+  `type: 'null'` with `x-content` and `x-source`, never required. `shapeAnswer` skips shows, ids
+  unchanged. New `show.ts` (root entry, no Zod): the four caps and `fileMarkdown`. Fixtures
+  `show.json` and `show-file.json`.
+- **Server** (`apps/server`). New `src/show-files.ts`: `readShowFiles` and `ShowFileError`, the
+  six steps of §5. Wired into the blocking `ask` (`tools/ask.ts`) and the inline one
+  (`tools/inline.ts`, `_meta['parley/files']`); `Shown.files` and `shownFiles()` in
+  `ask-lifecycle.ts`. `fake-ask` reads files before compiling; `fake-hub` skips shows. vitest added
+  (`^5.0.3`, a `test` script) with `src/show-files.test.ts`. The tool description's `show` bullet,
+  as pinned.
+- **Desktop** (`apps/desktop`). New `forms/renderers/ShowRenderer.vue`, registered for
+  `x-widget: show`. `QuestionFrame` takes `passive` (sets `[data-passive]`, no "Optional").
+  `keyboard.ts` documents `[data-passive]` and adds `firstToAnswer`, which `AskCard.vue` uses for
+  first focus, the window-focus fallback and the no-focus digit target. Styles in `styles.css`
+  (tokens only), 480 px under `html.inline`. `McpApp.vue` reads `_meta['parley/files']`, holds a
+  path-backed form until it arrives, and shows an error result's message. The history filter
+  searches `x-source.path`.
+- **Tests and tools.** A `show-file` `fake-host` scenario, with `Session.connect(cwd)` to start a
+  second server on the same hub from `/`. Trial prompt `plan-check.md` and its row.
+
+### Deviations
+
+- **No highlighted code (acceptance 7).** The card has no syntax highlighter: code blocks are
+  plain monospace, and only ```` ```diff ```` colors its lines. A non-markdown file shows as a
+  fenced block with its language on the `<code>` (`language-ts`), which is what the Goal and §3
+  say ("a code block with its language"). Adding a highlighter is a bundle and CSP question of its
+  own, so it's a follow-up, not part of this brief.
+- **`required: false` on a show is accepted.** §1 says to refuse `required` on a show. Only
+  `required: true` is refused: `false` is already true of a show, and brief 20's data says a
+  bounce costs a round trip for nothing.
+- **`ShowFile.path` is normalized,** relative to the project, with `./` and `..` folded and an
+  absolute path made relative. §2 says "as the agent gave it, relative to the project"; the two
+  differ only when the agent writes `./x` or an absolute path, and the caption reads better
+  normalized.
+- **A symlinked cwd counts as the project both ways.** The test caught it: macOS's `$TMPDIR` is
+  under `/var`, which is `/private/var`, so an absolute path through the cwd was refused as outside
+  after `realpath`. The lexical check now accepts a path inside either the cwd or its real path;
+  the `realpath` check after it is unchanged.
+- **More files than §6 named.** The inline card shows an error result's message ("This client
+  didn't start Parley in a project directory…") instead of "Loading the question…" forever, and
+  "Cancelled." when the host cancels before the files arrive. The history filter searches
+  `x-source.path`, which Out of scope describes as the behavior. `AskCard`'s digit target with no
+  focus, and its window-focus fallback, skip `[data-passive]` like first focus does.
+- **The trial baseline.** §10 says to replace brief 14's baseline. Brief 20 added its own pass
+  after it, so the new section compares with brief 20's pass (the latest) and replaces brief 14's
+  `## Baseline`; brief 20's section stays, since its report points at it.
+- **`areas.py` is gone.** `docket areas` replaced it and wrote the same Areas rows and rules.
+
+### Defaults taken
+
+- Caps: `content` 20,000 characters; a file's text 100,000 after `lines`, 2 MB on disk; 200,000
+  per ask, `content` included (`packages/protocol/src/show.ts`).
+- The pane: at most 55vh in the window, 480 px in the inline card, scrolling inside.
+- HTML and SVG files as `width=640 height=480` pictures, scaled to fit.
+- No wider window.
+
+### Acceptance
+
+1. `pnpm --filter @parley/protocol test`: **pass**, 112 tests (12 new for shows, 5 for
+   `fileMarkdown`, including a run of four backticks).
+2. `pnpm --filter @parley/server test`: **pass**, 14 tests in `show-files.test.ts`.
+3. `pnpm --filter @parley/desktop test`: **pass**, 154; `show` and `show-file` compile under
+   strict AJV with no warnings. `type: 'null'` works: JSON Forms' default UI schema makes no control
+   for a property without a `type`, so `null` is the one that renders (on the form spec page).
+4. `pnpm typecheck` and `pnpm --filter @parley/server build`: **pass**.
+5. `fake-host`: **all 10 scenarios pass**, the new `show-file` included (10 checks: the files in
+   `_meta` and not in `structuredContent` or the text, the card's compile with content, the window
+   getting the form inline, no answer line for the shows, and a second server from `/` refused
+   with nothing shown). Also passes with `--server dist`.
+6. Gallery, headless WebKit, light and dark: **pass**, 12 checks per theme. The pane scrolls
+   inside, first focus lands on the choice, Shift+Tab reaches the pane and ↓/Space scroll it, a
+   digit on the pane picks nothing, and Send works without touching the show, with no line for it.
+   `show-file` shows "isn't loaded here" for both files, with the captions, and first focus on the
+   boolean. `screenshots show` rerun; the PNGs are in.
+7. Installed build: **not run.** I asked before replacing the running app and got no answer in 30
+   minutes. It's in the spot checks below.
+8. Trial pass: **done**, `--runs 3 --keep`, in `apps/server/trials/README.md` as the new baseline.
+   `plan-check` used `show` with `path` in 3/3 runs, never `content`. The old prompts stayed
+   within noise: every one asked as often as in brief 20's pass, and all 33 calls were valid.
+   `show` appeared three more times, all `content`: `dead-code-cleanup` twice, listing what it
+   would remove (a `review` fits that better), and `changelog-draft` once, as a heads-up a line of
+   question text would carry. That one is `show` where a plain question would do. Every `used`
+   miss was read in the transcripts and is the label problem.
+
+### Size
+
+Sized unsized; this build ran in two sessions on 2026-11-02 with no compactions: `fa4b7b5a` (S, 7
+active min) and `4fd5c479` (M, 24 active min, 52 wall). The trial pass and the 30-minute ask ran
+in the background and aren't in active time. `docket sessions --brief 16` also counts `230b167a`
+(2026-10-14, 6 min), probably the session that wrote the brief, and totals XL.
+
+### Spot checks for Logan
+
+- **The gallery** is running: <http://localhost:1420/?gallery&fixture=show> and
+  `&fixture=show-file`. Tab to the pane, scroll it, send without touching it.
+- **Installed build (acceptance 7).** `pnpm install:desktop` (about five minutes), quit Parley
+  from the tray and reopen it, then from the repo root
+  `pnpm --filter @parley/server fake-ask show-file`. Expect the guide page rendered as markdown,
+  `form.ts` lines 1–50 as a `ts` code block (monospace, not colored), and an answer with one line,
+  for "In step".
+- From the brief: a show in Claude Desktop's inline card (a `content` one works; a `path` one gets
+  the "no project directory" error in the chat app; if agent mode gets used, note the `cwd` its
+  asks show in history, which brief 17's Desktop check needs), whether the 440-wide window is
+  enough for a real plan, and the next real "check this plan with me": did the agent reach for
+  `show` with `path` on its own?
+- The screenshots cut off before the questions: the gallery's viewport is 760 tall, so 55vh is
+  taller there than in the 600 px window. Worth a look whether the window's pane leaves the first
+  question in view.
+
+### Docs updated
+
+- Architecture: `form-spec.md` (the type, its fields, `x-content`/`x-source`, why `type: 'null'`,
+  `ShowFiles`, the caps, no downgrade, `show.ts`), `ask-tool.md` (a Show files section:
+  `readShowFiles`, the project rule, refusals, errors), `inline-cards.md` (`_meta['parley/files']`,
+  `Shown.files`, the card holding the form), `card-ui.md` (the renderer, `[data-passive]`,
+  `firstToAnswer`), `testing.md` (the server's vitest, `show-file`, fake-hub and fake-ask),
+  `asks-and-history.md` (the filter).
+- Sources lines, and from them `docket areas`: the Areas rows in `AGENTS.md` and
+  `.claude/rules/{ask-tool,form-spec,testing}.md`. `AGENTS.md` Commands: the server's `test`.
+- Guide: `question-types.md` (a Show section, eight kinds, `ask-tool.md` in Covers),
+  `claude-desktop.md`, `history.md` (the filter), `screenshots.md`, `README.md`; the root README's
+  feature list and "What it's built around".
+- `apps/server/trials/README.md`: `plan-check`'s row and the new baseline.
+- Decisions: unchanged. `show-blocks` and `files-in-shows` still read true.
+
+### Follow-ups
+
+- Briefs 17 (`:205`) and 18 (`:140`) say to run `areas.py`; it's `docket areas` now.
+- No syntax highlighting in card code blocks (see Deviations); decide whether shows of source
+  files want it.
+- The gallery and `screenshots` size the show pane from a 760 px viewport, not the 440 × 600
+  frame, so a show's screenshot never reaches the questions. Container units on the frame
+  (`cqh`) would make it match the window.
+- Trial tune-up: `dead-code-cleanup` put its sign-off list in a `show` (2/3) where a `review`
+  fits, and `changelog-draft` used a `show` for a one-line heads-up (1/3). Watch whether real use
+  does the same.
+- `pnpm --filter @parley/server add -D vitest` pruned the vitest build `packages/protocol` linked
+  to and left its link dangling, so `tsc` there failed until a plain `pnpm install`. Worth knowing
+  before the next `pnpm add` in this workspace.
+- Plan-check run 1 committed to `main` without being asked. That's the model, not Parley, but it's
+  in the transcript if the trial project ever wants a "don't commit" line.

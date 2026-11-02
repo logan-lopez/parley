@@ -4,7 +4,7 @@
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, shallowRef } from 'vue'
 import { JsonForms, type JsonFormsChangeEvent } from '@jsonforms/vue'
 import type { FormSpec } from '@parley/protocol'
-import { focusQuestion, questionsIn } from '../forms/keyboard'
+import { firstToAnswer, focusQuestion, questionsIn } from '../forms/keyboard'
 import { renderers } from '../forms/renderers'
 import { useNow } from './now'
 
@@ -144,7 +144,7 @@ function questions() {
 
 function activeQuestion(): HTMLElement | undefined {
   const all = questions()
-  return all.find((q) => q.contains(document.activeElement)) ?? all[0]
+  return all.find((q) => q.contains(document.activeElement)) ?? firstToAnswer(all)
 }
 
 function moveQuestion(step: number) {
@@ -222,14 +222,14 @@ function onKey(event: KeyboardEvent) {
 }
 
 // Back in the window (hotkey, or after a link opened the browser): put focus
-// back where it was, without scrolling. The first question if there's nowhere.
+// back where it was, without scrolling. The first question to answer if there's nowhere.
 let lastFocused: HTMLElement | null = null
 function onFocusIn(event: FocusEvent) {
   if (root.value?.contains(event.target as Node)) lastFocused = event.target as HTMLElement
 }
 function onWindowFocus() {
   if (root.value?.contains(document.activeElement)) return
-  const target = lastFocused?.isConnected ? lastFocused : questions()[0]?.querySelector<HTMLElement>('[data-primary]')
+  const target = lastFocused?.isConnected ? lastFocused : firstToAnswer(questions())?.querySelector<HTMLElement>('[data-primary]')
   target?.focus({ preventScroll: true })
 }
 
@@ -242,7 +242,7 @@ onMounted(() => {
     if (props.embedded) return
     // Read-only: focus the body, so the arrow keys scroll it.
     if (props.readonly) body.value?.focus({ preventScroll: true })
-    else focusQuestion(questions()[0])
+    else focusQuestion(firstToAnswer(questions()))
     body.value?.scrollTo({ top: 0 })   // keep the title in view
   })
 })

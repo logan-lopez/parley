@@ -1,5 +1,5 @@
 ---
-sources: ["packages/protocol/src/ask.ts", "packages/protocol/src/form.ts", "packages/protocol/fixtures/"]
+sources: ["packages/protocol/src/ask.ts", "packages/protocol/src/form.ts", "packages/protocol/src/show.ts", "packages/protocol/fixtures/"]
 ---
 # The form spec
 
@@ -8,12 +8,13 @@ compiles it to JSON Schema with `x-widget` hints, which is all the app renders. 
 answers, the same package shapes the answer back into a structured result and a line of text per
 question.
 
-**History:** [brief 2](../briefs/archive/02-ask-tool-and-ui.md), [brief 5](../briefs/archive/05-review-question.md) (`review`), [brief 10](../briefs/archive/10-text-drafts.md) (`draft`), [brief 11](../briefs/archive/11-review-decisions.md) (review `decisions`), [brief 12](../briefs/archive/12-capture-question.md) (`capture`)
+**History:** [brief 2](../briefs/archive/02-ask-tool-and-ui.md), [brief 5](../briefs/archive/05-review-question.md) (`review`), [brief 10](../briefs/archive/10-text-drafts.md) (`draft`), [brief 11](../briefs/archive/11-review-decisions.md) (review `decisions`), [brief 12](../briefs/archive/12-capture-question.md) (`capture`), [brief 16](../briefs/16-show-blocks.md) (`show`)
 
 `ask.ts` is the `@parley/protocol/ask` entry: the tool's Zod input schema (`askInputSchema`), the
 result schema, `compileQuestions` and `shapeAnswer`. They're pure functions, shared by the server,
 `fake-ask`, the gallery, the inline card and the tests. `form.ts` documents the schema vocabulary
-the app renders and holds its types.
+the app renders and holds its types. `show.ts` has the show caps and `fileMarkdown`, with no Zod,
+so the window can import it from the root entry.
 
 ## How it works
 
@@ -31,6 +32,12 @@ the app renders and holds its types.
     last), and `defaultDecision`: `approve`, `reject` or `none`, or with `decisions` one of them
     or `none`, defaulting to the first.
   - `capture`: `accept` (`text`, `image` or `any`, the default) and `placeholder`.
+  - `show`: something to look at, with nothing to answer. `content` (markdown, up to 20,000
+    characters) or `path` (a file in the project, which the server reads; [the ask
+    tool](ask-tool.md#show-files)), with `lines: [start, end]` for part of it. `question` is its
+    lead line. No `required`, since there's nothing to answer, and a form needs at least one
+    question that isn't a show: a form of only shows would block the agent with nothing to send
+    back, which is `notify` ([decision](../decisions/show-blocks.md)). Shows count toward the 1–4.
 - **Soft limits.** The published JSON Schema (what the model reads) says `header` ≤12 and
   `description` and `detail` ≤300; the Zod schema (what's accepted) takes a header up to 24 and a
   description or detail up to 500. `.meta({ maxLength })` sets the first and `.max()` the second
@@ -41,10 +48,14 @@ the app renders and holds its types.
   clipped on the card's chip ([the card](card-ui.md)); its id, the compiled `title` and the
   answer's `header` keep the full text. Labels stay hard limits, because a label is the answer
   value and clipping it would change the answer ([decision](../decisions/soft-input-limits.md)).
+  A show's `content` has no soft margin: past 20,000 the message points at `path`.
 - **Validation errors are written for the model.** The `superRefine` in `askInputSchema` catches
   the mistakes models make (options on a review, items on a choice, an "Other" option, a draft on
   anything but text, decisions on anything but review, `accept` on anything but capture, duplicate labels, decisions or ids, a
-  `defaultDecision` that isn't one of the decisions, `min` above `max`) and says what to do instead. The SDK rejects invalid input
+  `defaultDecision` that isn't one of the decisions, `min` above `max`; for shows, both or neither
+  of `content` and `path`, `lines` without a path or backwards, `content`, `path` or `lines` on
+  another type, `required: true`, and a form of only shows) and says what to do instead.
+  `required: false` on a show is accepted, since it's true anyway. The SDK rejects invalid input
   before the tool runs, so the model sees the message and retries.
 - **Answer keys.** An explicit `id` wins; otherwise a slug of the header, `_2`, `_3` on
   collisions, with explicit ids reserved first (`questionIds`).
@@ -77,17 +88,35 @@ the app renders and holds its types.
     `text` or a non-empty `images`, or a plain `required` when only one is accepted; the
     branches repeat `type`, which strict AJV needs. `images` hold absolute paths of PNGs the app
     saved. A text-only capture would downgrade to a string field; images have no downgrade.
+  - `show`: `type: 'null'`, never in `required`, and no data. `x-content` is the markdown body:
+    the agent's `content`, or the file as `fileMarkdown(path, text)` makes it: `.md`,
+    `.markdown` and `.mdx` as they are, `.html`/`.htm` and `.svg` as preview fences
+    (```` ```html preview ```` and ```` ```svg preview ````) at 640×480, scaled to fit, and
+    anything else as a fence in its language from a small map by extension (none for an unknown
+    one), longer than any backtick run in the text. `x-source: { path, lines?, totalLines }` names the file and the range shown.
+    `compileQuestions(input, files?)` takes the files the server read (`ShowFiles` in `form.ts`,
+    keyed by question id: `{ path, text, lines?, totalLines, sha256 }`, the hash of the whole file
+    even with `lines`). Without them a path-backed show gets `x-source: { path, lines? }` and no
+    `x-content`, and the card says the file isn't loaded: that's the gallery, and any compile
+    from the tool input alone. Why `type: 'null'`: JSON Forms' default UI schema makes no control
+    for a property without a `type`, so no renderer would run; `null` makes one, and with no data
+    there's nothing for AJV to check (strict mode included). No elicitation downgrade: there's no
+    field to fill.
 - **Window-only forms** (`isWindowOnly` in `form.ts`): a form with a `path` question, or a
   `capture` whose `x-accept` isn't `text`, can't be answered in an MCP Apps card (no file picker
   in the host's iframe, and nowhere to save an image). The server doesn't send it `inline`, and
   the card shows it read-only ([inline cards](inline-cards.md)).
-- **Markdown** in `description` and `x-preview` renders without raw HTML and without images
+- **Markdown** in `description`, `x-preview` and `x-content` renders without raw HTML and without images
   (`apps/desktop/src/forms/markdown.ts`): model HTML only ever reaches the screen as an image the
   app builds. Colors in code spans get swatches, a palette fence (```` ```palette ````) draws
   swatches, and an ```` ```html preview ```` or ```` ```svg preview ```` fence is drawn as a
   picture ([the card](card-ui.md)); the schema carries them as plain markdown, so a client without
   Parley's renderer shows the text. Previews are capped at 10,000 characters, since they're kept
   in `history.jsonl`; question text isn't.
+- **Show caps** (`show.ts`): `content` up to 20,000 characters (in the Zod schema); a file's text,
+  after `lines`, up to 100,000 characters, and at most 2 MB read from disk; everything one ask
+  shows, content and files together, up to 200,000. They keep a form well under the hub's 1 MiB
+  line after JSON escaping, and history's snapshots bounded.
 - **The result** (`askResultSchema`): `status` (`answered`, `dismissed`, `timed_out`,
   `cancelled`), `message`, `answers` keyed by id, and `note`. Each answer has `header`, `value`
   (a string, strings, a number, a boolean, or null for an optional question left blank), `custom`
@@ -108,6 +137,8 @@ the app renders and holds its types.
   text verbatim, indented under the line ("pasted 24 lines:"), with a fence longer than any run
   of backticks in it; one line of 120 characters or fewer is quoted instead (`pasted "v2.1.296"`).
   Screenshots follow as paths, one per line, introduced as PNG files the agent can read. A note is quoted after the answers.
+  A show has no entry in `answers` and no line; its id is still taken in `questionIds`, so the
+  ids around it don't shift.
   Skips and timeouts each get a sentence that tells the model what to do next (don't ask again,
   continue and say what you assumed); a cancel only says so. `message` is the same text.
 - **Fixtures** in `packages/protocol/fixtures/` are `ask` tool input, at least one per question type.
@@ -120,7 +151,8 @@ the app renders and holds its types.
   ([the card](card-ui.md)), and a fixture.
 - **Keep choice options in the titled-enum shape** MCP elicitation uses (`oneOf`/`anyOf` of
   `{ const, title }`). A flat form can then downgrade to native elicitation by dropping the Other
-  branch. `review` has no downgrade: elicitation forms are flat.
+  branch. `review` has no downgrade: elicitation forms are flat. A `show` has none either: it has
+  no field.
 - **A review's data is always a full array** when it comes from the app (the renderer writes the
   defaults, or the form requires every decision). `shapeAnswer` still fills gaps from `fake-hub` or
   partial data with the default, and under `none` with the last decision: reject, or the most

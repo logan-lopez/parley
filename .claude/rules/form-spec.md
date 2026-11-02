@@ -2,6 +2,7 @@
 paths:
   - "packages/protocol/src/ask.ts"
   - "packages/protocol/src/form.ts"
+  - "packages/protocol/src/show.ts"
   - "packages/protocol/fixtures/**"
 ---
 

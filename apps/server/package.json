@@ -15,7 +15,8 @@
     "build": "pnpm --filter @parley/desktop build:mcp-app && tsdown",
     "start": "node dist/index.mjs",
     "typecheck": "tsc",
-    "fake-host": "tsx scripts/fake-host.ts"
+    "fake-host": "tsx scripts/fake-host.ts",
+    "test": "vitest run"
   },
   "dependencies": {
     "@modelcontextprotocol/ext-apps": "^2.0.3",
@@ -28,6 +29,7 @@
     "@types/node": "^24.19.2",
     "tsdown": "^0.23.0",
     "tsx": "^4.23.15",
-    "typescript": "~6.0.3"
+    "typescript": "~6.0.3",
+    "vitest": "^5.0.3"
   }
 }

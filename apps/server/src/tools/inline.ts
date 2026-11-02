@@ -7,11 +7,12 @@
 
 import { registerAppResource, registerAppTool, RESOURCE_MIME_TYPE } from '@modelcontextprotocol/ext-apps/server'
 import type { McpServer } from '@modelcontextprotocol/server'
-import { isWindowOnly, type InlineOutcome } from '@parley/protocol'
+import { isWindowOnly, type InlineOutcome, type ShowFiles } from '@parley/protocol'
 import { askInputSchema, compileQuestions, DEFAULT_TIMEOUT_SECONDS, shapeAnswer } from '@parley/protocol/ask'
 import * as z from 'zod'
 import { answerInline, awaitStatus, showAsk, shownInput, waitAsk, type AskStatus } from '../ask-lifecycle.ts'
 import { CARD_URI, readCard } from '../card.ts'
+import { readShowFiles, ShowFileError } from '../show-files.ts'
 import { description } from './ask.ts'
 
 const askDescription = `${description}
@@ -46,14 +47,24 @@ export function registerInline(server: McpServer) {
       _meta: { 'anthropic/alwaysLoad': true, ui: { resourceUri: CARD_URI } },
     },
     async (input, ctx) => {
-      const form = compileQuestions(input)
+      let files: ShowFiles
+      try {
+        files = await readShowFiles(input)
+      } catch (error) {
+        if (!(error instanceof ShowFileError)) throw error
+        // Nothing is shown: the card renders nothing for an error result.
+        return { content: [{ type: 'text', text: error.message }], isError: true }
+      }
+      const form = compileQuestions(input, files)
       const timeoutMs = (input.timeoutSeconds ?? DEFAULT_TIMEOUT_SECONDS) * 1000
-      const askId = showAsk(ctx, input, form, timeoutMs, { inline: !isWindowOnly(form) })
+      const askId = showAsk(ctx, input, form, timeoutMs, { inline: !isWindowOnly(form), files })
       const message = `The form is in front of the user. Now call \`ask_wait\` with {"askId": "${askId}"} to get their answers. Don't continue the task until it returns.`
       return {
         content: [{ type: 'text', text: message }],
         structuredContent: { askId, message },
-        _meta: { 'parley/askId': askId },
+        // The card compiles the questions from the tool input, so it gets the
+        // files here. Hosts show the model only the text, never _meta.
+        _meta: { 'parley/askId': askId, ...(Object.keys(files).length && { 'parley/files': files }) },
       }
     },
   )

@@ -50,7 +50,7 @@ and move to `archive/` when they're done. Ideas that aren't scheduled yet are in
 21. [`21-dont-ask-again.md`](21-dont-ask-again.md): a per-question "Don't ask again here" toggle;
     the agent drafts a standing line for `AGENTS.md` for Logan to approve; then a trial pass.
 
-16. [`16-show-blocks.md`](16-show-blocks.md): a `show` question type with nothing to answer, from
+16. [`16-show-blocks.md`](16-show-blocks.md) (done, awaiting review): a `show` question type with nothing to answer, from
     `content` or a project file's `path` read by the server, rendered in its own scrolling pane;
     then a trial pass.
 17. [`17-editable-show.md`](17-editable-show.md): an `editable` show of a whole file, edited in a

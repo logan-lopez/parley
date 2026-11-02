@@ -1,0 +1,23 @@
+{
+  "title": "The question types page",
+  "questions": [
+    {
+      "header": "Guide page",
+      "question": "This is the guide page on question types as it stands.",
+      "type": "show",
+      "path": "docs/guide/question-types.md"
+    },
+    {
+      "header": "Vocabulary",
+      "question": "And the form vocabulary it describes, from `form.ts`.",
+      "type": "show",
+      "path": "packages/protocol/src/form.ts",
+      "lines": [1, 50]
+    },
+    {
+      "header": "In step",
+      "question": "Does the guide page still match the vocabulary?",
+      "type": "boolean"
+    }
+  ]
+}

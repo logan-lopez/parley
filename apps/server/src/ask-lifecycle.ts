@@ -7,7 +7,7 @@
 
 import { randomUUID } from 'node:crypto'
 import { CLIENT_INFO_META_KEY, type McpServer, type ServerContext } from '@modelcontextprotocol/server'
-import type { FormSpec, InlineOutcome, SessionInfo } from '@parley/protocol'
+import type { FormSpec, InlineOutcome, SessionInfo, ShowFiles } from '@parley/protocol'
 import type { AskInput } from '@parley/protocol/ask'
 import { getAppClient, type AskOutcome } from './app-client.ts'
 
@@ -60,6 +60,7 @@ export type Ended = AskOutcome & { via: Via }
 
 interface Shown {
   input: AskInput
+  files: ShowFiles       // the shows' files as read when it was shown (brief 17 diffs against them)
   done: Promise<Ended>   // never rejects
   ended?: Ended
   failure?: string       // the window was unavailable, and the card can't answer this one
@@ -79,12 +80,17 @@ const WAIT_SLICE_MS = Number(process.env.PARLEY_WAIT_SLICE_MS) || 200_000
 
 // `inline`: the card can answer this one too. False for asks with a path
 // question (no picker in the host's iframe), which the window must announce.
-export function showAsk(ctx: ServerContext, input: AskInput, form: FormSpec, timeoutMs: number, { inline }: { inline: boolean }): string {
+// `files`: what readShowFiles read for the form's shows.
+export function showAsk(
+  ctx: ServerContext, input: AskInput, form: FormSpec, timeoutMs: number,
+  { inline, files = {} }: { inline: boolean; files?: ShowFiles },
+): string {
   const askId = randomUUID()
   const windowAbort = new AbortController()
   let finish!: (ended: Ended) => void
   const entry: Shown = {
     input,
+    files,
     done: new Promise<Ended>((resolve) => (finish = resolve)),
     answerInline(outcome) {
       if (!end({ ...outcome, via: 'chat' })) return false
@@ -135,6 +141,10 @@ export type WaitResult =
 
 export function shownInput(askId: string): AskInput | undefined {
   return shown.get(askId)?.input
+}
+
+export function shownFiles(askId: string): ShowFiles | undefined {
+  return shown.get(askId)?.files
 }
 
 export async function waitAsk(ctx: ServerContext, askId: string): Promise<WaitResult> {

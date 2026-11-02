@@ -1,5 +1,5 @@
 ---
-sources: ["apps/server/src/index.ts", "apps/server/src/client-capabilities.ts", "apps/server/src/tools/ask.ts", "apps/server/src/ask-lifecycle.ts"]
+sources: ["apps/server/src/index.ts", "apps/server/src/client-capabilities.ts", "apps/server/src/tools/ask.ts", "apps/server/src/ask-lifecycle.ts", "apps/server/src/show-files.ts"]
 ---
 # The ask tool
 
@@ -8,11 +8,12 @@ MCP Apps get a two-step version ([inline cards](inline-cards.md)); this page is 
 every other client gets, how the server picks between them, and how long asks survive in Claude
 Code.
 
-**History:** [brief 1](../briefs/archive/01-hub-and-lifecycle.md), [brief 2](../briefs/archive/02-ask-tool-and-ui.md), [brief 3](../briefs/archive/03-trial-harness.md) (`alwaysLoad`), [brief 7](../briefs/archive/07-inline-cards.md) (two surfaces)
+**History:** [brief 1](../briefs/archive/01-hub-and-lifecycle.md), [brief 2](../briefs/archive/02-ask-tool-and-ui.md), [brief 3](../briefs/archive/03-trial-harness.md) (`alwaysLoad`), [brief 7](../briefs/archive/07-inline-cards.md) (two surfaces), [brief 16](../briefs/16-show-blocks.md) (show files)
 
 `index.ts` holds the server instructions and picks the surface. `client-capabilities.ts` reads the
 client's first message. `tools/ask.ts` is the blocking `ask` and the tool description both
-surfaces share. `ask-lifecycle.ts` holds `runAsk` and the show-then-wait helpers.
+surfaces share. `ask-lifecycle.ts` holds `runAsk` and the show-then-wait helpers. `show-files.ts`
+reads the files show blocks name.
 
 ## How it works
 
@@ -33,16 +34,50 @@ surfaces share. `ask-lifecycle.ts` holds `runAsk` and the show-then-wait helpers
   characters.
 - **The tool.** `ask` declares the input schema and an `outputSchema` (the result schema from
   [the form spec](form-spec.md)), `readOnlyHint`, and `_meta["anthropic/alwaysLoad"]: true`. The
-  description carries the input shape and one example. The handler compiles the questions, calls
-  `runAsk` with the timeout (default 1800 s, at most 3600), and returns `shapeAnswer`'s text as
-  content and its structured result as `structuredContent`. An unreachable app is an `isError`
-  result with the reason ("Parley isn't running…").
+  description carries the input shape and one example. The handler reads the shows' files
+  (`readShowFiles`), compiles the questions with them, calls `runAsk` with the timeout (default
+  1800 s, at most 3600), and returns `shapeAnswer`'s text as content and its structured result as
+  `structuredContent`. A refused file or an unreachable app is an `isError` result with the reason
+  ("Parley isn't running…"), and nothing is shown.
 - **`runAsk`** sends the form through `AppClient` with the call's abort signal and the client's
   identity, and blocks until the outcome. When the request carries a `progressToken`, it sends a
   progress notification every 15 s while it waits.
 - **Who's asking.** The client's name and version come from `getClientVersion()` (the
   `initialize` handshake), or the `_meta` envelope's client info. They go in the `hello`, and the
   app shows the name on the card with the project directory.
+
+## Show files
+
+A show block with `path` names a file; the server reads it, not the app
+([decision](../decisions/files-in-shows.md)). The server's cwd is the agent's project, so a
+relative path resolves the way the agent means it, and the app's fs scope stays its own data
+directory. `readShowFiles(input, projectDir = process.cwd())` returns `ShowFiles` keyed by question
+id ([the form spec](form-spec.md)) or throws a `ShowFileError`, whose message is model-facing and
+says what to do instead. For each path-backed show, in order:
+
+1. **A project.** A cwd of `/` or the home directory (after `realpath`) means the client has no
+   project, so `path` isn't available: "This client didn't start Parley in a project directory…
+   Put the text in `content` instead." Claude Code's sessions have the project root as their cwd;
+   Claude Desktop's chat (`claude-ai`) has `/`. Desktop's agent mode is unchecked.
+2. **Inside it.** The path resolves against the cwd, and both the path and the file's `realpath`
+   must stay inside the project (a relative path that doesn't start with `..`), so a symlink that
+   leads out is refused. The cwd and its real path both count, so an absolute path through a
+   symlinked cwd (macOS's `/var` is `/private/var`) is still inside.
+3. **Not a secret.** By name, case-insensitive, on the path as given and on where it really
+   leads: `.env`, `.env.*`, `*.pem`, `*.key`, `*.p12`, `*.pfx`, `id_rsa*`, `id_ed25519*`,
+   `id_ecdsa*`, `.netrc`, `.npmrc`, `.pypirc`, and anything under `.git/` or `.ssh/`. This and the
+   project rule are what keep secrets out of `history.jsonl`, which keeps what was shown.
+4. **A text file.** Missing, a directory, something other than a regular file, over 2 MB, or a NUL
+   byte in the first 8 KB each get their own message.
+5. **Lines.** `[start, end]`, with `end` clamped to the file's last line (one without a final
+   newline counts). A `start` past the end is an error that gives the line count.
+6. **Caps.** The text after slicing, up to 100,000 characters ("show part of it with `lines`"),
+   and everything the ask shows, `content` included, up to 200,000.
+
+The bytes are hashed as read (`sha256`, the whole file even with `lines`), decoded as UTF-8 and
+kept as they are, line endings included. `path` in the result is relative to the project, with
+`./` and `..` folded and an absolute path made relative. `fake-ask` reads files the same way from
+where `pnpm` was run.
 
 ## Claude Code and long asks
 

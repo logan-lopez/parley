@@ -40,10 +40,17 @@
 //   plain `required` when only one is accepted. Elicitation downgrade: a
 //   text-only capture becomes a string field; images have none, since a form
 //   field can't carry a pasted file.
+// - `show`: something to look at, with nothing to answer. `type: 'null'`, never
+//   in `required`, and no data. `x-content` is the markdown body: the agent's
+//   `content`, or a file the server read, turned into markdown by `fileMarkdown`
+//   (show.ts). `x-source: { path, lines?, totalLines? }` says which file it came
+//   from. A path-backed show compiled without its file has `x-source: { path }`
+//   and no `x-content`; the renderer says it isn't loaded. No elicitation
+//   downgrade: there's no field to fill, so a downgraded form would drop it.
 //
-// Markdown in `description` and `x-preview` is rendered without raw HTML.
+// Markdown in `description`, `x-preview` and `x-content` is rendered without raw HTML.
 
-export const WIDGETS = ['choice', 'text', 'number', 'boolean', 'path', 'review', 'capture'] as const
+export const WIDGETS = ['choice', 'text', 'number', 'boolean', 'path', 'review', 'capture', 'show'] as const
 export type Widget = (typeof WIDGETS)[number]
 
 export type PathKind = 'file' | 'directory'
@@ -60,6 +67,23 @@ export const CAPTURE_MAX_TEXT = 50_000
 export interface CaptureValue {
   text?: string
   images?: string[]
+}
+
+// A show block's file, read by the server. Keyed by question id.
+export interface ShowFile {
+  path: string                 // as the agent gave it, relative to the project
+  text: string                 // the file, or the requested lines
+  lines?: [number, number]     // the range actually shown, after clamping to the file
+  totalLines: number
+  sha256: string               // of the whole file's bytes at read time, even with `lines`
+}
+export type ShowFiles = Record<string, ShowFile>
+
+// Where a show's body came from, on the compiled property.
+export interface ShowSource {
+  path: string
+  lines?: [number, number]
+  totalLines?: number          // absent when compiled without the file
 }
 
 // Loose on purpose: a raw-schema `ask_form` later passes schemas straight through.

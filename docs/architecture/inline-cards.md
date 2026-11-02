@@ -8,7 +8,7 @@ Parley window: the first answer wins. Because Desktop mounts a view only after i
 returns, `ask` can't block there. It shows the form and returns an `askId`, and `ask_wait` blocks
 for the answer.
 
-**History:** [brief 6](../briefs/archive/06-mcp-apps-spike.md) (the spike), [brief 7](../briefs/archive/07-inline-cards.md), [brief 12](../briefs/archive/12-capture-question.md) (image captures, `clipboardWrite`)
+**History:** [brief 6](../briefs/archive/06-mcp-apps-spike.md) (the spike), [brief 7](../briefs/archive/07-inline-cards.md), [brief 12](../briefs/archive/12-capture-question.md) (image captures, `clipboardWrite`), [brief 16](../briefs/16-show-blocks.md) (show files in `_meta`)
 
 `tools/inline.ts` registers the surface. `ask-lifecycle.ts` holds `showAsk`, `waitAsk`,
 `awaitStatus` and `answerInline`. `card.ts` serves the card's HTML. `src/mcp-app/` in the desktop
@@ -19,9 +19,11 @@ app is the card: `McpApp.vue` around the same `AskCard` the window uses, and `th
 - **The surface** (only for clients that advertise MCP Apps; see
   [the ask tool](ask-tool.md#how-it-works)):
   - `ask`: same input and description as the blocking one, plus a paragraph on the two steps.
-    `_meta.ui.resourceUri` points at the card. It calls `showAsk` and returns at once with
-    `{ askId, message }` (and `_meta["parley/askId"]`). The message tells the model to call
-    `ask_wait` now.
+    `_meta.ui.resourceUri` points at the card. It reads the shows' files (`readShowFiles`,
+    [the ask tool](ask-tool.md#show-files)), compiles with them, calls `showAsk` and returns at
+    once with `{ askId, message }` (and `_meta["parley/askId"]`, plus `_meta["parley/files"]` when
+    a show named a file). The message tells the model to call `ask_wait` now. A refused file
+    returns `isError` with its message, and nothing is shown, in the chat or the window.
   - `ask_wait({ askId })`: blocks until the ask ends, at most one slice (200 s,
     `PARLEY_WAIT_SLICE_MS` for tests). Then it returns the shaped answer, or "the user hasn't
     answered yet, call again", or an error for an unknown id (from before a restart, or made up).
@@ -48,8 +50,15 @@ app is the card: `McpApp.vue` around the same `AskCard` the window uses, and `th
   iframe has no file picker and nowhere to save an image. A text-only capture works inline.
 - **No window.** If the app can't be reached, an inline ask goes on with the card alone and keeps
   its own timeout. A window-only ask fails, and `ask_wait` returns the error.
+- **Show files.** The card compiles the questions from the tool input, so a file the server read
+  reaches it only if the server sends it: `_meta["parley/files"]` on the `ask` result, the
+  `ShowFiles` keyed by question id. Never in `structuredContent` or the text: Desktop shows the
+  model only the text, so the file doesn't enter its context twice. `showAsk` keeps the files with
+  the shown ask (`Shown.files`, `shownFiles(askId)`), for brief 17's diff.
 - **The card** (`McpApp.vue`). The host sends the tool input (the questions), then the result (the
-  `askId`). The card compiles the questions itself, renders `AskCard` with `embedded` (no focus
+  `askId`, and any files). When the input has a show with `path`, the card holds the form
+  ("Loading the question…") until the result brings its file, rather than showing it unloaded
+  first; an error result shows its message instead. The card compiles the questions itself, renders `AskCard` with `embedded` (no focus
   grab, no Esc hint), long-polls `parley_status` until the ask ends, and answers through
   `parley_submit`. It points `openExternal` at the host's `openLink` through `setPlatform`, and
   takes the host's look (`theme.ts`): Parley Light or Dark by the host's `theme`, its fonts, and

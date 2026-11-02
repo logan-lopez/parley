@@ -9,7 +9,7 @@ Start with [The app](the-app.md): everything else happens in its window or besid
 - [Answering a card](answering.md): the queue, picking and sending, copying code, skipping, the
   note for the agent, and asks that end under you.
 - [Question types](question-types.md): choice, text, number, yes/no, path, review and capture,
-  as you see them.
+  as you see them, and shows: a plan or a file to look at, with the questions about it.
 - [From Claude Code](claude-code.md): what happens while an ask waits, long asks, Esc, and the
   built-in question tool.
 - [From Claude Desktop](claude-desktop.md): the inline card in the chat, and how it races the

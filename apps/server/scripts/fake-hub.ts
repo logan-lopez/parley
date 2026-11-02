@@ -16,7 +16,8 @@
 // Text questions with a draft: `first` sends the draft unchanged, and
 // `other:<text>` appends <text> to it as its last line.
 // Capture questions get <text> as pasted text under `other:<text>`, and
-// 'as you see fit' otherwise. Never a screenshot.
+// 'as you see fit' otherwise. Never a screenshot. Show blocks get nothing:
+// there's nothing to answer.
 //   skip                    dismiss
 //   none                    never answer (let it time out or be cancelled)
 //   delay:<s>:<policy>      wait, then apply the policy
@@ -126,6 +127,7 @@ function fill(form: FormSpec, policy: string): Record<string, unknown> {
         data[key] = { text: other ?? 'as you see fit' }
         break
       }
+      case 'show': break   // nothing to answer, and no data
       case 'review': {
         // The decisions are the items' enum: approve and reject, or the question's own.
         const other = policy.startsWith('other:') ? policy.slice(6) : undefined

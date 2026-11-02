@@ -7,7 +7,7 @@
 //   pnpm --filter @parley/server fake-host [scenario...] [--server dist] [--verbose]
 //
 // Scenarios (all by default): card-wins, window-wins, skip, slice, unknown-id,
-// path, capture, old-app, plain. `--server dist` runs dist/index.mjs instead of src/ under tsx.
+// path, capture, show-file, old-app, plain. `--server dist` runs dist/index.mjs instead of src/ under tsx.
 // `--verbose` passes the server's and the hub's stderr through.
 
 import { spawn, type ChildProcess } from 'node:child_process'
@@ -18,6 +18,7 @@ import { parseArgs } from 'node:util'
 import { Client } from '@modelcontextprotocol/client'
 import { StdioClientTransport } from '@modelcontextprotocol/client/stdio'
 import { RESOURCE_MIME_TYPE } from '@modelcontextprotocol/ext-apps/server'
+import { askInputSchema, compileQuestions } from '@parley/protocol/ask'
 
 const { values, positionals } = parseArgs({
   allowPositionals: true,
@@ -28,6 +29,7 @@ const { values, positionals } = parseArgs({
 })
 
 const packageDir = process.cwd()
+const repoRoot = resolve(packageDir, '../..')
 const tsx = resolve(packageDir, 'node_modules/.bin/tsx')
 const fixture = (name: string) =>
   JSON.parse(readFileSync(resolve(packageDir, `../../packages/protocol/fixtures/${name}.json`), 'utf8')) as Record<string, unknown>
@@ -38,6 +40,7 @@ const CARD_URI = 'ui://parley/card.html'
 interface Session {
   client: Client
   hubLog: () => Record<string, any>[]
+  connect(cwd: string): Promise<Client>   // another server on the same hub, started in `cwd`
 }
 
 type Check = (name: string, ok: boolean, detail?: unknown) => void
@@ -46,6 +49,7 @@ interface Scenario {
   reply: string[]
   hubFlags?: string[]
   inline?: boolean   // advertise MCP Apps; default true
+  cwd?: string       // the server's working directory; default the package dir
   env?: Record<string, string>
   run(session: Session, check: Check): Promise<void>
 }
@@ -190,6 +194,49 @@ const scenarios: Record<string, Scenario> = {
     },
   },
 
+  // A path-backed show: the server reads the file and sends it to the card in
+  // _meta, which compiles it with content; the window gets it in the form. A
+  // server started from `/` (Claude Desktop's chat) has no project.
+  'show-file': {
+    reply: ['none'],
+    cwd: repoRoot,
+    async run({ client, hubLog, connect }, check) {
+      const input = fixture('show-file')
+      const result = await call(client, 'ask', input)
+      const askId = (result.structuredContent as { askId?: unknown } | undefined)?.askId as string
+      const files = (result._meta as Record<string, any> | undefined)?.['parley/files']
+      check('ask returns the files in _meta', !!files?.guide_page?.text?.includes('#') && files?.vocabulary?.lines?.[0] === 1, files && Object.keys(files))
+      check('the files stay out of structuredContent and the text',
+        !JSON.stringify(result.structuredContent).includes('parley/files') && !textOf(result).includes('sha256'), result.structuredContent)
+      check('the guide page hash is a sha256', /^[0-9a-f]{64}$/.test(files?.guide_page?.sha256 ?? ''), files?.guide_page?.sha256)
+
+      // The card: the tool input, compiled with the result's files.
+      const card = compileQuestions(askInputSchema.parse(input), files).schema.properties as Record<string, any>
+      check('the card compiles the guide page as markdown', card.guide_page?.['x-content'] === files?.guide_page?.text, card.guide_page?.['x-source'])
+      check('the card compiles form.ts as a ts block with its range',
+        String(card.vocabulary?.['x-content']).startsWith('```ts\n') && card.vocabulary?.['x-source']?.lines?.join('-') === '1-50',
+        card.vocabulary?.['x-source'])
+
+      await sleep(300)
+      const sent = hubLog().find((l) => l.type === 'ask')
+      const window = sent?.form?.schema?.properties ?? {}
+      check('the window got the files in the form, inline', sent?.inline === true && !!window.guide_page?.['x-content'] && !!window.vocabulary?.['x-content'], sent && { inline: sent.inline })
+
+      const wait = callText(client, 'ask_wait', { askId })
+      const submit = await structured(client, 'parley_submit', { askId, kind: 'answer', data: { in_step: true } })
+      check('the card answers', submit.accepted === true, submit)
+      const answered = await wait
+      check('the answer has no line for the shows', answered.text === 'The user answered:\n- In step: Yes', answered.text)
+
+      const outside = await connect('/')
+      const refused = await call(outside, 'ask', input)
+      check('a server started from / has no project directory',
+        refused.isError === true && textOf(refused).includes("didn't start Parley in a project directory"), textOf(refused))
+      await sleep(300)
+      check('and nothing was shown', hubLog().filter((l) => l.type === 'ask').length === 1, hubLog().map((l) => l.type))
+    },
+  },
+
   // An app from before inline cards rejects `resolved`; the server withdraws its card instead.
   'old-app': {
     reply: ['none'],
@@ -261,25 +308,31 @@ async function runScenario(name: string, scenario: Scenario) {
     stdio: ['ignore', 'ignore', 'pipe'],
   })
   collect(hub, 'hub', stderr)
-  let client: Client | undefined
-  try {
-    await waitFor(() => existsSync(socket), 10_000, 'fake-hub to listen')
+  const clients: Client[] = []
+  const connect = async (cwd = scenario.cwd ?? packageDir) => {
     const command = values.server === 'dist' ? [process.execPath, resolve(packageDir, 'dist/index.mjs')] : [tsx, resolve(packageDir, 'src/index.ts')]
     const transport = new StdioClientTransport({
       command: command[0]!,
       args: command.slice(1),
+      cwd,
       env: { ...process.env as Record<string, string>, PARLEY_SOCKET: socket, PARLEY_NO_LAUNCH: '1', ...scenario.env },
       stderr: 'pipe',
     })
     transport.stderr?.on('data', (chunk) => record('server', String(chunk), stderr))
-    client = new Client({ name: 'fake-host', version: '0.0.0' }, { capabilities: scenario.inline === false ? {} : MCP_APPS })
+    const client = new Client({ name: 'fake-host', version: '0.0.0' }, { capabilities: scenario.inline === false ? {} : MCP_APPS })
+    clients.push(client)
     await client.connect(transport)
+    return client
+  }
+  try {
+    await waitFor(() => existsSync(socket), 10_000, 'fake-hub to listen')
+    const client = await connect()
     const hubLog = () => (existsSync(logFile) ? readFileSync(logFile, 'utf8').split('\n').filter(Boolean).map((l) => JSON.parse(l)) : [])
-    await withTimeout(scenario.run({ client, hubLog }, check), 60_000, name)
+    await withTimeout(scenario.run({ client, hubLog, connect }, check), 60_000, name)
   } catch (error) {
     check('ran without throwing', false, message(error))
   } finally {
-    await client?.close().catch(() => {})
+    await Promise.all(clients.map((c) => c.close().catch(() => {})))
     hub.kill()
     rmSync(dir, { recursive: true, force: true })
   }

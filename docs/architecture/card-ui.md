@@ -7,7 +7,7 @@ The ask card and the question renderers: one ask as a form, rendered by JSON For
 compiled schema, driven from the keyboard. The same card runs in the window, in the inline card in
 Claude Desktop, and in the dev gallery.
 
-**History:** [brief 2](../briefs/archive/02-ask-tool-and-ui.md), [brief 5](../briefs/archive/05-review-question.md) (the review renderer), [brief 7](../briefs/archive/07-inline-cards.md) (the platform adapter, `html.inline`), [brief 11](../briefs/archive/11-review-decisions.md) (labelled review decisions), [brief 12](../briefs/archive/12-capture-question.md) (copy buttons, the capture renderer), [brief 13](../briefs/13-color-chips.md) (color chips, palettes), [brief 14](../briefs/14-fenced-previews.md) (HTML and SVG previews), [brief 15](../briefs/15-themes.md) (tokens from themes)
+**History:** [brief 2](../briefs/archive/02-ask-tool-and-ui.md), [brief 5](../briefs/archive/05-review-question.md) (the review renderer), [brief 7](../briefs/archive/07-inline-cards.md) (the platform adapter, `html.inline`), [brief 11](../briefs/archive/11-review-decisions.md) (labelled review decisions), [brief 12](../briefs/archive/12-capture-question.md) (copy buttons, the capture renderer), [brief 13](../briefs/13-color-chips.md) (color chips, palettes), [brief 14](../briefs/14-fenced-previews.md) (HTML and SVG previews), [brief 15](../briefs/15-themes.md) (tokens from themes), [brief 16](../briefs/16-show-blocks.md) (the show renderer, `[data-passive]`)
 
 `card/AskCard.vue` is the card. It knows nothing about the hub or Tauri. `App.vue` is the window
 around it: the queue, Send and Skip, history. `forms/` holds the renderers, their registration, the
@@ -41,8 +41,11 @@ keyboard contract and markdown. `platform.ts` is the one way renderers reach the
 - **The keyboard contract** (`forms/keyboard.ts`) is how renderers and the card talk, through the
   DOM only: `[data-question]` marks each question's root in order, `[data-pick="n"]` is what key
   n picks (clicked, or focused if it's a text input), `[data-primary]` is where focus lands, and
-  `[data-advance-on-pick]` moves to the next question after a number-key pick. Other plain keys
-  belong to the renderer, handled on its own elements. A renderer that takes a digit for itself
+  `[data-advance-on-pick]` moves to the next question after a number-key pick. `[data-passive]`
+  marks a question with nothing to answer (a show): Tab still stops on it, but the card's first
+  focus on mount, and its fallback when the window regains focus with nowhere to return to, go to
+  the first question without it (`firstToAnswer`), and so does the target of a digit when no
+  question has focus. Other plain keys belong to the renderer, handled on its own elements. A renderer that takes a digit for itself
   (a labelled review row) prevents it, and the card leaves prevented digits alone.
 - **Renderers** (`forms/renderers/`) are JSON Forms controls, one per `x-widget`, each ranked 10
   by `widgetTester` so it beats the vanilla set, which stays as the fallback
@@ -81,6 +84,15 @@ keyboard contract and markdown. `platform.ts` is the one way renderers reach the
     reads the files back. An image-only capture's paste target is a text input that refuses
     typing (`beforeinput`), because WebKit may not deliver a paste to a focusable `div`.
     Read-only, it shows the text in a monospace block and the screenshots' file names.
+  - Show: the frame with `passive` (no "Optional"), then `x-content` through `Markdown.vue` in
+    `.show-pane`: a hairline `--border`, the card's radius, at most 55vh (480 px under
+    `html.inline`, where the card has no inner scroll), scrolling inside. The pane is the
+    `[data-primary]` with `tabindex="0"`, so Tab reaches it and the arrow keys, Page Up/Down and
+    Space scroll it natively; Enter on it sends, as on any non-button. It has no `[data-pick]`, so
+    digits do nothing. With `x-source`, a muted caption under the pane: `docs/plan.md`, or
+    `src/index.ts · lines 10–80 of 212`. With `x-source` and no `x-content` (compiled without the
+    file: the gallery, `show-file`), the pane reads "`<path>` isn't loaded here." Read-only it's
+    the same view, and it's never required, so it never appears in "Still needs an answer".
 - **Markdown** (`forms/markdown.ts`, markdown-it) renders model text with no raw HTML and no
   images. Links are linkified, and ```` ```diff ```` blocks color their lines. Every fenced block
   is wrapped in `.code-block` with a `[data-copy]` button that carries nothing: `Markdown.vue`'s

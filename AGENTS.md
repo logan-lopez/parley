@@ -38,6 +38,7 @@ From the root:
 | `pnpm typecheck` / `pnpm build` | Every package. |
 | `pnpm --filter @parley/server build` | Builds the inline card (`pnpm --filter @parley/desktop build:mcp-app`), then bundles the server to `apps/server/dist/index.mjs` with the card beside it as `dist/card.html`. The bundle is what an MCP client config points at (`node .../dist/index.mjs`). Needs Node 24: tsdown loads its `.ts` config through native type stripping, and Node 22.17 fails with "Failed to import module unrun". |
 | `pnpm --filter @parley/protocol test` | vitest for the input validation, the compiler and the answer shaper. |
+| `pnpm --filter @parley/server test` | vitest for `readShowFiles`: the project rule, refused files, `lines` and the caps. |
 | `pnpm --filter @parley/desktop test` | vitest for the history fold, the store's hub handlers, and every fixture's compiled schema under AJV. |
 | `pnpm --filter @parley/server fake-ask <file.json \| fixture> [--timeout <s>]` | One session without an MCP client: sends a form to the app and prints the outcome. |
 | `pnpm --filter @parley/server fake-hub <socket> [--log f.jsonl] [--reply <policy>]... [--old-app]` | Stands in for the app and answers on a script. Pair with `PARLEY_SOCKET`. |
@@ -100,12 +101,12 @@ map for every agent).
 
 | Code | Read first |
 | --- | --- |
-| `apps/server/src/index.ts`, `apps/server/src/client-capabilities.ts`, `apps/server/src/tools/ask.ts`, `apps/server/src/ask-lifecycle.ts` | [The ask tool](docs/architecture/ask-tool.md) |
+| `apps/server/src/index.ts`, `apps/server/src/client-capabilities.ts`, `apps/server/src/tools/ask.ts`, `apps/server/src/ask-lifecycle.ts`, `apps/server/src/show-files.ts` | [The ask tool](docs/architecture/ask-tool.md) |
 | `apps/desktop/src/asks/**`, `apps/desktop/src/history/**`, `apps/desktop/src/main.ts` | [Asks and history](docs/architecture/asks-and-history.md) |
 | `apps/desktop/src/card/**`, `apps/desktop/src/forms/**`, `apps/desktop/src/platform.ts`, `apps/desktop/src/styles.css`, `apps/desktop/src/zoom.ts`, `apps/desktop/src/ZoomControl.vue`, `apps/desktop/src/App.vue`, `apps/desktop/src/main.ts`, `apps/desktop/src/gallery/**` | [The card](docs/architecture/card-ui.md) |
 | `apps/desktop/src-tauri/src/lib.rs`, `apps/desktop/src-tauri/src/window.rs`, `apps/desktop/src-tauri/src/tray.rs`, `apps/desktop/src-tauri/src/shortcut.rs`, `apps/desktop/src-tauri/tauri.conf.json`, `apps/desktop/src-tauri/capabilities/**`, `apps/desktop/src-tauri/Cargo.toml`, `apps/desktop/src-tauri/Info.plist`, `apps/desktop/src-tauri/build.rs`, `apps/desktop/vite.config.ts`, `apps/desktop/scripts/install.sh`, `apps/desktop/icons/**`, `apps/desktop/scripts/icons.ts` | [The desktop shell](docs/architecture/desktop-shell.md) |
-| `packages/protocol/src/ask.ts`, `packages/protocol/src/form.ts`, `packages/protocol/fixtures/**` | [The form spec](docs/architecture/form-spec.md) |
+| `packages/protocol/src/ask.ts`, `packages/protocol/src/form.ts`, `packages/protocol/src/show.ts`, `packages/protocol/fixtures/**` | [The form spec](docs/architecture/form-spec.md) |
 | `packages/protocol/src/wire.ts`, `apps/desktop/src-tauri/src/hub.rs`, `apps/desktop/src/hub/**`, `apps/server/src/app-client.ts` | [The hub and the wire protocol](docs/architecture/hub.md) |
 | `apps/server/src/tools/inline.ts`, `apps/server/src/ask-lifecycle.ts`, `apps/server/src/card.ts`, `apps/server/tsdown.config.ts`, `apps/desktop/src/mcp-app/**`, `apps/desktop/mcp-app.html`, `apps/desktop/vite.mcp-app.config.ts` | [Inline cards (show, then wait)](docs/architecture/inline-cards.md) |
-| `apps/server/scripts/**`, `apps/desktop/scripts/screenshots.ts`, `apps/server/trials/**`, `apps/server/fixtures/**`, `packages/protocol/src/ask.test.ts`, `apps/desktop/src/asks/persist.test.ts`, `apps/desktop/src/asks/store.test.ts`, `apps/desktop/src/forms/schemas.test.ts`, `apps/desktop/src/forms/markdown.test.ts`, `apps/desktop/src/forms/preview.test.ts` | [Testing](docs/architecture/testing.md) |
+| `apps/server/scripts/**`, `apps/desktop/scripts/screenshots.ts`, `apps/server/trials/**`, `apps/server/fixtures/**`, `packages/protocol/src/ask.test.ts`, `apps/server/src/show-files.test.ts`, `apps/desktop/src/asks/persist.test.ts`, `apps/desktop/src/asks/store.test.ts`, `apps/desktop/src/forms/schemas.test.ts`, `apps/desktop/src/forms/markdown.test.ts`, `apps/desktop/src/forms/preview.test.ts` | [Testing](docs/architecture/testing.md) |
 | `apps/desktop/src/theme/**` | [Themes](docs/architecture/themes.md) |
