@@ -77,9 +77,8 @@ it if Logan finds himself reopening the panel mid-test.
 
 ## Trial tune-ups after the 10–12 pass
 
-**Scheduled (2026-11-01):** [brief 20](20-input-limits.md) takes the Codex baseline and updates the
-`crash-output` item with real-use numbers from [brief 19](19-usage-report.md). The other items
-stay here.
+**Done in [brief 20](20-input-limits.md):** the `crash-output` item has its real-use numbers. The
+Codex baseline is still owed: its run hit the usage limit. The other items stay here.
 
 The full pass on 2026-10-11 (baseline in `apps/server/trials/README.md`) left a handful of
 harness and model-facing questions. Together they're one brief with a trial pass at the end.
@@ -87,9 +86,12 @@ harness and model-facing questions. Together they're one brief with a trial pass
 - **`crash-output` never asked (0/3).** Every run reproduced a crash from the code, then ended its
   turn with an `awk` command for the user to run and report back in chat. That's the moment
   `capture` is for. The lever is the server instructions (a line like "you need something only
-  the user can get, such as command output"), which briefs 10–12 left alone on purpose. Check a
-  real debugging session first: if agents do reach for `capture` there, the prompt is just too
-  answerable from the code.
+  the user can get, such as command output"), which briefs 10–12 left alone on purpose. Real use
+  answers the "check a real debugging session first" question: agents do reach for `capture` on
+  their own, 24 of 2,160 questions in three weeks (1.1%), and the ideate counted 20 `capture`
+  calls from Claude Code, 11 with screenshots. So the prompt is mostly too answerable from the
+  code, and the server instructions stay as they are. It asked 2/3 on 2026-10-14 and 0/3 on
+  2026-11-02, the same noise as before.
 - **`changelog-draft` asks about a fix that isn't there.** All runs, in brief 10 and in the full
   pass, added a `choice` about the unfixed `fromCents` bug beside the draft. Rewording the prompt
   ("I've fixed…", with the fix applied in the trial project) would make the draft the only
@@ -104,7 +106,9 @@ harness and model-facing questions. Together they're one brief with a trial pass
   "the most cautious one last". It only matters for gaps, which the app never sends.
 - **Untested policies:** fake-hub's `second` and `other:` with custom decisions; no trial replies
   that way.
-- **No Codex baseline.** Run `--client codex --runs 1` before the next model-facing change.
+- **No complete Codex baseline.** Brief 20's run hit Codex's usage limit after three of the 14
+  prompts (all three asked, first call valid). Rerun `--client codex --runs 1` once it resets and
+  record the row.
 
 **Kill criteria:** real use shows agents reaching for `capture` and drafts on their own; then only
 the harness items are worth doing, as they come up.

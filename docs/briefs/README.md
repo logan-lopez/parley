@@ -45,7 +45,7 @@ and move to `archive/` when they're done. Ideas that aren't scheduled yet are in
 19. [`19-usage-report.md`](19-usage-report.md) (done, awaiting review): `pnpm --filter @parley/server usage`, a report on
     real asks from `history.jsonl` (and Claude Code's transcripts with `--transcripts`), with a
     dated real-use baseline in the trials README.
-20. [`20-input-limits.md`](20-input-limits.md): soft input limits, so near-miss headers and
+20. [`20-input-limits.md`](20-input-limits.md) (done, awaiting review): soft input limits, so near-miss headers and
     descriptions stop bouncing (6.6% of real calls); then the full trial pass and the Codex baseline.
 21. [`21-dont-ask-again.md`](21-dont-ask-again.md): a per-question "Don't ask again here" toggle;
     the agent drafts a standing line for `AGENTS.md` for Logan to approve; then a trial pass.

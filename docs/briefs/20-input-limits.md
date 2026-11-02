@@ -1,7 +1,7 @@
 ---
 size: M
 size-note: "the code is small; the full trial pass and the Codex baseline are most of it"
-status: not-started
+status: awaiting-review
 ---
 # Brief 20: Fewer bounced asks: soft input limits
 
@@ -142,3 +142,71 @@ rise) and "asked when it should" (should hold).
 
 Then stop. Report the trial numbers next to the baseline, and ask Logan before committing if
 anything in them dropped.
+
+## Report
+
+**Built**
+- `packages/protocol/src/ask.ts`: `header` accepts up to 24 and publishes `maxLength: 12`;
+  option `description` and review `detail` accept up to 500 and publish 300 (a small `softMax`
+  helper over `.max()` plus `.meta({ maxLength })`). Labels unchanged.
+- `apps/desktop/src/forms/renderers/QuestionFrame.vue`, `apps/desktop/src/styles.css`: the chip
+  clips at `14ch` with an ellipsis and carries the full header in `title`.
+- `apps/server/src/tools/ask.ts`: the choice and review lines name the limits (label 60 or 120,
+  description or detail 300). Nothing else in the description changed.
+- `packages/protocol/src/ask.test.ts`: a `soft limits` block (14-character header and 450 and 500
+  character descriptions parse; 25 and 501 are rejected with the aim in the message; labels stay
+  hard; id, compiled `title` and answer `header` keep the full text; `z.toJSONSchema(..., { io:
+  'input' })` still says 12, 300, 300, 60). The old header test now uses 25 characters.
+
+**Deviations**
+- The brief put the message for an over-limit description as "300 characters or fewer is the
+  aim…". I wrote "option descriptions are 500 characters or fewer, and 300 is the aim; put
+  anything longer in `preview`" (and the same for `detail`), so the model that does bounce at 500
+  sees both numbers.
+- The Codex baseline is not recorded: see Acceptance.
+
+**Defaults taken**
+- Header 24, description and detail 500.
+
+**Acceptance**
+- `pnpm --filter @parley/protocol test`: 93 passed.
+- `pnpm --filter @parley/desktop test`: 152 passed.
+- `pnpm typecheck`, `pnpm --filter @parley/server build`: pass.
+- `fake-host`: all 9 scenarios pass.
+- `tools/list` from the built server, through a one-off client: `header` 12, `description` 300,
+  `detail` 300, option `label` 60, item `label` 120.
+- `fake-ask` with a `Gate progress` header and a 420-character description, against `fake-hub`
+  with `PARLEY_SOCKET` and `PARLEY_NO_LAUNCH=1`: answered, and the hub log shows the long
+  description. The result's `header` is `Gate progress`.
+- Chip: a temporary fixture (removed afterwards) through the real card in headless WebKit, light
+  and dark. `Gate progress` fits; a 24-character header shows `Twenty-four c…`. The hover `title`
+  is set in the template but was not exercised headless: Logan's.
+- Trials, Claude `--runs 3`: first call valid 29 of 29. Asked when it should: the same on 9 of the 11
+  ask prompts, `config-format` 2/3 (up from 1/3), and **`crash-output` 0/3, down from 2/3**
+  on 2026-10-14 (it was 0/3 on 2026-10-11). Tables and notes are in `apps/server/trials/README.md`
+  under "After soft input limits".
+- Trials, Codex `--runs 1`: **not run to completion.** The account hit its usage limit after three
+  prompts (all asked, all first call valid) and the other eleven failed at once. No baseline row;
+  FUTURE.md keeps the bullet, reworded.
+- The week of real use, brief 19's `usage --transcripts` showing fewer than 66 bounces in 1,006:
+  Logan's to run.
+
+**Size:** sized M, this session S (6 active min, 37 wall, 0 compactions), from `docket sessions`
+run before this report. The trial passes ran in the background and aren't in the active time.
+
+**Spot checks for Logan**
+- Hover a clipped chip in the real app (`pnpm app`, or the gallery at
+  `http://localhost:1420/?gallery` after `pnpm --filter @parley/desktop dev`, with a local edit
+  to a header) and confirm the full header shows in a tooltip.
+- After a week, run `pnpm --filter @parley/server usage --transcripts` and compare the bounce
+  rate with 6.6%.
+
+**Docs updated:** `docs/architecture/form-spec.md` (soft limits), `docs/architecture/card-ui.md`
+(the header chip), `docs/guide/question-types.md`, `apps/server/trials/README.md`,
+`docs/briefs/FUTURE.md` (the `crash-output` numbers and the Codex bullet). The decision was already
+in `docs/decisions/soft-input-limits.md`; its Choice still matches.
+
+**Follow-ups**
+- Codex baseline: rerun `pnpm --filter @parley/server trial --client codex --runs 1` after the
+  usage limit resets (it said 3:43 AM) and add the row.
+- The guide's `answering.md` doesn't describe the chip, so only `question-types.md` changed.

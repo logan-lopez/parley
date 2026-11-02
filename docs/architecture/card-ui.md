@@ -28,6 +28,9 @@ keyboard contract and markdown. `platform.ts` is the one way renderers reach the
   undecided"). A required error inside a question's object (a capture) counts against that
   question. Props switch it to `readonly` (history) or `embedded` (the inline card: no focus on
   mount, no Esc hint), and `withdrawn` makes it read-only with a banner.
+- **The header chip** (`QuestionFrame.vue`, `.chip`): clips with an ellipsis at `14ch` and carries
+  the full header in `title`, so it shows on hover. The server accepts headers up to 24
+  characters ([the form spec](form-spec.md)); the same renderer draws the inline card.
 - **The note for the agent:** a collapsed textarea (2,000 characters) opened with `Cmd+N`, sent
   with an answer or a skip, and kept in the draft.
 - **Keys the card owns:** `1`–`9` pick in the active question, Tab and Shift+Tab move between

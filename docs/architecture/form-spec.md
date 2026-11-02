@@ -21,16 +21,26 @@ the app renders and holds its types.
   has a `header` (a chip of 12 characters or fewer), the `question` (markdown), a `type` (default
   `choice`), optional `id` (snake_case) and `required` (default true), and the fields for its
   type:
-  - `choice`: 2–6 `options`, each `{ label (≤60), description?, preview? (≤10,000) }`, plus `multiSelect`
+  - `choice`: 2–6 `options`, each `{ label (≤60), description? (300, soft), preview? (≤10,000) }`, plus `multiSelect`
     and `allowOther` (default on).
   - `text`: `multiline`, `placeholder`, and `draft` (up to 4,000 characters), text the agent
     wrote for the user to edit in place. `number`: `min`, `max`, `integer`. `boolean`: nothing.
   - `path`: `pathKind` (`file` or `directory`), `multiple`, `extensions`.
-  - `review`: 1–30 `items`, each `{ label (≤120), detail?, preview? (≤10,000) }`, optional `decisions`
+  - `review`: 1–30 `items`, each `{ label (≤120), detail? (300, soft), preview? (≤10,000) }`, optional `decisions`
     (2–4 labels of 12 characters or fewer, used instead of approve and reject, the most cautious
     last), and `defaultDecision`: `approve`, `reject` or `none`, or with `decisions` one of them
     or `none`, defaulting to the first.
   - `capture`: `accept` (`text`, `image` or `any`, the default) and `placeholder`.
+- **Soft limits.** The published JSON Schema (what the model reads) says `header` ≤12 and
+  `description` and `detail` ≤300; the Zod schema (what's accepted) takes a header up to 24 and a
+  description or detail up to 500. `.meta({ maxLength })` sets the first and `.max()` the second
+  (checked on zod 4.6.5 and the MCP SDK 2.3.1: the SDK validates with Zod and publishes the
+  schema). Of 1,006 real asks, 66 bounced on lengths a few characters over (about 40 on a 301 to
+  475 character description, 20 on a 13 or 14 character header), and each bounce was a round trip.
+  The tight number keeps cards short; the margin catches the near miss. A header past 12 is
+  clipped on the card's chip ([the card](card-ui.md)); its id, the compiled `title` and the
+  answer's `header` keep the full text. Labels stay hard limits, because a label is the answer
+  value and clipping it would change the answer ([decision](../decisions/soft-input-limits.md)).
 - **Validation errors are written for the model.** The `superRefine` in `askInputSchema` catches
   the mistakes models make (options on a review, items on a choice, an "Other" option, a draft on
   anything but text, decisions on anything but review, `accept` on anything but capture, duplicate labels, decisions or ids, a

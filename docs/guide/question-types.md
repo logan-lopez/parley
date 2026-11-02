@@ -4,8 +4,9 @@ covers: ["docs/architecture/form-spec.md", "docs/architecture/card-ui.md", "docs
 # Question types
 
 The seven kinds of question an agent can put on a card, as you see them. The agent picks the type;
-each question has a short header chip and the question itself, which can include formatting,
-links, code, colors and pictures ([Answering a card](answering.md#colors-and-pictures)).
+each question has a short header chip (a long one is cut short with an ellipsis and shows in full
+when you hover it) and the question itself, which can include formatting, links, code, colors and
+pictures ([Answering a card](answering.md#colors-and-pictures)).
 
 ## Choice
 

@@ -1,6 +1,7 @@
 import { readdirSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
+import { z } from 'zod'
 import { askInputSchema, askResultSchema, compileQuestions, questionIds, shapeAnswer, type AskInput } from './ask.ts'
 import { isWindowOnly } from './form.ts'
 
@@ -67,12 +68,59 @@ describe('input validation', () => {
   })
 
   it('limits header length, option count and question count', () => {
-    expect(issues({ questions: [{ ...q, header: 'Authentication method', options }] }))
+    expect(issues({ questions: [{ ...q, header: 'x'.repeat(25), options }] }))
       .toEqual([expect.stringContaining('12 characters or fewer')])
     expect(issues({ questions: [{ ...q, options: [{ label: 'A' }] }] }))
       .toEqual([expect.stringContaining('at least 2 options')])
     expect(issues({ questions: Array(5).fill({ ...q, options }) }))
       .toEqual([expect.stringContaining('at most 4 questions')])
+  })
+})
+
+describe('soft limits', () => {
+  const q = { header: 'Pick', question: 'Which?' }
+  const options = [{ label: 'A' }, { label: 'B' }]
+  const item = { label: 'a' }
+
+  it('accepts a header up to 24, a description and a detail up to 500', () => {
+    expect(issues({ questions: [{ ...q, header: 'Gate progress', options }] })).toEqual([])
+    expect(issues({ questions: [{ ...q, header: 'x'.repeat(24), options }] })).toEqual([])
+    expect(issues({ questions: [{ ...q, options: [{ label: 'A', description: 'd'.repeat(450) }, { label: 'B' }] }] })).toEqual([])
+    expect(issues({ questions: [{ ...q, type: 'review', items: [{ ...item, detail: 'd'.repeat(500) }] }] })).toEqual([])
+  })
+
+  it('rejects past the margin, saying the aim', () => {
+    expect(issues({ questions: [{ ...q, header: 'x'.repeat(25), options }] }))
+      .toEqual([expect.stringContaining('12 characters or fewer')])
+    expect(issues({ questions: [{ ...q, options: [{ label: 'A', description: 'd'.repeat(501) }, { label: 'B' }] }] }))
+      .toEqual([expect.stringContaining('300 is the aim')])
+    expect(issues({ questions: [{ ...q, type: 'review', items: [{ ...item, detail: 'd'.repeat(501) }] }] }))
+      .toEqual([expect.stringContaining('300 is the aim')])
+  })
+
+  it('keeps labels hard', () => {
+    expect(issues({ questions: [{ ...q, options: [{ label: 'l'.repeat(61) }, { label: 'B' }] }] }))
+      .toEqual([expect.stringContaining('60 characters or fewer')])
+    expect(issues({ questions: [{ ...q, type: 'review', items: [{ label: 'l'.repeat(121) }] }] }))
+      .toEqual([expect.stringContaining('120 characters or fewer')])
+  })
+
+  it('keeps the full header in the schema title, the id and the answer', () => {
+    const input = parse({ questions: [{ ...q, header: 'Gate progress', options }] })
+    const { schema } = compileQuestions(input)
+    expect(questionIds(input.questions)).toEqual(['gate_progress'])
+    expect((schema.properties as Record<string, { title: string }>).gate_progress!.title).toBe('Gate progress')
+    const { structured } = shapeAnswer(input, { status: 'answered', data: { gate_progress: 'A' } })
+    expect(structured.answers!.gate_progress).toEqual({ header: 'Gate progress', value: 'A' })
+  })
+
+  it('publishes the aim, not the margin', () => {
+    const json = z.toJSONSchema(askInputSchema, { io: 'input' }) as unknown as { properties: { questions: { items: Record<string, any> } } }
+    const qs = json.properties.questions.items.properties
+    expect(qs.header.maxLength).toBe(12)
+    expect(qs.options.items.properties.description.maxLength).toBe(300)
+    expect(qs.items.items.properties.detail.maxLength).toBe(300)
+    expect(qs.options.items.properties.label.maxLength).toBe(60)
   })
 })
 

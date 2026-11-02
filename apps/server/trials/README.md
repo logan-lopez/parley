@@ -174,6 +174,48 @@ description, which grew by those two paragraphs' sentences; on top of 1f96382. F
 - Not recorded: a Codex baseline, still. Run `--client codex --runs 1` before the next
   model-facing change.
 
+## After soft input limits (brief 20)
+
+2026-11-02, Claude Code 2.1.316, `claude-opus-5-5`, `--runs 3`, on top of the soft limits (header
+and description limits widened on the server, the description naming each limit). From
+`results/2026-11-02T04-47-48-862Z.jsonl`. The tool description grew by the limits in the choice and
+review lines. Compared with the 2026-10-14 baseline above:
+
+| prompt | expect | asked | first call valid | used | was (2026-10-14) |
+| --- | --- | --- | --- | --- | --- |
+| changelog-draft | ask | 3/3 | 3/3 | 3/3 | same |
+| config-format | ask | 2/3 | 2/2 | 0/2 | asked 1/3, used 1/1 |
+| crash-output | ask | 0/3 | – | – | asked 2/3 |
+| date-library | ask | 3/3 | 3/3 | 3/3 | used 2/3 |
+| dead-code-cleanup | ask | 3/3 | 3/3 | 0/3 | used 1/2 |
+| explain-by-category | no-ask | 0/3 | – | – | same |
+| export-sentinel | ask | 3/3 | 3/3 | 3/3 | same |
+| fix-negative-cents | no-ask | 0/3 | – | – | same |
+| json-flag | no-ask | 0/3 | – | – | same |
+| naming-skip | ask | 3/3 | 3/3 | – | same |
+| prune-unused | ask | 3/3 | 3/3 | 3/3 | same |
+| refactor-reports | ask | 3/3 | 3/3 | 0/3 | same |
+| report-look | ask | 3/3 | 3/3 | 3/3 | same |
+| sort-helpers | ask | 3/3 | 3/3 | 1/1 | same counts; shapes below |
+
+- **`sort-helpers` shape:** run 1 asked four `choice` questions, run 2 a plain `review`, run 3 a
+  `review+decisions`. Last time it was two runs of four `choice` questions and a plain `review`, with
+  `review+decisions` only in a `--keep` rerun. About the same mix, so the soft limits didn't move it.
+- **First call valid:** every call that was made was valid, 29 of 29. Nothing in the pass was a
+  validation bounce.
+- **`crash-output` asked 0/3,** against 2/3 on 2026-10-14. It was 0/3 on 2026-10-11 and the
+  change touches no wording about when to ask, so this reads as the same noise as `config-format`
+  moving 1/3 to 2/3, but it is a drop on a score that should hold.
+- **The `used` misses are the label problem.** Read: `dead-code-cleanup` run 1 kept the reports as
+  answered and said so in other words; `config-format` run 1 put the config in the project
+  directory first, then home, which is "Project, then home" restated.
+- **Codex: not a baseline.** `--client codex --runs 1` hit the account's usage limit after three
+  runs (`changelog-draft`, `config-format`, `sort-helpers`), and the other eleven failed at once
+  with "You've hit your usage limit" (`results/2026-11-02T05-19-46-349Z.jsonl`, `gpt-6-astra`,
+  codex-cli 0.166.0). The three that ran: all asked, all first call valid; `changelog-draft` was
+  one `text+draft`, `sort-helpers` one `review`, `config-format` two `choice` questions. Rerun the
+  whole set once the limit resets before calling it a baseline.
+
 ## Real use
 
 2026-11-01, from `$APPDATA/history.jsonl` and `~/.claude/projects`. Refresh with

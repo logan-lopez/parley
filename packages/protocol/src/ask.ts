@@ -23,17 +23,22 @@ export const QUESTION_TYPES = ['choice', 'text', 'number', 'boolean', 'path', 'r
 // Previews are kept in history.jsonl, so they get a cap; question text doesn't.
 const preview = z.string().max(10_000, 'previews are 10,000 characters or fewer').optional()
 
+// A soft limit: the model reads `aim` in the published JSON Schema (`.meta`), and the server
+// accepts up to `max`. 6.6% of real asks bounced on lengths a few characters over the aim.
+const softMax = (aim: number, max: number, message: string) =>
+  z.string().max(max, message).meta({ maxLength: aim })
+
 // Not `.describe()`d field by field: the tool description carries the shape
 // and an example, and per-field descriptions bloat every tools/list.
 const option = z.object({
   label: z.string().min(1).max(60, 'option labels are 60 characters or fewer; put detail in `description`'),
-  description: z.string().max(300).optional(),
+  description: softMax(300, 500, 'option descriptions are 500 characters or fewer, and 300 is the aim; put anything longer in `preview`').optional(),
   preview,
 })
 
 const reviewItem = z.object({
   label: z.string().min(1).max(120, 'item labels are 120 characters or fewer; put detail in `detail`'),
-  detail: z.string().max(300).optional(),
+  detail: softMax(300, 500, 'item details are 500 characters or fewer, and 300 is the aim; put anything longer in `preview`').optional(),
   preview,
 })
 
@@ -41,7 +46,8 @@ const question = z.object({
   id: z.string()
     .regex(/^[a-z][a-z0-9_]*$/, 'id must be snake_case: lowercase letters, digits and underscores, starting with a letter')
     .optional(),
-  header: z.string().min(1).max(12, 'header is a short chip of 12 characters or fewer, like "Auth method"; the full question goes in `question`'),
+  header: z.string().min(1).max(24, 'header is a short chip of 12 characters or fewer, like "Auth method" (the card clips it past 12); the full question goes in `question`')
+    .meta({ maxLength: 12 }),
   question: z.string().min(1),
   type: z.enum(QUESTION_TYPES).default('choice'),
   required: z.boolean().optional(),
