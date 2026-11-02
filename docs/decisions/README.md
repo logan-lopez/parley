@@ -37,6 +37,8 @@ from each file's frontmatter, so change a decision in its own file, not here.
 
 ## The form spec
 
+- [Don't ask again](dont-ask-again.md): A per-question "Don't ask again here" toggle; the agent drafts a standing line for AGENTS.md and saves it only after Logan accepts the draft; Parley never answers on his behalf (2026-11-01)
+- [Soft input limits](soft-input-limits.md): The model sees tight limits on headers and descriptions; the server accepts a margin past them, and clips a long header on the card (2026-11-01)
 - [Editing a shown file](editing-a-shown-file.md): `editable` on a whole-file `path` show (2026-10-14)
 - [Show blocks](show-blocks.md): A `show` question type with no answer: `content` (markdown) or `path` (with `lines`) (2026-10-14)
 - [Drafts to edit](drafts-to-edit.md): `draft` on `text` only (2026-10-10)

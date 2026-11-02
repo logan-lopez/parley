@@ -77,6 +77,10 @@ it if Logan finds himself reopening the panel mid-test.
 
 ## Trial tune-ups after the 10–12 pass
 
+**Scheduled (2026-11-01):** [brief 20](20-input-limits.md) takes the Codex baseline and updates the
+`crash-output` item with real-use numbers from [brief 19](19-usage-report.md). The other items
+stay here.
+
 The full pass on 2026-10-11 (baseline in `apps/server/trials/README.md`) left a handful of
 harness and model-facing questions. Together they're one brief with a trial pass at the end.
 

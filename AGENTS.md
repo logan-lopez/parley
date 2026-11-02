@@ -53,6 +53,12 @@ the root (gitignored) registers the built server for Claude Code in this repo.
 
 ### Rules that aren't obvious from the code
 
+- This repo is public (`github.com/logan-lopez/parley`). Nothing committed may name Logan's other
+  projects, include paths outside the repo (write `~/…`, never `/Users/<name>/…`), or quote his
+  history, transcripts, notes or vault. The theme code's references to inn, Quire and text-game
+  are deliberate and stay; don't add new ones. Real-use numbers go in as the `usage` report's
+  default output only (projects as `project-N`), never with `--projects` or `--examples`. When
+  unsure, ask before committing.
 - The server's stdout is the MCP channel. Never `console.log` there; log to stderr.
 - Keep the Rust side small: tray, global hotkey, window management, the socket hub. Rust forwards
   hub lines as JSON without reading their type; the protocol lives in the webview and the server.
