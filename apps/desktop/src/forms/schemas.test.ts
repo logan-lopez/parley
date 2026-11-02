@@ -33,6 +33,17 @@ function compile(schema: object, strict: boolean) {
 }
 
 describe('compiled schemas under AJV', () => {
+  it('accepts resolved root media under JSON Forms and strict AJV', () => {
+    const input = askInputSchema.parse({ questions: [{ header: 'Image', type: 'boolean', question: '![Screenshot](shot.png)' }] })
+    const schema = compileQuestions(input, {}, {
+      'shot.png': { kind: 'image', files: [{ path: 'shot.png', abs: '/project/shot.png', sha256: 'hash', bytes: 42, mime: 'image/png' }] },
+    }).schema
+    for (const strict of [false, true]) {
+      const { validate, warnings } = compile(schema, strict)
+      expect(warnings).toEqual([])
+      expect(validate({ image: true })).toBe(true)
+    }
+  })
   it.each(Object.keys(schemas))('%s compiles without warnings', (name) => {
     expect(compile(schemas[name]!, false).warnings).toEqual([])
     expect(compile(schemas[name]!, true).warnings).toEqual([])

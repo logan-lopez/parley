@@ -18,8 +18,9 @@ crate-type = ["staticlib", "cdylib", "rlib"]
 tauri-build = { version = "2", features = [] }
 
 [dependencies]
-tauri = { version = "2", features = ["tray-icon"] }
+tauri = { version = "2", features = ["tray-icon", "protocol-asset"] }
 serde = { version = "1", features = ["derive"] }
+sha2 = "0.10"
 # preserve_order: a form's properties are its question order, and a BTreeMap would sort them.
 serde_json = { version = "1", features = ["preserve_order"] }
 tauri-plugin-dialog = "2"

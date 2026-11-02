@@ -1,5 +1,5 @@
 ---
-sources: ["apps/server/scripts/", "apps/desktop/scripts/screenshots.ts", "apps/server/trials/", "apps/server/fixtures/", "packages/protocol/src/ask.test.ts", "apps/server/src/show-files.test.ts", "apps/server/src/show-edits.test.ts", "apps/desktop/src/asks/persist.test.ts", "apps/desktop/src/asks/store.test.ts", "apps/desktop/src/forms/schemas.test.ts", "apps/desktop/src/forms/markdown.test.ts", "apps/desktop/src/forms/preview.test.ts"]
+sources: ["apps/server/scripts/", "apps/desktop/scripts/screenshots.ts", "apps/server/trials/", "apps/server/fixtures/", "packages/protocol/src/ask.test.ts", "apps/server/src/show-files.test.ts", "apps/server/src/show-edits.test.ts", "apps/server/src/show-media.test.ts", "packages/protocol/src/media.test.ts", "apps/desktop/src/forms/media.test.ts", "apps/desktop/src/asks/persist.test.ts", "apps/desktop/src/asks/store.test.ts", "apps/desktop/src/forms/schemas.test.ts", "apps/desktop/src/forms/markdown.test.ts", "apps/desktop/src/forms/preview.test.ts"]
 ---
 # Testing
 
@@ -38,13 +38,19 @@ and when to reach for it.
     files parse, and errors name the file (`theme.test.ts`); folder precedence and fallbacks
     (`load.test.ts`); the setting, `settings.json` and its `sound` (`setting.test.ts`); and no color literal
     outside `src/theme/` (`no-color-literals.test.ts`) ([themes](themes.md)).
+  - Project media: `media.test.ts` in the protocol checks markdown discovery across every field,
+    code/scheme exclusions and `x-media`; `show-media.test.ts` checks project/secret refusals,
+    sniffing, symlinks, caps and inline encoding. Desktop `forms/media.test.ts` mounts the real
+    Markdown component for status, load/error/open behavior and shared grants. `markdown.test.ts`
+    checks escaped placeholders with no model-supplied `src`; the `media` gallery fixture draws
+    a question, option preview and show image, covered by the AJV fixture sweep.
   - `apps/desktop/src-tauri` (`cargo test`): a line through the hub keeps its key order, which is
-    the question order (`hub.rs`).
+    the question order (`hub.rs`), and media hash/changed/missing/refused checks (`media.rs`).
 - **`fake-ask`** (`scripts/fake-session.ts`) acts as one server session without an MCP client:
   it connects to the hub, sends a form and prints the outcome. It takes `ask` tool input (a bare
   name like `choice` resolves to `packages/protocol/fixtures/choice.json`), which goes through the
-  tool's validation, `readShowFiles` (against where `pnpm` was run, so run `show-file` and
-  `show-edit` from the repo root), compiler, `applyShowEdits` (so an edited `show-edit` changes
+  tool's validation, `readShowFiles` and `readShowMedia` (against where `pnpm` was run, so run
+  `show-file`, `show-edit` and `media` from the repo root), compiler, `applyShowEdits` (so an edited `show-edit` changes
   `packages/protocol/fixtures/files/settings.example.json`; `git checkout` it after) and shaper, or a raw `FormSpec` (sample:
   `apps/server/fixtures/sample.json`). Ctrl-C kills it without a cancel, which exercises the
   app's disconnect path.
@@ -67,7 +73,9 @@ and when to reach for it.
   inline), `show-file` (a server started in the repo root returns `_meta["parley/files"]`, the
   card compiles them with content, the window gets them in the form, the answer has no line for
   the shows, and a second server started from `/` returns the "no project directory" error and
-  shows nothing; `Session.connect(cwd)` starts that one on the same hub), `show-edit` (a server
+  shows nothing; `Session.connect(cwd)` starts that one on the same hub), `media` (image data
+  URLs and references reach only the card metadata, the window gets references only, answers
+  work, and refused media sends no form), `show-edit` (a server
   started in a scratch project under `$TMPDIR`: the card sends an edited file, `ask_wait`'s text
   says it was saved and carries the diff, the file on disk changed, and a second `ask_wait` gets
   the same text rather than a conflict), `old-app`, `plain`.

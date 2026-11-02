@@ -3,7 +3,8 @@
 // what it needs with `setPlatform`. Outside Tauri (the gallery in a plain
 // browser) it falls back to browser APIs.
 
-import { isTauri } from '@tauri-apps/api/core'
+import { convertFileSrc, invoke, isTauri } from '@tauri-apps/api/core'
+import type { Media, MediaFile } from '@parley/protocol'
 import { appDataDir, join } from '@tauri-apps/api/path'
 import { open } from '@tauri-apps/plugin-dialog'
 import { BaseDirectory, mkdir, writeFile } from '@tauri-apps/plugin-fs'
@@ -73,11 +74,47 @@ export async function saveImage(png: Blob): Promise<string> {
 
 let fakeImages = 0
 
+export type MediaStatus = 'ok' | 'changed' | 'missing' | 'refused' | 'unresolved' | 'window'
+// Equal hashes can belong to different files; one may have disappeared while
+// the other is still there. Keep those individual statuses under the hash.
+export type MediaUrl = { url?: string; status: MediaStatus; byPath?: Map<string, MediaUrl> }
+
+// One batch per mounted form. The caller shares its promise with every
+// markdown surface, and drops it on unmount so history checks the disk again.
+export async function mediaUrls(entries: Media): Promise<Map<string, MediaUrl>> {
+  if (overrides.mediaUrls) return overrides.mediaUrls(entries)
+  const files = Object.values(entries).flatMap((entry) => entry.files)
+  if (!files.length) return new Map()
+  if (!isTauri()) return new Map(files.map((file) => [file.sha256, { status: 'unresolved' }]))
+  const statuses = await invoke<MediaStatus[]>('allow_media', {
+    entries: files.map(({ abs, sha256 }) => ({ abs, sha256 })),
+  })
+  const urls = new Map<string, MediaUrl>()
+  files.forEach((file, i) => {
+    const result: MediaUrl = {
+      status: statuses[i] ?? 'refused',
+      ...(statuses[i] === 'ok' && { url: convertFileSrc(file.abs) }),
+    }
+    const previous = urls.get(file.sha256)
+    const byPath = previous?.byPath ?? new Map<string, MediaUrl>()
+    byPath.set(file.abs, result)
+    urls.set(file.sha256, { ...result, byPath })
+  })
+  return urls
+}
+
+// Call only for an image in this form whose grant succeeded. Inline hosts
+// have no local file opener. Rust rechecks the grant and hash before opening.
+export async function openMedia(file: MediaFile): Promise<void> {
+  if (isTauri()) await invoke('open_media', { entry: { abs: file.abs, sha256: file.sha256 } })
+}
+
 // A host that isn't Tauri or a plain browser (the MCP Apps card) swaps in its own.
 interface Overrides {
   openExternal?: (url: string) => Promise<void>
   copyText?: (text: string) => Promise<boolean>
   saveImage?: (png: Blob) => Promise<string>
+  mediaUrls?: (entries: Media) => Promise<Map<string, MediaUrl>>
 }
 
 const overrides: Overrides = {}

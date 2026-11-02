@@ -7,7 +7,7 @@
 //   pnpm --filter @parley/server fake-host [scenario...] [--server dist] [--verbose]
 //
 // Scenarios (all by default): card-wins, window-wins, skip, slice, unknown-id,
-// path, capture, show-file, show-edit, old-app, plain. `--server dist` runs dist/index.mjs instead of src/ under tsx.
+// path, capture, show-file, show-edit, media, old-app, plain. `--server dist` runs dist/index.mjs instead of src/ under tsx.
 // `--verbose` passes the server's and the hub's stderr through.
 
 import { spawn, type ChildProcess } from 'node:child_process'
@@ -234,6 +234,35 @@ const scenarios: Record<string, Scenario> = {
         refused.isError === true && textOf(refused).includes("didn't start Parley in a project directory"), textOf(refused))
       await sleep(300)
       check('and nothing was shown', hubLog().filter((l) => l.type === 'ask').length === 1, hubLog().map((l) => l.type))
+    },
+  },
+
+  media: {
+    reply: ['none'],
+    cwd: repoRoot,
+    async run({ client, hubLog }, check) {
+      const input = fixture('media')
+      const result = await call(client, 'ask', input)
+      const meta = result._meta as Record<string, any>
+      const refs = meta?.['parley/media-refs']
+      const urls = meta?.['parley/media']
+      const src = 'packages/protocol/fixtures/files/layout.png'
+      check('the card gets a data URL and its media reference',
+        urls?.[src]?.startsWith('data:image/png;base64,') && refs?.[src]?.files?.[0]?.sha256?.length === 64, meta && Object.keys(meta))
+      const card = compileQuestions(askInputSchema.parse(input), undefined, refs)
+      check('the card compiles x-media from result metadata', !!card.schema['x-media'], card.schema['x-media'])
+      check('media stays out of model content', !JSON.stringify(result.structuredContent).includes('base64') && !textOf(result).includes('sha256'), result.structuredContent)
+      await sleep(300)
+      const sent = hubLog().find((l) => l.type === 'ask')
+      check('the window gets references only and media remains inline',
+        sent?.inline === true && !!sent?.form?.schema?.['x-media']?.[src] && !JSON.stringify(sent).includes('base64'), sent?.inline)
+      const askId = (result.structuredContent as { askId: string }).askId
+      await structured(client, 'parley_submit', { askId, kind: 'answer', data: { next_step: 'Keep the sidebar (Recommended)' } })
+      const answered = await callText(client, 'ask_wait', { askId })
+      check('the image ask still answers normally', answered.text.includes('Keep the sidebar'), answered.text)
+      const refused = await call(client, 'ask', { questions: [{ header: 'Missing', type: 'boolean', question: '![Missing](not-here.png)' }] })
+      check('missing images fail before showing a form', refused.isError === true && textOf(refused).includes("doesn't exist"), textOf(refused))
+      check('no second form was sent to the window', hubLog().filter((l) => l.type === 'ask').length === 1, hubLog().map((l) => l.type))
     },
   },
 

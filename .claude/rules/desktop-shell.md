@@ -1,6 +1,7 @@
 ---
 paths:
   - "apps/desktop/src-tauri/src/lib.rs"
+  - "apps/desktop/src-tauri/src/media.rs"
   - "apps/desktop/src-tauri/src/window.rs"
   - "apps/desktop/src-tauri/src/tray.rs"
   - "apps/desktop/src-tauri/src/shortcut.rs"

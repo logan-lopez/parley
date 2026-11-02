@@ -19,6 +19,7 @@ import { askInputSchema, compileQuestions, DEFAULT_TIMEOUT_SECONDS, shapeAnswer 
 import { getAppClient } from '../src/app-client.ts'
 import { applyShowEdits } from '../src/show-edits.ts'
 import { readShowFiles } from '../src/show-files.ts'
+import { readShowMedia } from '../src/show-media.ts'
 
 const { values, positionals } = parseArgs({
   allowPositionals: true,
@@ -57,7 +58,8 @@ try {
     const input = { ...parsed.data, timeoutSeconds: seconds(parsed.data.timeoutSeconds) }
     // Shows' files resolve against where the user ran it, as the server's do against its cwd.
     const files = await readShowFiles(input)
-    const outcome = await ask(compileQuestions(input, files), input.timeoutSeconds)
+    const media = await readShowMedia(input, files)
+    const outcome = await ask(compileQuestions(input, files, media), input.timeoutSeconds)
     // Editable shows are saved as the server saves them.
     const edits = outcome.status === 'answered' ? await applyShowEdits(input, files, outcome.data) : undefined
     const { structured, text } = shapeAnswer(input, outcome, { edits })

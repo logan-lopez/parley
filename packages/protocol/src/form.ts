@@ -55,6 +55,7 @@
 //   version the text started from, so the server can tell what an edit was
 //   made against.
 //
+// Root `x-media` holds Media references (media.ts), keyed by markdown destination.
 // Markdown in `description`, `x-preview` and `x-content` is rendered without raw HTML.
 
 export const WIDGETS = ['choice', 'text', 'number', 'boolean', 'path', 'review', 'capture', 'show'] as const

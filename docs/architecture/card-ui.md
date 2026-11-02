@@ -116,8 +116,8 @@ keyboard contract and markdown. `platform.ts` is the one way renderers reach the
     Cmd+Enter sends. Read-only it's View with the text sent, and "· edited" after the caption
     when it differs. The card never diffs or writes; the server does
     ([the ask tool](ask-tool.md#editable-shows)).
-- **Markdown** (`forms/markdown.ts`, markdown-it) renders model text with no raw HTML and no
-  images. Links are linkified, and ```` ```diff ```` blocks color their lines. Every fenced block
+- **Markdown** (`forms/markdown.ts`, markdown-it) renders model text without raw HTML. Links are
+  linkified, and ```` ```diff ```` blocks color their lines. Every fenced block
   is wrapped in `.code-block` with a `[data-copy]` button that carries nothing: `Markdown.vue`'s
   delegated click copies the block's `<code>` text (less its trailing newline) through `copyText`,
   then says "Copied" for 1.5 s, or, when that fails, selects the code and says "Press ⌘C". The
@@ -129,6 +129,16 @@ keyboard contract and markdown. `platform.ts` is the one way renderers reach the
   `Markdown.vue`'s `paint()`, run on mount and after every render (`v-html` replaces the DOM),
   sets it as `--swatch` through the CSSOM. The webview never navigates: a capture-phase click
   handler in `main.ts` stops every link, and links open through `openExternal`.
+- **Project images** (`forms/media.ts`, `Markdown.vue`): markdown images become a `figure.md-media`
+  with a destination in `data-media`, a caption, path and an image with no `src`. Schemes and
+  protocol-relative URLs stay text, so no model URL is fetched. `AskCard` provides one media
+  context per mount: all markdown surfaces share one `mediaUrls` promise, including previews
+  mounted later. A form change or a later mount rechecks the files, so history doesn't reuse a
+  stale grant. `paintMedia` fills only a resolved URL from `x-media`, ignores stale async results,
+  and handles loading, drawn, changed, missing, refused and unresolved states; decode failures
+  keep the caption and path too. Bitmaps keep natural size, at most the column's width. Clicking
+  a drawn image opens the granted file through the platform adapter. An inline image above the
+  caps says “Open in the Parley window”. No new key chord.
 - **Previews** (`forms/preview.ts`): a fence whose info string is `html preview` or `svg preview`
   (then optional `width=N` and `height=N`, clamped to 200–800 by 40–800, default 400×200;
   `parsePreviewInfo`) renders as a `figure.md-preview` holding an `img` with no `src`, a caption
@@ -166,7 +176,10 @@ keyboard contract and markdown. `platform.ts` is the one way renderers reach the
   `copyText` (`navigator.clipboard.writeText`, false on failure), and `saveImage`, which writes a
   PNG to `$APPDATA/captures/<YYYY-MM-DD>/<8 hex>.png` with the fs plugin and returns the
   absolute path (a made-up `/tmp/parley-capture-n.png` outside Tauri, so the gallery works). All
-  of them can be overridden through `setPlatform`.
+  of them can be overridden through `setPlatform`. `mediaUrls(entries)` batches `allow_media`
+  and maps hashes to status/URL pairs using `convertFileSrc` (with per-path statuses when equal
+  hashes belong to different files); inline and gallery hosts override
+  it. `openMedia(file)` calls `open_media` only in Tauri.
 - **Styles** (`styles.css`): no colors of its own. Every color is a theme token (`--bg`,
   `--surface-raised`, `--text-muted`, `--accent`, `--highlight`, `--link` …) that `src/theme/`
   paints on `:root`, or a shade mixed from them in `src/theme/tokens.css` (`--hover`, `--code-bg`,

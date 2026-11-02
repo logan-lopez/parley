@@ -2,8 +2,9 @@
 // Dev only (`?gallery`): every shared fixture through the real compiler and
 // card, without the hub. Submitting shows what the model would get back.
 import { computed, ref, watch } from 'vue'
-import type { ShowFiles } from '@parley/protocol'
-import { askInputSchema, compileQuestions, questionIds, shapeAnswer, DEFAULT_TIMEOUT_SECONDS, type AskInput, type AskOutcome } from '@parley/protocol/ask'
+import type { Media, ShowFiles } from '@parley/protocol'
+import { askInputSchema, askMediaRefs, compileQuestions, questionIds, shapeAnswer, DEFAULT_TIMEOUT_SECONDS, type AskInput, type AskOutcome } from '@parley/protocol/ask'
+import { setPlatform } from '../platform'
 import AskCard from '../card/AskCard.vue'
 import ZoomControl from '../ZoomControl.vue'
 
@@ -18,6 +19,18 @@ const names = Object.keys(fixtures)
 // the gallery never writes.
 const FILES = 'packages/protocol/fixtures/files/'
 const fileTexts = import.meta.glob<string>('../../../../packages/protocol/fixtures/files/*', { query: '?raw', import: 'default', eager: true })
+const fileUrls = import.meta.glob<string>('../../../../packages/protocol/fixtures/files/*.png', { query: '?url', import: 'default', eager: true })
+setPlatform({
+  mediaUrls: async (entries) => new Map(Object.values(entries).flatMap((entry) => entry.files.map((file) => [
+    file.sha256, { status: 'ok' as const, url: fileUrls[`../../../../${file.path}`] },
+  ]))),
+})
+
+function fixtureMedia(input: AskInput, files: ShowFiles): Media {
+  return Object.fromEntries(askMediaRefs(input, files).filter((src) => Object.prototype.hasOwnProperty.call(fileUrls, `../../../../${src}`)).map((src) => [
+    src, { kind: 'image', files: [{ path: src, abs: src, sha256: src, bytes: 0, mime: 'image/png' }] },
+  ]))
+}
 function fixtureFiles(input: AskInput): ShowFiles {
   const ids = questionIds(input.questions)
   const files: ShowFiles = {}
@@ -42,7 +55,11 @@ const run = ref(0)   // remounts the card
 
 const parsed = computed(() => askInputSchema.safeParse(fixtures[name.value]))
 const input = computed(() => (parsed.value.success ? parsed.value.data : undefined))
-const form = computed(() => (input.value ? compileQuestions(input.value, fixtureFiles(input.value)) : undefined))
+const form = computed(() => {
+  if (!input.value) return undefined
+  const files = fixtureFiles(input.value)
+  return compileQuestions(input.value, files, fixtureMedia(input.value, files))
+})
 
 watch(name, (value) => {
   const url = new URL(location.href)

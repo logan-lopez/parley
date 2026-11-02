@@ -1,0 +1,24 @@
+{
+  "title": "A picture in the question",
+  "questions": [
+    {
+      "header": "Layout",
+      "question": "The current layout.",
+      "type": "show",
+      "content": "![Sidebar and three report cards](packages/protocol/fixtures/files/layout.png)"
+    },
+    {
+      "header": "Next step",
+      "question": "Keep this arrangement?\n\n![The layout under review](packages/protocol/fixtures/files/layout.png)",
+      "options": [
+        {
+          "label": "Keep the sidebar (Recommended)",
+          "preview": "![Navigation stays beside the cards](packages/protocol/fixtures/files/layout.png)"
+        },
+        {
+          "label": "Try top navigation"
+        }
+      ]
+    }
+  ]
+}

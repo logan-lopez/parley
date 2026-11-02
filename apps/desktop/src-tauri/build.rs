@@ -2,6 +2,8 @@ fn main() {
     // App commands need an app manifest so capabilities can allow them.
     tauri_build::try_build(tauri_build::Attributes::new().app_manifest(
         tauri_build::AppManifest::new().commands(&[
+            "allow_media",
+            "open_media",
             "hub_ready",
             "hub_send",
             "hub_close",

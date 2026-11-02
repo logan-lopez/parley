@@ -60,6 +60,15 @@ app is the card: `McpApp.vue` around the same `AskCard` the window uses, and `th
   runs `applyShowEdits` the first time and keeps its promise on the ask (`Shown.edits`), so a
   late or repeated wait returns the same answer ([the ask tool](ask-tool.md#editable-shows)). An
   editable show isn't window-only: the card edits and sends the text like any answer.
+- **Project images.** `ask` resolves media beside show files, compiles it into the window's form,
+  and sends `Media` in `_meta['parley/media-refs']` and capped image data URLs keyed by destination
+  in `_meta['parley/media']`. Neither appears in model content; the window and history receive
+  references only. Images use at most 2 MB per file and 8 MB per ask (source bytes), with no URL
+  for an oversized, changed or missing file. `McpApp.vue` waits for metadata when input names
+  media, compiles with the references, and overrides `mediaUrls` to use those data URLs. Omitted
+  images keep the caption/path and say “Open in the Parley window”. Images don't make a form
+  window-only. Repeated content hashes can reuse a payload already sent for another reference.
+  Actual Claude Desktop rendering remains a hands-on check.
 - **The card** (`McpApp.vue`). The host sends the tool input (the questions), then the result (the
   `askId`, and any files). When the input has a show with `path`, the card holds the form
   ("Loading the question…") until the result brings its file, rather than showing it unloaded

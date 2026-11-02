@@ -10,6 +10,8 @@
     "notification:default",
     "opener:allow-open-url",
     "opener:allow-default-urls",
+    "allow-allow-media",
+    "allow-open-media",
     "allow-hub-ready",
     "allow-hub-send",
     "allow-hub-close",

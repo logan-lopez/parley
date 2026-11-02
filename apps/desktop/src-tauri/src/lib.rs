@@ -2,6 +2,7 @@
 // server instances connect to. Forms and everything else live in the webview.
 
 mod hub;
+mod media;
 #[cfg(desktop)]
 mod shortcut;
 mod tray;
@@ -53,6 +54,8 @@ pub fn run() {
             }
         })
         .invoke_handler(tauri::generate_handler![
+            media::allow_media,
+            media::open_media,
             hub::hub_ready,
             hub::hub_send,
             hub::hub_close,

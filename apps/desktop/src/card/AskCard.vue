@@ -3,10 +3,11 @@
 // nothing about the hub or Tauri, so the gallery renders it as-is.
 import { computed, nextTick, onBeforeUnmount, onMounted, provide, ref, shallowRef } from 'vue'
 import { JsonForms, type JsonFormsChangeEvent } from '@jsonforms/vue'
-import type { FormSpec } from '@parley/protocol'
+import type { FormSpec, Media } from '@parley/protocol'
 import { firstToAnswer, focusQuestion, questionsIn } from '../forms/keyboard'
 import { renderers } from '../forms/renderers'
 import { REMEMBER } from '../forms/remember'
+import { MEDIA, mediaContext } from '../forms/media'
 import { useNow } from './now'
 
 type ErrorObject = NonNullable<JsonFormsChangeEvent['errors']>[number]
@@ -39,6 +40,8 @@ const emit = defineEmits<{
 }>()
 
 const root = ref<HTMLElement>()
+const emptyMedia: Media = {}
+provide(MEDIA, mediaContext(() => (props.form.schema['x-media'] as Media | undefined) ?? emptyMedia))
 const body = ref<HTMLElement>()
 const data = shallowRef<unknown>(props.initialData ?? {})
 const errors = shallowRef<ErrorObject[]>([])

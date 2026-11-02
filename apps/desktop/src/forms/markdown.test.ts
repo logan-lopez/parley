@@ -39,6 +39,21 @@ describe('parsePalette', () => {
 })
 
 describe('renderMarkdown', () => {
+  it('emits caption and local media placeholders, with no src from model text', () => {
+    const html = renderMarkdown('![A & B](<shots/a b.png>)')
+    expect(html).toContain('data-media="shots/a b.png"')
+    expect(html).toContain('<figcaption>A &amp; B</figcaption>')
+    expect(html).not.toMatch(/\ssrc=/)
+    expect(renderMarkdown('![remote](https://example.com/a.png)')).not.toContain('<img')
+    expect(renderMarkdown('![remote](//example.com/a.png)')).not.toContain('<img')
+    expect(renderMarkdown('![local](a.png)', true)).toContain('data-media="a.png"')
+  })
+  it('escapes media captions and paths, leaving code inert', () => {
+    expect(renderMarkdown('![<script>](<a"b.png>)')).not.toContain('<script>')
+    expect(renderMarkdown('![x](<a"b.png>)')).toContain('data-media="a&quot;b.png"')
+    expect(renderMarkdown('`![x](a.png)`')).not.toContain('data-media')
+    expect(renderMarkdown('```\n![x](a.png)\n```')).not.toContain('data-media')
+  })
   it('puts a swatch on a color in a code span, block and inline', () => {
     const chip = '<code class="color-chip" data-color="#38bdf8"><span class="swatch" aria-hidden="true"></span>#38bdf8</code>'
     expect(renderMarkdown('Sky is `#38bdf8`.')).toContain(chip)

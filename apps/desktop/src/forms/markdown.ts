@@ -1,17 +1,26 @@
-import MarkdownIt from 'markdown-it'
+import { isMediaRef, mediaMarkdown } from '@parley/protocol'
 import { isColor, parsePalette } from './colors'
 import { parsePreviewInfo } from './preview'
 
-// Model-written text: no raw HTML, and no images (they'd load remote URLs).
+// Model-written text: no raw HTML or source URLs from model text.
 // HTML and SVG reach the screen only as a picture the app builds itself.
 // Code blocks stay plain monospace, except that ```diff blocks color their
 // added, removed and hunk-header lines.
-const md = new MarkdownIt({
-  html: false,
-  linkify: true,
-  highlight: (source, lang) => (lang === 'diff' ? diff(source) : ''),
-})
-md.disable('image')
+const md = mediaMarkdown()
+md.options.highlight = (source, lang) => (lang === 'diff' ? diff(source) : '')
+md.renderer.rules.image = (tokens, idx, _options, _env, self) => {
+  const token = tokens[idx]
+  const src = String(token.attrGet('src') ?? '')
+  const caption = self.renderInlineAsText(token.children ?? [], md.options, {})
+  const escape = md.utils.escapeHtml
+  // A scheme or protocol-relative URL stays text. No remote fetch is tried.
+  if (!isMediaRef(src)) return escape(`![${caption}](${src})`)
+  return `<figure class="md-media" data-media="${escape(src)}">`
+    + `<button type="button" class="md-media-open" data-media-open tabindex="-1" disabled aria-label="Open ${escape(caption || src)}">`
+    + `<img class="md-media-img" alt="${escape(caption)}" hidden></button>`
+    + `<figcaption>${escape(caption)}</figcaption><span class="md-media-path">${escape(src)}</span>`
+    + `<span class="md-media-status" role="status">${escape(src)} isn't loaded here</span></figure>`
+}
 
 // Every fenced block gets a copy button. It carries nothing: Markdown.vue's
 // click handler copies the block's `<code>` text. A ```palette block that

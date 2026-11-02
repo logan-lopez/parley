@@ -47,6 +47,10 @@ and takes the theme's text color, so it follows light and dark. Either is drawn 
 theme changes. A wide one is shrunk to fit the card. If the agent's HTML or SVG can't be drawn, the caption says
 "Couldn't draw this preview" in red and the source shows instead.
 
+An agent can also show [an image file from the project](pictures.md), such as a screenshot, with
+its caption and path. Click it in the window to open it in Preview. Old asks keep the reference:
+if the file changed or is gone, the card says so.
+
 ## Keys
 
 | Key | What it does |

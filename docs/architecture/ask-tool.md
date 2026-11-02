@@ -1,5 +1,5 @@
 ---
-sources: ["apps/server/src/index.ts", "apps/server/src/client-capabilities.ts", "apps/server/src/tools/ask.ts", "apps/server/src/ask-lifecycle.ts", "apps/server/src/show-files.ts", "apps/server/src/show-edits.ts"]
+sources: ["apps/server/src/index.ts", "apps/server/src/client-capabilities.ts", "apps/server/src/tools/ask.ts", "apps/server/src/ask-lifecycle.ts", "apps/server/src/show-files.ts", "apps/server/src/show-edits.ts", "apps/server/src/show-media.ts"]
 ---
 # The ask tool
 
@@ -35,8 +35,8 @@ reads the files show blocks name, and `show-edits.ts` saves editable shows' edit
 - **The tool.** `ask` declares the input schema and an `outputSchema` (the result schema from
   [the form spec](form-spec.md)), `readOnlyHint`, and `_meta["anthropic/alwaysLoad"]: true`. The
   description carries the input shape and one example. The handler reads the shows' files
-  (`readShowFiles`), compiles the questions with them, calls `runAsk` with the timeout (default
-  1800 s, at most 3600), saves any editable show's edit (`applyShowEdits`, answers only), and
+  (`readShowFiles`) and project media (`readShowMedia`), compiles the questions with them, calls
+  `runAsk` with the timeout (default 1800 s, at most 3600), saves any editable show's edit (`applyShowEdits`, answers only), and
   returns `shapeAnswer`'s text as content and its structured result as `structuredContent`. A refused file or an unreachable app is an `isError` result with the reason
   ("Parley isn't running…"), and nothing is shown.
 - **Remembered answers.** `AppClient` passes the answer's `remember` ids (strings only, empty
@@ -86,6 +86,21 @@ The bytes are hashed as read (`sha256`, the whole file even with `lines`), decod
 kept as they are, line endings included. `path` in the result is relative to the project, with
 `./` and `..` folded and an absolute path made relative. `fake-ask` reads files the same way from
 where `pnpm` was run.
+
+## Project images
+
+`show-media.ts` resolves local markdown image references from every markdown surface with
+`readShowMedia(input, files, projectDir = process.cwd())`. It reuses `projectRoot` and `locate`
+from `show-files.ts`, including realpath containment and the secret-name checks above. It opens
+regular files only, reads at most the size cap plus one byte, sniffs PNG/JPEG/GIF/WebP headers
+regardless of extension, and hashes the bytes. SVG asks the model to use a `show` with `path`.
+More than 200 distinct refs or a file over 25 MB is refused with a corrective message, before
+anything is shown. The form carries `x-media` references, never image bytes. Shown markdown
+uses project-relative media destinations, just like every other field. `fake-ask` resolves them
+the same way. Remote images and images inside code are ignored.
+
+`inlineMediaUrls` rereads images under the inline caps and verifies their hashes before encoding
+them for result metadata ([inline cards](inline-cards.md)); a changed or missing file is omitted.
 
 ## Editable shows
 

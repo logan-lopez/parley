@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
-import { copyText, openExternal } from '../platform'
+import { computed, inject, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { copyText, openExternal, openMedia } from '../platform'
+import { MEDIA } from './media'
 import { renderMarkdown } from './markdown'
 import { previewSrc, scaled, type PreviewKind } from './preview'
 import { onThemeChange, previewTheme } from './theme-watch'
@@ -11,12 +12,61 @@ const html = computed(() => renderMarkdown(props.source, props.inline))
 // After every render: v-html replaces the DOM. Swatch colors go through the
 // CSSOM, which the CSP allows; a `style` attribute in the markup it drops.
 const root = ref<HTMLElement>()
+const media = inject(MEDIA, undefined)
 
 function paint() {
   for (const el of root.value?.querySelectorAll<HTMLElement>('[data-color]') ?? []) {
     el.style.setProperty('--swatch', el.dataset.color!)
   }
   paintPreviews()
+  void paintMedia()
+}
+
+async function paintMedia() {
+  const figures = [...(root.value?.querySelectorAll<HTMLElement>('.md-media') ?? [])]
+  if (!figures.length || !media) return
+  const entries = media.entries()
+  for (const figure of figures) {
+    if (Object.prototype.hasOwnProperty.call(entries, figure.dataset.media!)) figure.querySelector('.md-media-status')!.textContent = 'Loading…'
+  }
+  const urls = await media.urls().catch(() => new Map())
+  // v-html or the form may have changed while the grant was being checked.
+  if (entries !== media.entries()) return
+  for (const figure of figures) {
+    if (!root.value?.contains(figure)) continue
+    const src = figure.dataset.media!
+    const file = Object.prototype.hasOwnProperty.call(entries, src) ? entries[src]?.files[0] : undefined
+    const byHash = file && urls.get(file.sha256)
+    const result = file && (byHash?.byPath?.get(file.abs) ?? byHash)
+    const status = figure.querySelector<HTMLElement>('.md-media-status')!
+    if (file) figure.querySelector('.md-media-path')!.textContent = file.path
+    const img = figure.querySelector<HTMLImageElement>('.md-media-img')!
+    const button = figure.querySelector<HTMLButtonElement>('[data-media-open]')!
+    if (result?.status === 'ok' && result.url) {
+      status.textContent = 'Loading…'
+      img.onload = () => {
+        img.hidden = false
+        status.textContent = ''
+        button.disabled = false
+      }
+      img.onerror = () => {
+        img.hidden = true
+        button.disabled = true
+        status.textContent = `Couldn't draw ${file!.path}`
+      }
+      img.src = result.url
+    } else {
+      img.hidden = true
+      button.disabled = true
+      img.removeAttribute('src')
+      const path = file?.path ?? src
+      status.textContent = result?.status === 'changed' ? `${path} changed since this was asked`
+        : result?.status === 'missing' ? `${path} is gone`
+        : result?.status === 'window' ? 'Open in the Parley window'
+        : result?.status === 'refused' ? `${path} couldn't be loaded`
+        : `${path} isn't loaded here`
+    }
+  }
 }
 
 // A preview's picture is built from its code block's text with the theme as
@@ -71,11 +121,23 @@ onBeforeUnmount(() => {
   resize.disconnect()
 })
 watch(html, paint, { flush: 'post' })
+watch(() => media?.entries(), () => void paintMedia(), { flush: 'post' })
 
 // Links open in the default browser; the webview never navigates. A code
 // block's button copies it, and a preview's flips between picture and source.
 function onClick(event: MouseEvent) {
   const target = event.target as Element | null
+  const image = target?.closest<HTMLButtonElement>('[data-media-open]')
+  if (image) {
+    event.preventDefault()
+    if (event.type === 'click' && !image.disabled && media) {
+      const src = image.closest<HTMLElement>('[data-media]')!.dataset.media!
+      const entries = media.entries()
+      const file = Object.prototype.hasOwnProperty.call(entries, src) ? entries[src]?.files[0] : undefined
+      if (file) void openMedia(file).catch((error) => console.warn('open image failed:', error))
+    }
+    return
+  }
   const toggle = target?.closest<HTMLButtonElement>('[data-preview-source]')
   if (toggle) {
     event.preventDefault()
@@ -102,7 +164,7 @@ function onClick(event: MouseEvent) {
 // An option's preview belongs to the option that has focus, and goes away
 // when focus leaves it: pressing Source or Copy in it mustn't move focus.
 function onMouseDown(event: MouseEvent) {
-  if ((event.target as Element | null)?.closest('[data-preview-source], [data-copy]')) event.preventDefault()
+  if ((event.target as Element | null)?.closest('[data-preview-source], [data-copy], [data-media-open]')) event.preventDefault()
 }
 
 // "Copied" for a moment. When the host won't allow the clipboard (an MCP Apps

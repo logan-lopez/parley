@@ -180,3 +180,12 @@ Four questions on one card.
 | Light | Dark |
 | --- | --- |
 | ![four questions, light](images/cards/four-questions-light.png) | ![four questions, dark](images/cards/four-questions-dark.png) |
+
+## Project pictures
+
+An image in a show's content, the question itself, and an option's preview.
+How it works: [Pictures from the project](pictures.md).
+
+| Light | Dark |
+| --- | --- |
+| ![Project images, light](images/cards/media-light.png) | ![Project images, dark](images/cards/media-dark.png) |

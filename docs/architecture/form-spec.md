@@ -1,5 +1,5 @@
 ---
-sources: ["packages/protocol/src/ask.ts", "packages/protocol/src/form.ts", "packages/protocol/src/show.ts", "packages/protocol/fixtures/"]
+sources: ["packages/protocol/src/ask.ts", "packages/protocol/src/form.ts", "packages/protocol/src/show.ts", "packages/protocol/src/media.ts", "packages/protocol/fixtures/"]
 ---
 # The form spec
 
@@ -99,7 +99,7 @@ with no Zod, so the window can import it from the root entry.
     (```` ```html preview ```` and ```` ```svg preview ````) at 640×480, scaled to fit, and
     anything else as a fence in its language from a small map by extension (none for an unknown
     one), longer than any backtick run in the text. `x-source: { path, lines?, totalLines }` names the file and the range shown.
-    `compileQuestions(input, files?)` takes the files the server read (`ShowFiles` in `form.ts`,
+    `compileQuestions(input, files?, media?)` takes the files the server read (`ShowFiles` in `form.ts`,
     keyed by question id: `{ path, text, lines?, totalLines, sha256 }`, the hash of the whole file
     even with `lines`). Without them a path-backed show gets `x-source: { path, lines? }` and no
     `x-content`, and the card says the file isn't loaded: that's the gallery, and any compile
@@ -118,13 +118,24 @@ with no Zod, so the window can import it from the root entry.
   `capture` whose `x-accept` isn't `text`, can't be answered in an MCP Apps card (no file picker
   in the host's iframe, and nowhere to save an image). The server doesn't send it `inline`, and
   the card shows it read-only ([inline cards](inline-cards.md)).
-- **Markdown** in `description`, `x-preview` and `x-content` renders without raw HTML and without images
-  (`apps/desktop/src/forms/markdown.ts`): model HTML only ever reaches the screen as an image the
+- **Markdown** in `description`, `x-preview` and `x-content` renders without raw HTML; local
+  images are resolved separately (`apps/desktop/src/forms/markdown.ts`): model HTML only ever
+  reaches the screen as an image the
   app builds. Colors in code spans get swatches, a palette fence (```` ```palette ````) draws
   swatches, and an ```` ```html preview ```` or ```` ```svg preview ```` fence is drawn as a
   picture ([the card](card-ui.md)); the schema carries them as plain markdown, so a client without
   Parley's renderer shows the text. Previews are capped at 10,000 characters, since they're kept
   in `history.jsonl`; question text isn't.
+- **Project images** (`media.ts`): root `x-media` is a map keyed by the markdown destination,
+  `MediaEntry = { kind: 'image' | 'audio', files: MediaFile[] }` (images have one file). Each file
+  carries `{ path, abs, sha256, bytes, mime }`: project-relative name, real absolute path, and
+  the hash, size and sniffed type. No bytes go over the hub or into history. `compileQuestions(input, files?, media?)`
+  attaches resolved entries; absent entries render as unloaded. `mediaRefs(text)` shares
+  markdown-it's grammar with the renderer, preserves destination spelling, and skips code,
+  fences, schemes and protocol-relative URLs. `askMediaRefs` scans questions, option descriptions
+  and previews, review details and previews, show content and shown markdown files. The tool's
+  Zod input is unchanged. Caps: 25 MB per image, 200 media refs per ask; inline payloads use
+  2 MB per image and 8 MB per ask (source bytes). SVG uses a path-backed show.
 - **Show caps** (`show.ts`): `content` up to 20,000 characters (in the Zod schema); a file's text,
   after `lines`, up to 100,000 characters, and at most 2 MB read from disk; everything one ask
   shows, content and files together, up to 200,000, with an editable file counted twice (its

@@ -6,3 +6,4 @@
 export * from './form.ts'
 export * from './wire.ts'
 export * from './show.ts'
+export * from './media.ts'

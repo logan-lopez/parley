@@ -44,7 +44,8 @@ Every question type, in light and dark: [What it looks like](docs/guide/screensh
   `AskUserQuestion`, with more types: text, number, yes/no, file and folder paths, a review that
   gives each item of a list a decision (approve or reject, or the agent's own labels), a
   capture box for pasted output and screenshots, and a show block to put a plan or a project file
-  in front of you, which you can edit in place. The server compiles them to JSON Schema, which is all the app renders.
+  in front of you, which you can edit in place. Project images can sit in any markdown. The
+  server compiles them to JSON Schema, which is all the app renders.
 - **An inbox, not a modal.** One app, many agents. Asks from every session queue up, labelled with
   who's asking; nothing steals your focus, and every ask is kept in history with what you sent.
 - **Parley never answers for you.** A question you're tired of is retired in the project's own
@@ -102,6 +103,9 @@ How each part works, as you use it, is in [the guide](docs/guide/README.md).
   command the agent wants you to run, [color swatches](docs/guide/answering.md#colors-and-pictures)
   on colors and palettes, and [pictures](docs/guide/answering.md#colors-and-pictures) of the
   layouts, mockups and icons an agent drew in HTML or SVG.
+- [Project pictures](docs/guide/pictures.md) in questions, previews and shows: PNG, JPEG, GIF and
+  WebP from the project, with captions, a click to open, and a notice when a file changes or goes
+  missing in history. Small images appear in Claude Desktop's inline card too.
 - [Claude Code](docs/guide/claude-code.md) asks block until you answer, for up to an hour.
 - [Claude Desktop](docs/guide/claude-desktop.md) shows the card inline in the chat as well.
 - [History](docs/guide/history.md) of every ask for 30 days, searchable.

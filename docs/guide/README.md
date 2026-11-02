@@ -10,6 +10,8 @@ Start with [The app](the-app.md): everything else happens in its window or besid
   note for the agent, "Don't ask again here", and asks that end under you.
 - [Question types](question-types.md): choice, text, number, yes/no, path, review and capture,
   as you see them, and shows: a plan or a file to look at, with the questions about it.
+- [Pictures from the project](pictures.md): screenshots in questions, previews and shows, and what
+  happens when an old image changes or disappears.
 - [From Claude Code](claude-code.md): what happens while an ask waits, long asks, Esc, and the
   built-in question tool.
 - [From Claude Desktop](claude-desktop.md): the inline card in the chat, and how it races the

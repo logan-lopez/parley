@@ -9,10 +9,11 @@
 // holds a form with a path-backed show until it arrives.
 import { computed, ref, shallowRef } from 'vue'
 import { App } from '@modelcontextprotocol/ext-apps'
-import { isWindowOnly, type ShowFiles } from '@parley/protocol'
-import { askInputSchema, compileQuestions, DEFAULT_TIMEOUT_SECONDS, type AskInput, type AskOutcome } from '@parley/protocol/ask'
+import { isWindowOnly, type Media, type ShowFiles } from '@parley/protocol'
+import { askInputSchema, askMediaRefs, compileQuestions, DEFAULT_TIMEOUT_SECONDS, type AskInput, type AskOutcome } from '@parley/protocol/ask'
 import AskCard from '../card/AskCard.vue'
 import { setPlatform } from '../platform'
+import { inlineImageUrls } from '../forms/media'
 import { applyHostContext } from './theme'
 
 // What parley_status and parley_submit report (apps/server/src/ask-lifecycle.ts).
@@ -26,6 +27,8 @@ const input = shallowRef<AskInput>()
 const inputError = ref<string>()
 const askId = ref<string>()
 const files = shallowRef<ShowFiles>()
+const media = shallowRef<Media>()
+let imageUrls: Record<string, string> = {}
 const resultError = ref<string>()   // `ask` itself failed (a show's file refused, say): nothing was shown
 const status = shallowRef<Status>({ state: 'open' })
 const cancelled = ref(false)    // the host cancelled `ask` itself, so there's no askId
@@ -37,9 +40,10 @@ const host = ref('Claude')
 
 // A path-backed show has no content until the result brings its file.
 const waitsForFiles = computed(() => !!input.value?.questions.some((q) => q.type === 'show' && q.path !== undefined))
+const waitsForMedia = computed(() => !!input.value && askMediaRefs(input.value).length > 0)
 const form = computed(() => {
-  if (!input.value || (waitsForFiles.value && !files.value)) return undefined
-  return compileQuestions(input.value, files.value)
+  if (!input.value || (waitsForFiles.value && !files.value) || (waitsForMedia.value && !media.value)) return undefined
+  return compileQuestions(input.value, files.value, media.value)
 })
 // No file picker or screenshot saving in the host's iframe: the window answers these.
 const windowOnly = computed(() => !!form.value && isWindowOnly(form.value))
@@ -50,6 +54,7 @@ setPlatform({
   openExternal: async (url) => {
     await app.openLink({ url })
   },
+  mediaUrls: async (entries) => inlineImageUrls(entries, imageUrls),
 })
 
 app.onhostcontextchanged = (context) => applyHostContext(context)
@@ -67,6 +72,9 @@ app.ontoolresult = (result) => {
   }
   const shown = (result._meta as Record<string, unknown> | undefined)?.['parley/files']
   if (shown && typeof shown === 'object' && !files.value) files.value = shown as ShowFiles
+  const meta = result._meta as Record<string, unknown> | undefined
+  imageUrls = (meta?.['parley/media'] ?? {}) as Record<string, string>
+  media.value = (meta?.['parley/media-refs'] ?? {}) as Media
   const id = (result.structuredContent as { askId?: unknown } | undefined)?.askId
     ?? (result._meta as Record<string, unknown> | undefined)?.['parley/askId']
   if (typeof id !== 'string' || askId.value) return

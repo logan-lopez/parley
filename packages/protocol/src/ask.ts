@@ -21,6 +21,7 @@ import {
   type Widget,
 } from './form.ts'
 import { fileMarkdown, SHOW_CONTENT_MAX, SHOW_EDIT_MAX, type ShowEdit } from './show.ts'
+import { mediaRefs, type Media } from './media.ts'
 
 export const DEFAULT_TIMEOUT_SECONDS = 1800
 export const QUESTION_TYPES = ['choice', 'text', 'number', 'boolean', 'path', 'review', 'capture', 'show'] as const satisfies readonly Widget[]
@@ -312,7 +313,7 @@ const OTHER: OtherOptionSchema = { type: 'string', minLength: 1, title: 'Other' 
 
 // `files`: the shows' files the server read, keyed by question id. Without
 // them a path-backed show compiles with `x-source` and no `x-content`.
-export function compileQuestions(input: AskInput, files?: ShowFiles): FormSpec {
+export function compileQuestions(input: AskInput, files?: ShowFiles, media?: Media): FormSpec {
   const ids = questionIds(input.questions)
   const properties: Record<string, JsonSchema> = {}
   const required: string[] = []
@@ -323,8 +324,21 @@ export function compileQuestions(input: AskInput, files?: ShowFiles): FormSpec {
   })
   return {
     ...(input.title && { title: input.title }),
-    schema: { type: 'object', properties, required },
+    schema: { type: 'object', properties, required, ...(media && Object.keys(media).length && { 'x-media': media }) },
   }
+}
+
+// Every markdown surface the card renders, including a shown markdown file.
+export function askMediaRefs(input: AskInput, files?: ShowFiles): string[] {
+  const ids = questionIds(input.questions)
+  const texts = input.questions.flatMap((q, i) => [
+    q.question,
+    ...(q.options ?? []).flatMap((o) => [o.description ?? '', o.preview ?? '']),
+    ...(q.items ?? []).flatMap((item) => [item.detail ?? '', item.preview ?? '']),
+    q.content ?? '',
+    ...(files?.[ids[i]!] ? [fileMarkdown(files[ids[i]!]!.path, files[ids[i]!]!.text)] : []),
+  ])
+  return [...new Set(texts.flatMap(mediaRefs))]
 }
 
 function compileQuestion(q: Question, file?: ShowFile): JsonSchema {

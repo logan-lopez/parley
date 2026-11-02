@@ -311,6 +311,14 @@ span.remember { cursor: default; }
 .md .md-preview.failed .md-preview-img, .md .md-preview.failed .md-preview-toggle { display: none; }
 .md .md-preview.failed .md-preview-status { color: var(--danger); }
 
+.md .md-media { margin: 8px 0; max-width: 100%; }
+.md .md-media-open { display: block; padding: 0; border: 0; background: none; max-width: 100%; cursor: zoom-in; }
+.md .md-media-open:disabled { cursor: default; }
+.md .md-media-img { display: block; max-width: 100%; height: auto; border-radius: 6px; }
+.md .md-media-img[hidden] { display: none; }
+.md .md-media figcaption { font-size: 12px; }
+.md .md-media-path, .md .md-media-status { display: block; font-size: 11px; color: var(--text-muted); overflow-wrap: anywhere; }
+
 /* Choice */
 
 .options { display: flex; flex-direction: column; gap: 4px; }

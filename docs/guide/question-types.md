@@ -7,7 +7,8 @@ The eight kinds of question an agent can put on a card, as you see them, countin
 isn't a question: a show, something to look at. The agent picks the type;
 each question has a short header chip (a long one is cut short with an ellipsis and shows in full
 when you hover it) and the question itself, which can include formatting, links, code, colors and
-pictures ([Answering a card](answering.md#colors-and-pictures)).
+pictures ([Answering a card](answering.md#colors-and-pictures)). Screenshots and other
+[project images](pictures.md) can appear in the question, an option or review preview, or a show.
 
 ## Choice
 

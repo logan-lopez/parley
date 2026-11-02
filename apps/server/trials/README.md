@@ -90,6 +90,7 @@ A changed prompt resets the comparison for that prompt.
 | changelog-draft | ask | other:… | an edit-in-place draft: should be one `text` with a `draft` |
 | sort-helpers | ask | first | a per-item assignment: should be one `review` with `decisions` |
 | crash-output | ask | other:… | output only the user can get: should be one `capture` |
+| screenshot-look | ask | first | a committed screenshot shown before a layout choice; should use `![caption](path)` |
 | report-look | ask | first | a visual choice: should preview layouts or colors (`html preview`, chips, a palette) |
 | plan-check | ask | first | a plan to check: should put the file in front of the user (`show` with `path`) and ask about it |
 | config-tweak | ask | other:… | a file for the user to adjust: should be a `show` with `path` and `editable` |
@@ -411,3 +412,40 @@ free-text answers and notes) are for reading locally, never for this file.
   - `` questions.N.options.N.label: question N has an option labelled 'Other, after v2 (Recommended)'; leave it out, because choice questions already let the user type their own answer ``: 1 (1.4%)
 - **Backgrounded with notification:** 390 (99.0% of backgrounded); agent made tool calls before notification in 284 / 390 (72.8%); `Edit`/`Write` in 72 / 390 (18.5%, 216 calls total)
 - **Asks per session (679 sessions):** median 1, p90 2, max 23
+
+## Brief 22: project images, targeted pass (2026-11-02)
+
+The tool description gained one sentence on project images written as `![caption](path)`.
+A small PNG, `project/layout.png`, and the `screenshot-look` prompt were added. This is a targeted
+pass, not a new full-suite baseline. Claude Code 2.1.316 with `claude-opus-5-5`; Codex CLI 0.162.1
+with `gpt-6-astra`, using the harness defaults. Logan approved the real-client runs.
+
+Commands: `trial --client all --prompt screenshot-look --runs 3`, then
+`trial --client all --prompt report-look --prompt plan-check --runs 1`. Results are the local,
+gitignored `results/2026-11-02T22-13-51-072Z.jsonl` and
+`results/2026-11-02T22-16-33-788Z.jsonl`.
+
+| prompt | client | asked | first call valid | used (raw scorer) |
+| --- | --- | --- | --- | --- |
+| screenshot-look | Claude | 3/3 | 2/3 | 2/3 |
+| screenshot-look | Codex | 3/3 | 3/3 | 3/3 |
+| report-look | Claude | 1/1 | 1/1 | 0/1 |
+| report-look | Codex | 1/1 | 1/1 | 1/1 |
+| plan-check | Claude | 1/1 | 1/1 | 0/1 |
+| plan-check | Codex | 1/1 | 1/1 | 0/1 |
+
+- All ten runs asked. No client errors or timeouts. The regression prompts kept asking and
+  first-call validity at their earlier rates; these one-run samples don't establish a trend.
+- `screenshot-look` Claude run 3 first tried a `show` with `path: "layout.png"`. The existing text
+  reader correctly refused it as binary; the model retried with markdown image content and the
+  window received the image reference. The first-call failure stays in the table.
+- The retained Claude run 2 showed the image in markdown and acknowledged the sidebar choice,
+  but omitted the answer label's trailing parenthetical. The `used` scorer requires the whole
+  normalized choice label, so that run remains a raw miss.
+- `report-look` Claude used the new shared `layout.png` asset, returned a show plus choices,
+  and implemented an HTML dashboard following it. Its final text/diff didn't repeat a complete
+  answer label, so the raw score is 0/1. The added PNG is visible to every prompt, which affects
+  direct comparison of this prompt's visual form with the older baseline.
+- Both `plan-check` runs showed `docs/csv-plan.md` by path. Their raw `used` misses remain
+  recorded; no scorer or prompt was changed to make the pass look green. The earlier Claude
+  baseline also recorded 0/3 on this proxy.
