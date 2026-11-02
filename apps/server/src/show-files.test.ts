@@ -129,6 +129,14 @@ describe('readShowFiles', () => {
     expect(await refusal(readShowFiles(four, project))).toContain('more than 200,000 characters')
   })
 
+  it('counts an editable file twice: the card carries its text and the original', async () => {
+    // 90,000 + 20,000 + twelve.ts's 84 fits; with the 90,000 counted twice it doesn't.
+    const rest = [{ content: 'z'.repeat(20_000) }, { path: 'twelve.ts' }]
+    await expect(readShowFiles(input({ path: 'ninety.txt' }, ...rest), project)).resolves.toBeDefined()
+    expect(await refusal(readShowFiles(input({ path: 'ninety.txt', editable: true }, ...rest), project)))
+      .toContain('counting an editable file twice')
+  })
+
   it('has no project at / or in the home directory', async () => {
     const message = "This client didn't start Parley in a project directory, so `path` isn't available here. Put the text in `content` instead."
     expect(await refusal(readShowFiles(input({ path: 'README.md' }), '/'))).toBe(message)

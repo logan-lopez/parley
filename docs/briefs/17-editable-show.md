@@ -383,3 +383,48 @@ Unsized; this session not measured (Copilot CLI, not Claude Code: `docket sessio
 - `docket links --paths` flags `card-ui.md:92`'s `docs/plan.md`, an example caption from brief 16
   rather than a path. It needs a `.checklinks-ignore` entry or rewording.
 - Edit and View have no key.
+- Second look, finding 4: the hash check and the write in `applyShowEdits` aren't atomic. A
+  per-file lock would cover parallel asks in one server, not two sessions; writing a temp file
+  and renaming it after re-checking the hash narrows the gap for both, at the cost of the
+  in-place write that keeps the inode.
+- Second look, finding 2's remainder: the caps count UTF-16 units, not bytes, so a file of
+  control characters (JSON escapes each to 6 bytes) can still pass the hub's line. Measuring the
+  serialized form in the server before sending would close it for every shape.
+- Second look, finding 1: a file that isn't valid UTF-8 is corrupted when an edit is saved. No
+  pick from Logan yet.
+
+### Second look
+
+2026-11-02, Codex (`gpt-6.1-sol`, read-only sandbox) on the commit `feat: editable show blocks,
+saved by the server with a diff back (brief 17)`, about 6 minutes. Four findings, each checked
+against the code; none wrong. A second Codex run (same model, read-only) from another session
+found 2–4 again and not 1; Logan answered that run's round, so 2–4 carry his picks and 1 is still
+open.
+
+1. A file that isn't valid UTF-8 is corrupted when an edit is saved (`apps/server/src/show-edits.ts:63`):
+   confirmed, reproduced. `readShowFiles` decodes with replacement characters, and the save writes
+   them back: a Latin-1 `café A` edited to `B` turned byte `e9` into `efbfbd`, and the diff doesn't
+   show it. Proposed fix: refuse `editable` on a file whose bytes don't round-trip through UTF-8.
+   Logan: no answer yet.
+2. Editable shows can push a form past the hub's 1 MiB line (`packages/protocol/src/ask.ts:458`):
+   confirmed. `x-content` and `x-original` both carry the text, and the caps count characters, not
+   bytes: two 90,000-character files of 3-byte characters compile to about 1.08 MB, and the hub
+   drops the connection. The same gap exists from brief 16 for control characters, which JSON
+   escapes to 6 bytes each. It also loops: the server re-sends its pending asks on every
+   reconnect (`app-client.ts:220`). Logan: fix. `readShowFiles` counts an editable file's text
+   twice against the 200,000-character total, and says so in the message; a new test in
+   `show-files.test.ts`. The control-character gap from brief 16 stays (a follow-up below).
+3. An editor paste over 1 MiB loses the answer silently
+   (`apps/desktop/src/forms/renderers/ShowRenderer.vue:98`): partly right. The mechanism holds:
+   `answer()` in `asks/store.ts` ends the ask and drops its draft before `send()`, which only logs
+   `hub_send`'s rejection, so the server waits until the timeout. It takes a paste about ten times
+   the file cap. The edited text isn't lost: the ended record keeps it in history. Logan: fix.
+   `SHOW_EDIT_MAX` (200,000, twice the file cap so an edit can grow the file) in `show.ts`, as
+   `maxLength` on the compiled `text` and `maxlength` on the textarea.
+4. The hash check and the write aren't atomic (`apps/server/src/show-edits.ts:56`): partly right.
+   There's an `await` between the read and the write, but two Parley answers can't land in it (one
+   user answers seconds apart, and each session is its own process, so a lock wouldn't help); only
+   an outside writer in that gap could, or two parallel asks from one session. Logan:
+   follow-up (in Follow-ups).
+
+Fixed in the commit `fix: second-look fixes for brief 17`. Finding 1 still needs Logan's pick.

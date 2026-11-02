@@ -35,10 +35,12 @@ export async function readShowFiles(input: AskInput, projectDir = process.cwd())
       project ??= await projectRoot(projectDir)
       const file = await readOne(q.path, q.lines, project)
       files[ids[i]!] = file
-      total += file.text.length
+      // An editable show's text goes over the wire twice, as `x-content` and
+      // `x-original`, so it counts twice against the line the hub accepts.
+      total += file.text.length * (q.editable ? 2 : 1)
     }
     if (total > SHOW_ASK_MAX_CHARS) {
-      throw new ShowFileError(`The shows in this ask come to more than ${count(SHOW_ASK_MAX_CHARS)} characters, Parley's limit for one ask; show less of each file with \`lines\`, or split the shows across asks`)
+      throw new ShowFileError(`The shows in this ask come to more than ${count(SHOW_ASK_MAX_CHARS)} characters, Parley's limit for one ask, counting an editable file twice; show less of each file with \`lines\`, or split the shows across asks`)
     }
   }
   return files

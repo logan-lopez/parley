@@ -1014,7 +1014,7 @@ describe('editable shows', () => {
     expect((schema.properties as Record<string, unknown>).plan).toEqual({
       'x-widget': 'show', title: 'Plan', description: 'Adjust the plan.',
       type: 'object',
-      properties: { text: { type: 'string' }, base: { type: 'string' } },
+      properties: { text: { type: 'string', maxLength: 200_000 }, base: { type: 'string' } },
       additionalProperties: false,
       'x-editable': true,
       'x-content': '# Plan\r\n',

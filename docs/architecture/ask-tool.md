@@ -72,7 +72,8 @@ says what to do instead. For each path-backed show, in order:
 5. **Lines.** `[start, end]`, with `end` clamped to the file's last line (one without a final
    newline counts). A `start` past the end is an error that gives the line count.
 6. **Caps.** The text after slicing, up to 100,000 characters ("show part of it with `lines`"),
-   and everything the ask shows, `content` included, up to 200,000.
+   and everything the ask shows, `content` included, up to 200,000. An editable file counts
+   twice, since the form carries its text as both `x-content` and `x-original`.
 
 The bytes are hashed as read (`sha256`, the whole file even with `lines`), decoded as UTF-8 and
 kept as they are, line endings included. `path` in the result is relative to the project, with

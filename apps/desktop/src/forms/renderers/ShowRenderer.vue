@@ -10,7 +10,7 @@
 import { computed, onMounted, ref } from 'vue'
 import { rendererProps, type RendererProps } from '@jsonforms/vue'
 import type { ControlElement } from '@jsonforms/core'
-import { fileMarkdown, type ShowEditValue, type ShowSource } from '@parley/protocol'
+import { fileMarkdown, SHOW_EDIT_MAX, type ShowEditValue, type ShowSource } from '@parley/protocol'
 import Markdown from '../Markdown.vue'
 import QuestionFrame from './QuestionFrame.vue'
 import { useQuestion } from './useQuestion'
@@ -93,6 +93,7 @@ const caption = computed(() => {
       class="text-input show-edit"
       rows="12"
       spellcheck="false"
+      :maxlength="SHOW_EDIT_MAX"
       autocapitalize="off"
       autocomplete="off"
       :value="text"

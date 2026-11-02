@@ -107,7 +107,7 @@ with no Zod, so the window can import it from the root entry.
     for a property without a `type`, so no renderer would run; `null` makes one, and with no data
     there's nothing for AJV to check (strict mode included). No elicitation downgrade: there's no
     field to fill.
-    An editable show is `type: object` instead, `properties: { text: string, base: string }` with
+    An editable show is `type: object` instead, `properties: { text: string (maxLength 200,000), base: string }` with
     `additionalProperties: false`, `x-editable: true`, and still never required. `x-original` is
     the file's text as read (line endings included), which the editor starts from, `x-content`
     its markdown as for any show, and `x-source: { path, totalLines, sha256 }`. The renderer
@@ -127,8 +127,12 @@ with no Zod, so the window can import it from the root entry.
   in `history.jsonl`; question text isn't.
 - **Show caps** (`show.ts`): `content` up to 20,000 characters (in the Zod schema); a file's text,
   after `lines`, up to 100,000 characters, and at most 2 MB read from disk; everything one ask
-  shows, content and files together, up to 200,000. They keep a form well under the hub's 1 MiB
-  line after JSON escaping, and history's snapshots bounded.
+  shows, content and files together, up to 200,000, with an editable file counted twice (its
+  text is in `x-content` and `x-original`); an editable show's `text`, the edit sent back, up to
+  200,000 (`SHOW_EDIT_MAX`, the schema's `maxLength` and the textarea's `maxlength`). They keep a
+  form and an answer well under the hub's 1 MiB line, and history's snapshots bounded. A line
+  over it never arrives: the hub closes the connection, and the server re-sends its pending asks
+  on reconnect.
 - **The result** (`askResultSchema`): `status` (`answered`, `dismissed`, `timed_out`,
   `cancelled`), `message`, `answers` keyed by id, and `note`. Each answer has `header`, `value`
   (a string, strings, a number, a boolean, or null for an optional question left blank), `custom`

@@ -20,7 +20,7 @@ import {
   type ShowSource,
   type Widget,
 } from './form.ts'
-import { fileMarkdown, SHOW_CONTENT_MAX, type ShowEdit } from './show.ts'
+import { fileMarkdown, SHOW_CONTENT_MAX, SHOW_EDIT_MAX, type ShowEdit } from './show.ts'
 
 export const DEFAULT_TIMEOUT_SECONDS = 1800
 export const QUESTION_TYPES = ['choice', 'text', 'number', 'boolean', 'path', 'review', 'capture', 'show'] as const satisfies readonly Widget[]
@@ -448,7 +448,7 @@ function compileEditable(q: Question, base: { title: string; description: string
   const editable = {
     'x-widget': 'show', ...base,
     type: 'object',
-    properties: { text: { type: 'string' }, base: { type: 'string' } },
+    properties: { text: { type: 'string', maxLength: SHOW_EDIT_MAX }, base: { type: 'string' } },
     additionalProperties: false,
     'x-editable': true,
   }

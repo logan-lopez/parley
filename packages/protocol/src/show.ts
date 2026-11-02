@@ -11,6 +11,11 @@ export const SHOW_FILE_MAX_BYTES = 2 * 1024 * 1024
 // under the hub's 1 MiB line, after JSON escaping.
 export const SHOW_ASK_MAX_CHARS = 200_000
 
+// An editable show's text as the user sends it back. Twice the file cap, so an
+// edit can grow the file, and well under the hub's 1 MiB line: past it the
+// answer would never reach the server, and the edit would go unsaved.
+export const SHOW_EDIT_MAX = 200_000
+
 // An editable show's diff, left out of the answer past this when the file was
 // saved (the agent can run `git diff`). Kept when it wasn't: it's then the only
 // copy of the user's edit.

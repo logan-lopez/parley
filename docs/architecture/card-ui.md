@@ -95,7 +95,7 @@ keyboard contract and markdown. `platform.ts` is the one way renderers reach the
     the same view, and it's never required, so it never appears in "Still needs an answer".
     An editable show (`x-editable` with `x-original`) isn't passive: it opens on **Edit**, a
     monospace `textarea.show-edit` (no wrapping, 12 lines growing to 30 with `field-sizing`,
-    then scrolling) that's the `[data-primary]`, so first focus lands in it, with the caret put
+    then scrolling, `maxlength` 200,000) that's the `[data-primary]`, so first focus lands in it, with the caret put
     at the top on that first focus (setting the value leaves it at the end). On mount it writes
     `{ text: x-original, base: x-source.sha256 }`, not over data already there. Edit and View
     are a small `.segmented` toggle above it (mouse only, `tabindex="-1"`); View renders the
