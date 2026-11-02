@@ -390,22 +390,20 @@ Unsized; this session not measured (Copilot CLI, not Claude Code: `docket sessio
 - Second look, finding 2's remainder: the caps count UTF-16 units, not bytes, so a file of
   control characters (JSON escapes each to 6 bytes) can still pass the hub's line. Measuring the
   serialized form in the server before sending would close it for every shape.
-- Second look, finding 1: a file that isn't valid UTF-8 is corrupted when an edit is saved. No
-  pick from Logan yet.
 
 ### Second look
 
 2026-11-02, Codex (`gpt-6.1-sol`, read-only sandbox) on the commit `feat: editable show blocks,
 saved by the server with a diff back (brief 17)`, about 6 minutes. Four findings, each checked
 against the code; none wrong. A second Codex run (same model, read-only) from another session
-found 2–4 again and not 1; Logan answered that run's round, so 2–4 carry his picks and 1 is still
-open.
+found 2–4 again and not 1; Logan answered that run's round for 2–4, and 1 in chat after.
 
 1. A file that isn't valid UTF-8 is corrupted when an edit is saved (`apps/server/src/show-edits.ts:63`):
    confirmed, reproduced. `readShowFiles` decodes with replacement characters, and the save writes
    them back: a Latin-1 `café A` edited to `B` turned byte `e9` into `efbfbd`, and the diff doesn't
-   show it. Proposed fix: refuse `editable` on a file whose bytes don't round-trip through UTF-8.
-   Logan: no answer yet.
+   show it. Logan: fix. `readShowFiles` refuses an editable show whose file doesn't re-encode to
+   its own bytes, with a message that says to show it without `editable`; the same file still
+   shows read-only. Tests for a Latin-1 file, and a BOM, which round-trips.
 2. Editable shows can push a form past the hub's 1 MiB line (`packages/protocol/src/ask.ts:458`):
    confirmed. `x-content` and `x-original` both carry the text, and the caps count characters, not
    bytes: two 90,000-character files of 3-byte characters compile to about 1.08 MB, and the hub
@@ -427,4 +425,5 @@ open.
    an outside writer in that gap could, or two parallel asks from one session. Logan:
    follow-up (in Follow-ups).
 
-Fixed in the commit `fix: second-look fixes for brief 17`. Finding 1 still needs Logan's pick.
+Findings 2 and 3 fixed in the commit `fix: second-look fixes for brief 17`, and finding 1 in
+`fix: refuse editable shows of files that aren't UTF-8 (brief 17)`.

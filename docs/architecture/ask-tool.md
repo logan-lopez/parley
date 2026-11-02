@@ -68,7 +68,9 @@ says what to do instead. For each path-backed show, in order:
    `id_ecdsa*`, `.netrc`, `.npmrc`, `.pypirc`, and anything under `.git/` or `.ssh/`. This and the
    project rule are what keep secrets out of `history.jsonl`, which keeps what was shown.
 4. **A text file.** Missing, a directory, something other than a regular file, over 2 MB, or a NUL
-   byte in the first 8 KB each get their own message.
+   byte in the first 8 KB each get their own message. An editable show's file must also be valid
+   UTF-8 (its bytes re-encode to themselves): invalid bytes decode to U+FFFD, and a save would
+   write that back over bytes the user never touched, unseen in the diff.
 5. **Lines.** `[start, end]`, with `end` clamped to the file's last line (one without a final
    newline counts). A `start` past the end is an error that gives the line count.
 6. **Caps.** The text after slicing, up to 100,000 characters ("show part of it with `lines`"),

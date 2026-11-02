@@ -33,7 +33,7 @@ export async function readShowFiles(input: AskInput, projectDir = process.cwd())
       total += q.content?.length ?? 0
     } else {
       project ??= await projectRoot(projectDir)
-      const file = await readOne(q.path, q.lines, project)
+      const file = await readOne(q.path, q.lines, project, q.editable === true)
       files[ids[i]!] = file
       // An editable show's text goes over the wire twice, as `x-content` and
       // `x-original`, so it counts twice against the line the hub accepts.
@@ -90,7 +90,7 @@ export async function locate(path: string, project: Project): Promise<{ real: st
   return { real, given }
 }
 
-async function readOne(path: string, lines: [number, number] | undefined, project: Project): Promise<ShowFile> {
+async function readOne(path: string, lines: [number, number] | undefined, project: Project, editable = false): Promise<ShowFile> {
   const { real, given } = await locate(path, project)
   const info = await stat(real)
   if (info.isDirectory()) {
@@ -109,6 +109,12 @@ async function readOne(path: string, lines: [number, number] | undefined, projec
   const sha256 = createHash('sha256').update(bytes).digest('hex')
   // As it is, line endings included.
   const whole = bytes.toString('utf8')
+  // Invalid UTF-8 decodes to U+FFFD, and saving an edit would write that back
+  // over bytes the user never touched, unseen in the diff. A whole-file read,
+  // since an editable show takes no `lines`.
+  if (editable && !Buffer.from(whole, 'utf8').equals(bytes)) {
+    throw new ShowFileError(`\`${path}\` isn't valid UTF-8, so saving an edit to it would change bytes the user didn't touch; show it without \`editable\`, and ask about the change instead`)
+  }
   const all = splitLines(whole)
 
   let text = whole

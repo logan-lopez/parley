@@ -136,7 +136,9 @@ the filter finds a show by its file's path, not its text.
 ### Editing a shown file
 
 The agent can let you edit a file it shows, so you fix the thing instead of describing the fix:
-a config to adjust, a plan to tighten. It's always a whole file from the project.
+a config to adjust, a plan to tighten. It's always a whole file from the project, in UTF-8: a
+file in another encoding can be shown but not edited, since saving it would quietly change
+characters you never touched.
 
 - **Edit and View.** It opens on **Edit**: the file's text in a monospace box, 12 lines tall and
   growing to 30, then scrolling. **View**, beside it, shows your text the way the file would show

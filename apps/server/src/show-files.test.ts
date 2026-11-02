@@ -24,6 +24,8 @@ beforeAll(() => {
   writeFileSync(join(project, 'server.PEM'), 'x\n')
   writeFileSync(join(project, '.git/config'), '[core]\n')
   writeFileSync(join(project, 'logo.png'), Buffer.from([0x89, 0x50, 0x4e, 0x47, 0, 0, 0, 0]))
+  writeFileSync(join(project, 'latin1.txt'), Buffer.from([0x63, 0x61, 0x66, 0xe9, 0x20, 0x41, 0x0a]))   // "café A\n" in Latin-1
+  writeFileSync(join(project, 'bom.md'), Buffer.from('\ufeff# Plan\n', 'utf8'))
   writeFileSync(join(project, 'big.txt'), Buffer.alloc(2 * 1024 * 1024 + 1, 'a'))
   writeFileSync(join(project, 'long.txt'), 'x'.repeat(100_001))
   writeFileSync(join(root, 'outside.md'), 'secret plans\n')
@@ -127,6 +129,15 @@ describe('readShowFiles', () => {
       go,
     ] })
     expect(await refusal(readShowFiles(four, project))).toContain('more than 200,000 characters')
+  })
+
+  it('refuses to edit a file that isn\'t valid UTF-8, and still shows it', async () => {
+    expect(await refusal(read('latin1.txt', { editable: true })))
+      .toBe("`latin1.txt` isn't valid UTF-8, so saving an edit to it would change bytes the user didn't touch; show it without `editable`, and ask about the change instead")
+    expect((await read('latin1.txt')).show_1!.text).toBe('caf\ufffd A\n')
+    // A BOM is valid UTF-8 and survives the round trip.
+    expect((await read('bom.md', { editable: true })).show_1!.text).toBe('\ufeff# Plan\n')
+    expect((await read('docs/plan.md', { editable: true })).show_1!.path).toBe('docs/plan.md')
   })
 
   it('counts an editable file twice: the card carries its text and the original', async () => {
