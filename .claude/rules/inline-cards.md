@@ -13,6 +13,7 @@ Before changing these files, read [Inline cards (show, then wait)](../../docs/ar
 
 Decisions that bind these files, newest first:
 
+- [Media in the inline card](../../docs/decisions/media-in-the-inline-card.md): Claude Desktop's inline card shows images as `data:` URLs from the result's `_meta` up to a cap; sounds play in the window only
 - [Files in shows](../../docs/decisions/files-in-shows.md): The server reads `path`, inside its cwd only (after `realpath`), refusing secret-looking names
 - [Themes and the inline card](../../docs/decisions/themes-and-the-inline-card.md): The card keeps following Claude's surfaces and text over Parley Light or Dark
 - [History when the window and the card both answer](../../docs/decisions/history-when-the-window-and-the-card-both-answer.md): The server's first-in answer wins, and `resolved` overwrites the window's answered or skipped record

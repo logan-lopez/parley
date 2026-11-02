@@ -22,6 +22,7 @@ from each file's frontmatter, so change a decision in its own file, not here.
 
 ## The card
 
+- [Audition play keys](audition-play-keys.md): `p` plays the focused row's next sound chip, Shift+`p` replays, Esc stops; digits keep deciding the row (2026-11-02)
 - [Colors in markdown](colors-in-markdown.md): A color in a code span (hex or a CSS color function, no named colors) gets a swatch (2026-10-11)
 - [HTML and SVG previews](html-and-svg-previews.md): Opt-in ```` ```html preview ```` / ```` ```svg preview ```` fences, drawn as an SVG image from a `data:` URL at a size the agent gives (2026-10-11)
 - [Pasted screenshots](pasted-screenshots.md): `capture` saves them as PNGs under `$APPDATA/captures/<day>/` and returns the paths (2026-10-10)
@@ -37,6 +38,7 @@ from each file's frontmatter, so change a decision in its own file, not here.
 
 ## The form spec
 
+- [Media by reference](media-by-reference.md): Images and sounds in a form are references (path, sha256, size) the window reads from disk, never copies or base64 (2026-11-02)
 - [Don't ask again](dont-ask-again.md): A per-question "Don't ask again here" toggle; the agent drafts a standing line for AGENTS.md and saves it only after Logan accepts the draft; Parley never answers on his behalf (2026-11-01)
 - [Soft input limits](soft-input-limits.md): The model sees tight limits on headers and descriptions; the server accepts a margin past them, and clips a long header on the card (2026-11-01)
 - [Editing a shown file](editing-a-shown-file.md): `editable` on a whole-file `path` show (2026-10-14)
@@ -55,6 +57,7 @@ from each file's frontmatter, so change a decision in its own file, not here.
 
 ## Inline cards (show, then wait)
 
+- [Media in the inline card](media-in-the-inline-card.md): Claude Desktop's inline card shows images as `data:` URLs from the result's `_meta` up to a cap; sounds play in the window only (2026-11-02)
 - [Inline answers and the window](inline-answers-and-the-window.md): The window races the card quietly (no notification) (2026-10-10)
 - [MCP Apps hosts](mcp-apps-hosts.md): Claude Desktop only (2026-10-10)
 - [Inline asks in MCP Apps clients](inline-asks-in-mcp-apps-clients.md): "Show, then wait": `ask` returns an `askId` at once, and `ask_wait` blocks in 200 s slices

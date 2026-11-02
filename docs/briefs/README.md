@@ -6,7 +6,7 @@ and move to `archive/` when they're done. Ideas that aren't scheduled yet are in
 
 ## Where things stand
 
-*Updated 2026-11-01.*
+*Updated 2026-11-02.*
 
 - Built: the hub, `ask`, the trial harness, history and `review` (briefs 1–5), inline cards in
   Claude Desktop (6–7), the window as a non-activating panel, menu-bar only (8–9), and three
@@ -23,6 +23,9 @@ and move to `archive/` when they're done. Ideas that aren't scheduled yet are in
   from text or a project file (16), editing a shown file with the diff back and the file saved
   (17), and a card that follows the file while it's open (18, spike first). After those, the
   [`FUTURE.md`](FUTURE.md) candidates are still "Hands-on runs" and the trial tune-ups.
+- Then briefs 22–25, written 2026-11-02 from an ideate on media in asks: project images in
+  markdown (22, with a spike first), sounds as play chips (23), audition keys (24) and
+  before/after compare (25). 22 goes first; 23 and 25 need only 22, and 24 needs 23.
   `crash-output` asked 2/3 in brief 14's pass (0/3 before); `sort-helpers` dropped `decisions`
   in 2/3 and wants a rerun.
 - Loose ends waiting on Logan: the hand checks from briefs 10–12 (a draft and a copy button in
@@ -57,6 +60,14 @@ and move to `archive/` when they're done. Ideas that aren't scheduled yet are in
     textarea; the server saves it when the disk still matches and returns a diff; then a trial pass.
 18. [`18-live-show.md`](18-live-show.md): the window's card follows a shown file
     while the ask is open, by re-sending the ask with the same id; go or no-go before the build.
+22. [`22-media-images.md`](22-media-images.md) (done, awaiting review): `![caption](path)` draws a project image in any markdown,
+    by reference (path and hash) through the asset protocol; starts with a PNG and Ogg spike.
+23. [`23-media-sounds.md`](23-media-sounds.md): the same syntax for audio files and globs of variants, as
+    play chips, one sound at a time; window-only in the inline card.
+24. [`24-audition-keys.md`](24-audition-keys.md): `p` cycles the focused row's takes, Shift+`p` replays,
+    Esc stops; autoplay as an opt-in setting.
+25. [`25-compare-images.md`](25-compare-images.md): a ```` ```compare ```` fence of two images, flipped in place
+    at full width.
 
 ## Done
 
