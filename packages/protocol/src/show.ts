@@ -11,6 +11,23 @@ export const SHOW_FILE_MAX_BYTES = 2 * 1024 * 1024
 // under the hub's 1 MiB line, after JSON escaping.
 export const SHOW_ASK_MAX_CHARS = 200_000
 
+// An editable show's diff, left out of the answer past this when the file was
+// saved (the agent can run `git diff`). Kept when it wasn't: it's then the only
+// copy of the user's edit.
+export const SHOW_DIFF_MAX = 20_000
+
+// What became of an editable show's edit, per question id. The server applies
+// it (apps/server/src/show-edits.ts); shapeAnswer turns it into the answer.
+export interface ShowEdit {
+  path: string
+  edited: boolean
+  written: boolean
+  conflict?: true          // the file changed on disk since it was shown
+  diff?: string            // unified, against the text the user was shown
+  changedLines?: number    // added + removed, when the diff is left out for size
+  error?: string           // the write failed (permissions, disk), or the path was refused
+}
+
 // HTML and SVG files are drawn as brief 14 pictures at this size, scaled to fit.
 export const SHOW_PICTURE = { width: 640, height: 480 }
 

@@ -53,7 +53,7 @@ and move to `archive/` when they're done. Ideas that aren't scheduled yet are in
 16. [`16-show-blocks.md`](16-show-blocks.md) (done, awaiting review): a `show` question type with nothing to answer, from
     `content` or a project file's `path` read by the server, rendered in its own scrolling pane;
     then a trial pass.
-17. [`17-editable-show.md`](17-editable-show.md): an `editable` show of a whole file, edited in a
+17. [`17-editable-show.md`](17-editable-show.md) (done, awaiting review): an `editable` show of a whole file, edited in a
     textarea; the server saves it when the disk still matches and returns a diff; then a trial pass.
 18. [`18-live-show.md`](18-live-show.md): the window's card follows a shown file
     while the ask is open, by re-sending the ask with the same id; go or no-go before the build.

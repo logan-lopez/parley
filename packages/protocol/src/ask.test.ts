@@ -980,6 +980,100 @@ describe('show blocks', () => {
 
   it('is not window-only', () => {
     expect(isWindowOnly(compileQuestions(fixture('show')))).toBe(false)
+    expect(isWindowOnly(compileQuestions(fixture('show-edit')))).toBe(false)
+  })
+})
+
+describe('editable shows', () => {
+  const show = { header: 'Plan', question: 'Adjust the plan.', type: 'show' as const }
+  const go = { header: 'Go ahead?', question: 'Start?', type: 'boolean' as const }
+  const editable = { ...show, path: 'docs/plan.md', editable: true }
+  const input = parse({ questions: [editable, go] })
+  const file: ShowFiles[string] = { path: 'docs/plan.md', text: '# Plan\r\n', totalLines: 1, sha256: 'ab'.repeat(32) }
+  const answered = { status: 'answered' as const, data: { plan: { text: '# Plan v2\n' }, go_ahead: true } }
+  const diff = '--- docs/plan.md\n+++ docs/plan.md\n@@ -1,1 +1,1 @@\n-# Plan\n+# Plan v2\n'
+  const fenced = '  ```diff\n  --- docs/plan.md\n  +++ docs/plan.md\n  @@ -1,1 +1,1 @@\n  -# Plan\n  +# Plan v2\n  ```'
+  const edit = { path: 'docs/plan.md', edited: true }
+
+  it('takes editable on a whole file', () => {
+    expect(issues({ questions: [editable, go] })).toEqual([])
+    expect(issues({ questions: [{ ...go, editable: false }] })).toEqual([])
+  })
+
+  it('explains editable on another type, without a path, and with lines', () => {
+    expect(issues({ questions: [{ ...go, editable: true }] }))
+      .toEqual([expect.stringContaining("question 1 has `editable` but type 'boolean'")])
+    expect(issues({ questions: [{ ...show, content: '# Plan', editable: true }, go] }))
+      .toEqual([expect.stringContaining('only a file can be edited in place; for text you wrote, use a text question with a `draft`')])
+    expect(issues({ questions: [{ ...editable, lines: [1, 5] }, go] }))
+      .toEqual([expect.stringContaining('an editable show is the whole file; drop `lines`')])
+  })
+
+  it('compiles to an object with the original text and its hash, never required', () => {
+    const { schema } = compileQuestions(input, { plan: file })
+    expect((schema.properties as Record<string, unknown>).plan).toEqual({
+      'x-widget': 'show', title: 'Plan', description: 'Adjust the plan.',
+      type: 'object',
+      properties: { text: { type: 'string' }, base: { type: 'string' } },
+      additionalProperties: false,
+      'x-editable': true,
+      'x-content': '# Plan\r\n',
+      'x-original': '# Plan\r\n',
+      'x-source': { path: 'docs/plan.md', totalLines: 1, sha256: file.sha256 },
+    })
+    expect(schema.required).toEqual(['go_ahead'])
+  })
+
+  it('compiles without its file to x-source alone', () => {
+    expect(props(input).plan).toEqual(expect.objectContaining({ type: 'object', 'x-editable': true, 'x-source': { path: 'docs/plan.md' } }))
+    expect(props(input).plan).not.toHaveProperty('x-original')
+  })
+
+  it('says an unchanged file was left alone', () => {
+    const { structured, text } = shapeAnswer(input, answered, { edits: { plan: { ...edit, edited: false, written: false } } })
+    expect(structured.answers!.plan).toEqual({ header: 'Plan', value: 'docs/plan.md', edited: false })
+    expect(text).toBe('The user answered:\n- Plan: left docs/plan.md unchanged\n- Go ahead?: Yes')
+  })
+
+  it('fences the diff of a saved edit', () => {
+    const { structured, text } = shapeAnswer(input, answered, { edits: { plan: { ...edit, written: true, diff } } })
+    expect(structured.answers!.plan).toEqual({ header: 'Plan', value: 'docs/plan.md', edited: true, written: true, diff })
+    expect(text).toBe(`The user answered:\n- Plan: edited docs/plan.md, and Parley saved it:\n${fenced}\n- Go ahead?: Yes`)
+    expect(askResultSchema.safeParse(structured).success).toBe(true)
+  })
+
+  it('says a conflicting edit was not saved, with the diff', () => {
+    const { structured, text } = shapeAnswer(input, answered, { edits: { plan: { ...edit, written: false, conflict: true, diff } } })
+    expect(structured.answers!.plan).toEqual({ header: 'Plan', value: 'docs/plan.md', edited: true, written: false, conflict: true, diff })
+    expect(text).toContain("- Plan: edited docs/plan.md, but the file changed on disk after it was shown, so Parley didn't save it. "
+      + `Their edit, against the version they saw:\n${fenced}`)
+  })
+
+  it('gives a write error and the diff', () => {
+    const { text } = shapeAnswer(input, answered, { edits: { plan: { ...edit, written: false, error: 'EACCES: permission denied', diff } } })
+    expect(text).toContain(`- Plan: edited docs/plan.md, but Parley couldn't save it (EACCES: permission denied). Their edit:\n${fenced}`)
+  })
+
+  it('leaves out a diff over the cap, with the count', () => {
+    const { structured, text } = shapeAnswer(input, answered, { edits: { plan: { ...edit, written: true, changedLines: 412 } } })
+    expect(structured.answers!.plan).toEqual({ header: 'Plan', value: 'docs/plan.md', edited: true, written: true, changedLines: 412 })
+    expect(text).toContain('- Plan: edited docs/plan.md (412 lines changed), and Parley saved it; run `git diff` to see it')
+  })
+
+  it('says the server saves it when there are no edits (the gallery)', () => {
+    expect(shapeAnswer(input, answered).text)
+      .toBe('The user answered:\n- Plan: edited docs/plan.md; the server saves it and works out the diff\n- Go ahead?: Yes')
+    expect(shapeAnswer(input, { status: 'answered', data: { go_ahead: true } }).text)
+      .toBe('The user answered:\n- Plan: left docs/plan.md unchanged\n- Go ahead?: Yes')
+    const untouched = { status: 'answered' as const, data: { plan: { text: '# Plan\n' }, go_ahead: true } }
+    expect(shapeAnswer(input, untouched, { files: { plan: file } }).text).toContain('- Plan: left docs/plan.md unchanged')
+    expect(shapeAnswer(input, answered, { files: { plan: file } }).text).toContain('- Plan: edited docs/plan.md; the server saves it')
+  })
+
+  it('fences a diff with backticks in it longer', () => {
+    const ticks = '--- a.md\n+++ a.md\n@@ -1 +1 @@\n-x\n+```js\n'
+    const { text } = shapeAnswer(input, answered, { edits: { plan: { ...edit, written: true, diff: ticks } } })
+    expect(text).toContain('\n  ````diff\n')
   })
 })
 

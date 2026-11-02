@@ -139,6 +139,13 @@ A plan in its own scrolling pane, then a choice and a review about it.
 | --- | --- |
 | ![show, light](images/cards/show-light.png) | ![show, dark](images/cards/show-dark.png) |
 
+An editable show: a config file in the box, on Edit, then a yes/no about it
+([Question types](question-types.md#editing-a-shown-file)).
+
+| Light | Dark |
+| --- | --- |
+| ![show edit, light](images/cards/show-edit-light.png) | ![show edit, dark](images/cards/show-edit-dark.png) |
+
 ## In the question text
 
 How it works: [Answering a card](answering.md#code-in-a-question).

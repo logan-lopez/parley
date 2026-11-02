@@ -1,0 +1,17 @@
+{
+  "title": "Settings for tally",
+  "questions": [
+    {
+      "header": "Settings",
+      "question": "Here's the config I'd start with. Change anything you like before I wire it up.",
+      "type": "show",
+      "path": "packages/protocol/fixtures/files/settings.example.json",
+      "editable": true
+    },
+    {
+      "header": "Use them?",
+      "question": "Use these settings?",
+      "type": "boolean"
+    }
+  ]
+}

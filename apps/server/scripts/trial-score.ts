@@ -170,6 +170,7 @@ function questionsOf(input: any): { header: string; type: string }[] {
     const type = String(q?.type ?? 'choice')
     const variant = type === 'text' && typeof q?.draft === 'string' ? 'text+draft'
       : type === 'review' && Array.isArray(q?.decisions) ? 'review+decisions'
+      : type === 'show' && q?.editable === true ? 'show+editable'
       : type
     return { header: String(q?.header ?? ''), type: variant }
   })

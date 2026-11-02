@@ -1,5 +1,5 @@
 ---
-sources: ["apps/server/scripts/", "apps/desktop/scripts/screenshots.ts", "apps/server/trials/", "apps/server/fixtures/", "packages/protocol/src/ask.test.ts", "apps/server/src/show-files.test.ts", "apps/desktop/src/asks/persist.test.ts", "apps/desktop/src/asks/store.test.ts", "apps/desktop/src/forms/schemas.test.ts", "apps/desktop/src/forms/markdown.test.ts", "apps/desktop/src/forms/preview.test.ts"]
+sources: ["apps/server/scripts/", "apps/desktop/scripts/screenshots.ts", "apps/server/trials/", "apps/server/fixtures/", "packages/protocol/src/ask.test.ts", "apps/server/src/show-files.test.ts", "apps/server/src/show-edits.test.ts", "apps/desktop/src/asks/persist.test.ts", "apps/desktop/src/asks/store.test.ts", "apps/desktop/src/forms/schemas.test.ts", "apps/desktop/src/forms/markdown.test.ts", "apps/desktop/src/forms/preview.test.ts"]
 ---
 # Testing
 
@@ -7,7 +7,7 @@ How Parley is checked without a person at the keyboard or a real client: unit te
 parts, stand-ins for each side of the socket and for an MCP Apps host, and a harness that runs real
 models against a fake app.
 
-**History:** [brief 1](../briefs/archive/01-hub-and-lifecycle.md) (`fake-ask`), [brief 3](../briefs/archive/03-trial-harness.md) (`fake-hub`, trials), [brief 7](../briefs/archive/07-inline-cards.md) (`fake-host`), [brief 12](../briefs/archive/12-capture-question.md) (the `capture` scenario), [brief 19](../briefs/19-usage-report.md) (`usage`), [brief 16](../briefs/16-show-blocks.md) (the server's vitest, `show-file`)
+**History:** [brief 1](../briefs/archive/01-hub-and-lifecycle.md) (`fake-ask`), [brief 3](../briefs/archive/03-trial-harness.md) (`fake-hub`, trials), [brief 7](../briefs/archive/07-inline-cards.md) (`fake-host`), [brief 12](../briefs/archive/12-capture-question.md) (the `capture` scenario), [brief 19](../briefs/19-usage-report.md) (`usage`), [brief 16](../briefs/16-show-blocks.md) (the server's vitest, `show-file`), [brief 17](../briefs/17-editable-show.md) (`show-edits.test.ts`, `show-edit`)
 
 The commands are in [`AGENTS.md`](../../AGENTS.md#commands). This page is what each one covers
 and when to reach for it.
@@ -20,7 +20,11 @@ and when to reach for it.
   - `apps/server`: `readShowFiles` against a project in a temp directory under `$TMPDIR`: relative
     and absolute paths, `lines` slicing and clamping, `..` and a symlink out, refused names (and a
     link to one), binary, too big, a directory, the per-ask cap, cwd `/` and home, and that the
-    hash is of the whole file (`show-files.test.ts`).
+    hash is of the whole file (`show-files.test.ts`). `applyShowEdits` in a fresh temp project per
+    test: unchanged (sent or not), written in place (same inode and mode) with its diff, CRLF
+    kept, a conflict (the file rewritten between read and answer), the file deleted, the file
+    swapped for a symlink out, a read-only file (the write error), and a diff over the cap
+    (`show-edits.test.ts`).
   - `apps/desktop`: the history file's startup fold and which screenshot folders have aged out
     (`persist.test.ts`), the store's hub handlers
     (`resolved`, `inline`) through the real hub client with Tauri mocked (`store.test.ts`), and
@@ -39,8 +43,9 @@ and when to reach for it.
 - **`fake-ask`** (`scripts/fake-session.ts`) acts as one server session without an MCP client:
   it connects to the hub, sends a form and prints the outcome. It takes `ask` tool input (a bare
   name like `choice` resolves to `packages/protocol/fixtures/choice.json`), which goes through the
-  tool's validation, `readShowFiles` (against where `pnpm` was run, so run `show-file` from the
-  repo root), compiler and shaper, or a raw `FormSpec` (sample:
+  tool's validation, `readShowFiles` (against where `pnpm` was run, so run `show-file` and
+  `show-edit` from the repo root), compiler, `applyShowEdits` (so an edited `show-edit` changes
+  `packages/protocol/fixtures/files/settings.example.json`; `git checkout` it after) and shaper, or a raw `FormSpec` (sample:
   `apps/server/fixtures/sample.json`). Ctrl-C kills it without a cancel, which exercises the
   app's disconnect path.
 - **`fake-hub`** stands in for the app on a socket, logs every ask (`--log`), and answers on a
@@ -50,7 +55,8 @@ and when to reach for it.
   `decisions`; for a
   text draft, `first` sends it unchanged and `other:<text>` appends the text as its last line; a
   capture gets `other:<text>` as pasted text, or 'as you see fit', and never a screenshot; a show
-  gets nothing). Each
+  gets nothing, except an editable one: `other:<text>` adds the text as the file's last line, and
+  every other policy sends it unchanged, with its `base`). Each
   ask takes the next `--reply`; the last repeats. `--old-app` rejects `resolved` as an app from
   before inline cards does. Point a server at it with `PARLEY_SOCKET` and `PARLEY_NO_LAUNCH=1`.
 - **`fake-host`** stands in for an MCP Apps host (Claude Desktop). It advertises the extension,
@@ -60,9 +66,13 @@ and when to reach for it.
   inline), `show-file` (a server started in the repo root returns `_meta["parley/files"]`, the
   card compiles them with content, the window gets them in the form, the answer has no line for
   the shows, and a second server started from `/` returns the "no project directory" error and
-  shows nothing; `Session.connect(cwd)` starts that one on the same hub), `old-app`, `plain`.
+  shows nothing; `Session.connect(cwd)` starts that one on the same hub), `show-edit` (a server
+  started in a scratch project under `$TMPDIR`: the card sends an edited file, `ask_wait`'s text
+  says it was saved and carries the diff, the file on disk changed, and a second `ask_wait` gets
+  the same text rather than a conflict), `old-app`, `plain`.
 - **The gallery** renders every fixture through the real card without the hub
-  ([the card](card-ui.md#how-it-works)).
+  ([the card](card-ui.md#how-it-works)). A show of a file under `packages/protocol/fixtures/files/`
+  loads there (`show-edit`'s settings); any other path stays unloaded.
 - **`screenshots`** (`apps/desktop/scripts/screenshots.ts`) draws the gallery headless for
   [What it looks like](../guide/screenshots.md) and the README: Vite on its own port (1430 up,
   no HMR), Playwright's WebKit (the window is WKWebView), each fixture in light and dark at 2x,

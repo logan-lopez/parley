@@ -2,7 +2,8 @@
 // Dev only (`?gallery`): every shared fixture through the real compiler and
 // card, without the hub. Submitting shows what the model would get back.
 import { computed, ref, watch } from 'vue'
-import { askInputSchema, compileQuestions, shapeAnswer, DEFAULT_TIMEOUT_SECONDS, type AskOutcome } from '@parley/protocol/ask'
+import type { ShowFiles } from '@parley/protocol'
+import { askInputSchema, compileQuestions, questionIds, shapeAnswer, DEFAULT_TIMEOUT_SECONDS, type AskInput, type AskOutcome } from '@parley/protocol/ask'
 import AskCard from '../card/AskCard.vue'
 import ZoomControl from '../ZoomControl.vue'
 
@@ -11,6 +12,24 @@ const fixtures = Object.fromEntries(
   Object.entries(modules).map(([path, mod]) => [path.split('/').pop()!.replace(/\.json$/, ''), mod.default]),
 )
 const names = Object.keys(fixtures)
+
+// Files only the fixtures use, so a show of one loads here as the server would
+// read it. Anything else stays "isn't loaded here". The hash is a stand-in:
+// the gallery never writes.
+const FILES = 'packages/protocol/fixtures/files/'
+const fileTexts = import.meta.glob<string>('../../../../packages/protocol/fixtures/files/*', { query: '?raw', import: 'default', eager: true })
+function fixtureFiles(input: AskInput): ShowFiles {
+  const ids = questionIds(input.questions)
+  const files: ShowFiles = {}
+  input.questions.forEach((q, i) => {
+    const text = q.type === 'show' && q.path?.startsWith(FILES) && !q.lines
+      ? fileTexts[`../../../../${q.path}`]
+      : undefined
+    if (text === undefined) return
+    files[ids[i]!] = { path: q.path!, text, totalLines: text.split('\n').length - (text.endsWith('\n') ? 1 : 0), sha256: 'gallery' }
+  })
+  return files
+}
 
 const params = new URLSearchParams(location.search)
 const initial = params.get('fixture')
@@ -23,7 +42,7 @@ const run = ref(0)   // remounts the card
 
 const parsed = computed(() => askInputSchema.safeParse(fixtures[name.value]))
 const input = computed(() => (parsed.value.success ? parsed.value.data : undefined))
-const form = computed(() => (input.value ? compileQuestions(input.value) : undefined))
+const form = computed(() => (input.value ? compileQuestions(input.value, fixtureFiles(input.value)) : undefined))
 
 watch(name, (value) => {
   const url = new URL(location.href)
@@ -39,7 +58,7 @@ function reset() {
 }
 
 function finish(outcome: AskOutcome) {
-  if (input.value) result.value = shapeAnswer(input.value, outcome)
+  if (input.value) result.value = shapeAnswer(input.value, outcome, { files: fixtureFiles(input.value) })
 }
 </script>
 

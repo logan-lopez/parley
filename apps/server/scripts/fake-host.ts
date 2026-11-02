@@ -7,11 +7,11 @@
 //   pnpm --filter @parley/server fake-host [scenario...] [--server dist] [--verbose]
 //
 // Scenarios (all by default): card-wins, window-wins, skip, slice, unknown-id,
-// path, capture, show-file, old-app, plain. `--server dist` runs dist/index.mjs instead of src/ under tsx.
+// path, capture, show-file, show-edit, old-app, plain. `--server dist` runs dist/index.mjs instead of src/ under tsx.
 // `--verbose` passes the server's and the hub's stderr through.
 
 import { spawn, type ChildProcess } from 'node:child_process'
-import { existsSync, mkdtempSync, readFileSync, rmSync } from 'node:fs'
+import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join, resolve } from 'node:path'
 import { parseArgs } from 'node:util'
@@ -234,6 +234,49 @@ const scenarios: Record<string, Scenario> = {
         refused.isError === true && textOf(refused).includes("didn't start Parley in a project directory"), textOf(refused))
       await sleep(300)
       check('and nothing was shown', hubLog().filter((l) => l.type === 'ask').length === 1, hubLog().map((l) => l.type))
+    },
+  },
+
+  // An editable show answered in the card: ask_wait saves the file and returns
+  // the diff, once. The server runs in a scratch project, since it writes.
+  'show-edit': {
+    reply: ['none'],
+    async run({ hubLog, connect }, check) {
+      const project = mkdtempSync(join(tmpdir(), 'ph-edit-'))
+      const settings = join(project, 'settings.json')
+      writeFileSync(settings, '{\n  "currency": "USD"\n}\n')
+      try {
+        const client = await connect(project)
+        const input = { questions: [
+          { header: 'Settings', question: 'Adjust them.', type: 'show', path: 'settings.json', editable: true },
+          { header: 'Use them?', question: 'Use these settings?', type: 'boolean' },
+        ] }
+        const result = await call(client, 'ask', input)
+        const askId = (result.structuredContent as { askId?: unknown } | undefined)?.askId as string
+        const file = (result._meta as Record<string, any> | undefined)?.['parley/files']?.settings
+        check('ask returns the file in _meta', file?.text?.includes('USD') && /^[0-9a-f]{64}$/.test(file?.sha256 ?? ''), file)
+
+        const card = (compileQuestions(askInputSchema.parse(input), { settings: file }).schema.properties as Record<string, any>).settings
+        check('the card compiles it editable, with the original and its hash',
+          card?.['x-editable'] === true && card?.['x-original'] === file?.text && card?.['x-source']?.sha256 === file?.sha256, card && Object.keys(card))
+        await sleep(300)
+        const sent = hubLog().find((l) => l.type === 'ask')
+        check('the window got it inline, editable', sent?.inline === true && sent?.form?.schema?.properties?.settings?.['x-editable'] === true, sent && { inline: sent.inline })
+
+        const wait = callText(client, 'ask_wait', { askId })
+        const data = { settings: { text: '{\n  "currency": "EUR"\n}\n', base: file?.sha256 }, use_them: true }
+        const submit = await structured(client, 'parley_submit', { askId, kind: 'answer', data })
+        check('the card answers', submit.accepted === true, submit)
+        const answered = await wait
+        check('ask_wait says it was saved, with the diff',
+          answered.text.includes('edited settings.json, and Parley saved it:') && answered.text.includes('```diff')
+            && answered.text.includes('-  "currency": "USD"') && answered.text.includes('+  "currency": "EUR"'), answered.text)
+        check('the file on disk changed', readFileSync(settings, 'utf8').includes('EUR'), readFileSync(settings, 'utf8'))
+        const again = await callText(client, 'ask_wait', { askId })
+        check('a second ask_wait gets the same answer, not a conflict', again.text === answered.text, again.text)
+      } finally {
+        rmSync(project, { recursive: true, force: true })
+      }
     },
   },
 

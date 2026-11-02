@@ -8,7 +8,7 @@ Parley window: the first answer wins. Because Desktop mounts a view only after i
 returns, `ask` can't block there. It shows the form and returns an `askId`, and `ask_wait` blocks
 for the answer.
 
-**History:** [brief 6](../briefs/archive/06-mcp-apps-spike.md) (the spike), [brief 7](../briefs/archive/07-inline-cards.md), [brief 12](../briefs/archive/12-capture-question.md) (image captures, `clipboardWrite`), [brief 16](../briefs/16-show-blocks.md) (show files in `_meta`)
+**History:** [brief 6](../briefs/archive/06-mcp-apps-spike.md) (the spike), [brief 7](../briefs/archive/07-inline-cards.md), [brief 12](../briefs/archive/12-capture-question.md) (image captures, `clipboardWrite`), [brief 16](../briefs/16-show-blocks.md) (show files in `_meta`), [brief 17](../briefs/17-editable-show.md) (edits saved in `ask_wait`)
 
 `tools/inline.ts` registers the surface. `ask-lifecycle.ts` holds `showAsk`, `waitAsk`,
 `awaitStatus` and `answerInline`. `card.ts` serves the card's HTML. `src/mcp-app/` in the desktop
@@ -25,7 +25,8 @@ app is the card: `McpApp.vue` around the same `AskCard` the window uses, and `th
     a show named a file). The message tells the model to call `ask_wait` now. A refused file
     returns `isError` with its message, and nothing is shown, in the chat or the window.
   - `ask_wait({ askId })`: blocks until the ask ends, at most one slice (200 s,
-    `PARLEY_WAIT_SLICE_MS` for tests). Then it returns the shaped answer, or "the user hasn't
+    `PARLEY_WAIT_SLICE_MS` for tests). Then it saves any editable show's edit and returns the
+    shaped answer, or "the user hasn't
     answered yet, call again", or an error for an unknown id (from before a restart, or made up).
     No `outputSchema`, since "still waiting" isn't an `AskResult`. Aborting a wait cancels the ask.
   - `parley_submit({ askId, kind, data?, note? })` and `parley_status({ askId })`: app-only
@@ -54,7 +55,11 @@ app is the card: `McpApp.vue` around the same `AskCard` the window uses, and `th
   reaches it only if the server sends it: `_meta["parley/files"]` on the `ask` result, the
   `ShowFiles` keyed by question id. Never in `structuredContent` or the text: Desktop shows the
   model only the text, so the file doesn't enter its context twice. `showAsk` keeps the files with
-  the shown ask (`Shown.files`, `shownFiles(askId)`), for brief 17's diff.
+  the shown ask (`Shown.files`, `shownFiles(askId)`): an editable show's edit is checked and
+  diffed against them. `ask_wait` saves the edits of an answered ask through `shownEdits`, which
+  runs `applyShowEdits` the first time and keeps its promise on the ask (`Shown.edits`), so a
+  late or repeated wait returns the same answer ([the ask tool](ask-tool.md#editable-shows)). An
+  editable show isn't window-only: the card edits and sends the text like any answer.
 - **The card** (`McpApp.vue`). The host sends the tool input (the questions), then the result (the
   `askId`, and any files). When the input has a show with `path`, the card holds the form
   ("Loading the question…") until the result brings its file, rather than showing it unloaded

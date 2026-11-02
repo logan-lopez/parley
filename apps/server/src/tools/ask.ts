@@ -7,6 +7,7 @@ import {
   shapeAnswer,
 } from '@parley/protocol/ask'
 import { runAsk } from '../ask-lifecycle.ts'
+import { applyShowEdits } from '../show-edits.ts'
 import { readShowFiles } from '../show-files.ts'
 
 // About the input shape. When to ask lives in the server instructions.
@@ -21,7 +22,7 @@ Each question has a \`header\` (a chip of 12 characters or fewer), the \`questio
 - path: a native file or folder picker that returns paths only. \`pathKind\` ('file' or 'directory'), \`multiple\`, \`extensions\`.
 - review: the user approves or rejects each of 1–30 \`items\` (files to delete, changes to apply), each { label (120 characters at most), detail? (300), preview? }, and can comment on any. Labels must be unique. \`defaultDecision\` is 'approve' (default), 'reject', or 'none' when every item needs an explicit decision, so a hurried Enter doesn't approve everything. The answer is the approved labels, plus each item's decision and comment. \`decisions\`: 2–4 short labels to use instead of approve/reject, such as ['Keep', 'Move', 'Delete'], with the most cautious one last; \`defaultDecision\` is then one of them or 'none', and the answer is the items given the first decision.
 - capture: a box the user pastes into, for something only they can get, such as command output, a console dump or a screenshot. \`accept\` is 'text', 'image' or 'any' (default). Text comes back verbatim; screenshots come back as PNG file paths you can read. Put commands for the user to run in fenced code blocks in \`question\`: they get a copy button.
-- show: something to look at, not answer, such as a plan, a file or a design. Give \`content\` (markdown, up to 20,000 characters) or \`path\`, a file in the project that Parley reads, so you don't repeat it (\`lines: [start, end]\` for part of it). Markdown files render, HTML and SVG files are drawn as pictures, and other files show as code. Put the questions about it after it in the same call, which needs at least one question besides show.
+- show: something to look at, not answer, such as a plan, a file or a design. Give \`content\` (markdown, up to 20,000 characters) or \`path\`, a file in the project that Parley reads, so you don't repeat it (\`lines: [start, end]\` for part of it). Markdown files render, HTML and SVG files are drawn as pictures, and other files show as code. Put the questions about it after it in the same call, which needs at least one question besides show. With \`editable: true\` (a whole file given by \`path\`), the user can edit it in place. Parley saves their change to the file and returns a diff, so don't apply it yourself unless the answer says it wasn't saved.
 
 In markdown, a color in a code span (\`#38bdf8\`, \`oklch(70% 0.15 230)\`) shows with a swatch, and a \`\`\`palette block, one color per line with an optional name after it, shows large labelled swatches. A \`\`\`html preview or \`\`\`svg preview block (static HTML and CSS, or SVG: no scripts, no external images or fonts) is drawn as a picture instead of shown as code, 400×200 by default; set the size on its first line, such as \`\`\`html preview width=400 height=240. Use it in an option's \`preview\` for layouts, UI options and visual designs.
 
@@ -47,13 +48,16 @@ export function registerAsk(server: McpServer) {
     async (input, ctx) => {
       const timeoutMs = (input.timeoutSeconds ?? DEFAULT_TIMEOUT_SECONDS) * 1000
       try {
-        const form = compileQuestions(input, await readShowFiles(input))
-        const outcome = await runAsk(ctx, form, timeoutMs)
+        const files = await readShowFiles(input)
+        const outcome = await runAsk(ctx, compileQuestions(input, files), timeoutMs)
         console.error(`[parley] ask ended: ${outcome.status}`)
-        const { structured, text } = shapeAnswer(input, outcome)
+        // Only an answer writes; a skip leaves every file alone.
+        const edits = outcome.status === 'answered' ? await applyShowEdits(input, files, outcome.data) : undefined
+        const { structured, text } = shapeAnswer(input, outcome, { edits })
         return { content: [{ type: 'text', text }], structuredContent: structured }
       } catch (error) {
-        // A show's file was refused, or the app is unavailable. Invalid input never
+        // A show's file was refused, the app is unavailable, or an edit's write
+        // threw something unexpected. Invalid input never
         // gets here: the SDK rejects it first.
         return {
           content: [{ type: 'text', text: error instanceof Error ? error.message : String(error) }],

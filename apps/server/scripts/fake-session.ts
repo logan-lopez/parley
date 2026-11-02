@@ -17,6 +17,7 @@ import { parseArgs } from 'node:util'
 import type { FormSpec } from '@parley/protocol'
 import { askInputSchema, compileQuestions, DEFAULT_TIMEOUT_SECONDS, shapeAnswer } from '@parley/protocol/ask'
 import { getAppClient } from '../src/app-client.ts'
+import { applyShowEdits } from '../src/show-edits.ts'
 import { readShowFiles } from '../src/show-files.ts'
 
 const { values, positionals } = parseArgs({
@@ -55,8 +56,11 @@ try {
     // --timeout overrides the input's, and the shaped text should say so.
     const input = { ...parsed.data, timeoutSeconds: seconds(parsed.data.timeoutSeconds) }
     // Shows' files resolve against where the user ran it, as the server's do against its cwd.
-    const outcome = await ask(compileQuestions(input, await readShowFiles(input)), input.timeoutSeconds)
-    const { structured, text } = shapeAnswer(input, outcome)
+    const files = await readShowFiles(input)
+    const outcome = await ask(compileQuestions(input, files), input.timeoutSeconds)
+    // Editable shows are saved as the server saves them.
+    const edits = outcome.status === 'answered' ? await applyShowEdits(input, files, outcome.data) : undefined
+    const { structured, text } = shapeAnswer(input, outcome, { edits })
     console.log(text)
     console.log(JSON.stringify(structured, null, 2))
   } else {

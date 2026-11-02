@@ -132,3 +132,24 @@ Parley reads only files inside the project the agent runs in, and never ones tha
 hold secrets (`.env`, keys, anything under `.git` or `.ssh`). In Claude Desktop's chat there's no
 project, so a show there has the text pasted in. History keeps the file as you saw it then, and
 the filter finds a show by its file's path, not its text.
+
+### Editing a shown file
+
+The agent can let you edit a file it shows, so you fix the thing instead of describing the fix:
+a config to adjust, a plan to tighten. It's always a whole file from the project.
+
+- **Edit and View.** It opens on **Edit**: the file's text in a monospace box, 12 lines tall and
+  growing to 30, then scrolling. **View**, beside it, shows your text the way the file would show
+  (markdown rendered, HTML drawn as a picture), so you can check it before sending.
+- **Keys.** Enter is a new line; Cmd+Enter sends. The card's first focus lands in the box, at the
+  top of the file.
+- **Reset to original** appears under the box once your text differs from the file.
+- **On send, Parley saves the file** for you, and the agent gets a diff of your change rather than
+  the whole file, so it doesn't redo it. If the file changed on disk while the card was open,
+  Parley saves nothing, and the agent is told so, with your edit as a diff to apply by hand.
+  Leaving the text as it was saves nothing and tells the agent the file is unchanged. A skip
+  never writes.
+- **In history** the card shows the text you sent, in View, with "edited" after the file name
+  when it differs from the original.
+
+Git is the undo: Parley keeps no copy of the file from before your edit.

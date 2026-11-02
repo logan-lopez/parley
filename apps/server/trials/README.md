@@ -90,13 +90,18 @@ A changed prompt resets the comparison for that prompt.
 | crash-output | ask | other:… | output only the user can get: should be one `capture` |
 | report-look | ask | first | a visual choice: should preview layouts or colors (`html preview`, chips, a palette) |
 | plan-check | ask | first | a plan to check: should put the file in front of the user (`show` with `path`) and ask about it |
+| config-tweak | ask | other:… | a file for the user to adjust: should be a `show` with `path` and `editable` |
 
 The question types are in the `questions` field of each result, not scored. Check them by eye for
 `prune-unused`, `config-format`, `changelog-draft`, `sort-helpers` and `crash-output`; a text question with a
-draft shows as `text+draft`, and a review with its own decisions as `review+decisions`. For
+draft shows as `text+draft`, a review with its own decisions as `review+decisions`, and an
+editable show as `show+editable`. For
 `report-look`, read the questions themselves in the transcript: which of chips, a palette, an
 `html preview` and an `svg preview` they use. For `plan-check`, whether a `show` appears and
-whether it used `path` or `content`.
+whether it used `path` or `content`. For `config-tweak`, whether the show is `editable`, and whether the agent then
+re-applied a change Parley had already saved: a `written: true` answer means the edit is on disk
+without the agent touching the file, so the diff check finds `EUR` either way. Read the
+transcript for a second write of the same line.
 
 `project/` is `tally`, a small expense-CSV CLI with a planted sign bug in `fromCents`, unused
 helpers, unwired `reports/monthly.ts` and `reports/yearly.ts`, a superseded `utils/format-old.ts`
@@ -133,6 +138,49 @@ the answer. Trust it more on `export-sentinel`, where the string is distinctive.
 `firstValid: false` and `hubAsks: 0`.
 
 ## Baseline
+
+2026-11-02, Claude Code 2.1.316, `claude-opus-5-5`, `--runs 3 --keep`: the first full pass with
+editable shows (brief 17) in the tool description, whose show bullet grew by one sentence, and
+the new `config-tweak` prompt. From `results/2026-11-02T14-55-15-960Z.jsonl`, every transcript
+kept. Compared with brief 16's pass (the section below):
+
+| prompt | expect | asked | first call valid | used | over-asked | re-asked after skip | was (2026-11-02, brief 16) |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| changelog-draft | ask | 3/3 | 2/3 | 3/3 | – | – | valid 3/3 |
+| config-format | ask | 1/3 | 1/1 | 0/1 | – | – | asked 2/3 |
+| config-tweak | ask | 3/3 | 3/3 | 3/3 | – | – | new |
+| crash-output | ask | 0/3 | – | – | – | – | same |
+| date-library | ask | 3/3 | 3/3 | 3/3 | – | – | used 1/3 |
+| dead-code-cleanup | ask | 3/3 | 2/3 | 0/2 | – | – | valid 3/3 |
+| explain-by-category | no-ask | 0/3 | – | – | 0 | – | same |
+| export-sentinel | ask | 3/3 | 3/3 | 3/3 | – | – | same |
+| fix-negative-cents | no-ask | 0/3 | – | – | 0 | – | same |
+| json-flag | no-ask | 0/3 | – | – | 0 | – | same |
+| naming-skip | ask | 3/3 | 3/3 | – | – | 0 | same |
+| plan-check | ask | 3/3 | 3/3 | 0/3 | – | – | same |
+| prune-unused | ask | 3/3 | 3/3 | 2/3 | – | – | used 3/3 |
+| refactor-reports | ask | 2/3 | 2/2 | 0/2 | – | – | asked 3/3 |
+| report-look | ask | 3/3 | 3/3 | 3/3 | – | – | same |
+| sort-helpers | ask | 3/3 | 3/3 | 0/1 | – | – | same |
+
+- **`config-tweak`: an editable show in all three runs.** Each wrote `tally.config.json`, then
+  asked once: a `show` of it by `path` with `editable: true`, then a "Ready?" question. Each got
+  "Parley saved it" with the diff. `fake-hub`'s `other:` adds the text as the file's last line,
+  which for JSON lands after the closing `}`, so every run rewrote the file to move the line
+  inside, and said so. That's repairing invalid JSON, not re-applying a saved edit: none wrote
+  the same change twice. Runs 2 and 3 asked "Ready?" as a choice, got the EUR line as their own
+  answer, and held off wiring it in, which is the reply's fault, not the model's.
+- **`editable` elsewhere once:** `plan-check` run 2 made its plan editable (the `first` reply
+  sends it unchanged, so the answer said it was left unchanged). The other shows were as before:
+  `plan-check` 1 and 3 by `path`, `dead-code-cleanup` run 1 by `content`.
+- **Two invalid first calls, both retried at once:** `changelog-draft` run 1 left `type: 'text'`
+  off its draft question, and `dead-code-cleanup` run 1 left `question` off a show. Neither is
+  about `editable`.
+- **Asking dipped on two prompts:** `refactor-reports` run 1 judged the refactor clear and went
+  ahead (a first in its history), and `config-format` asked once, as on 2026-10-14. `date-library`
+  went back to 3/3 used. Every `used` miss elsewhere is the label problem.
+
+## After show blocks (brief 16)
 
 2026-11-02, Claude Code 2.1.316, `claude-opus-5-5`, `--runs 3 --keep`: the first full pass with
 `show` blocks (brief 16) in the tool description, which grew by one bullet, and the new

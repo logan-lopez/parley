@@ -5,6 +5,7 @@ paths:
   - "apps/server/src/tools/ask.ts"
   - "apps/server/src/ask-lifecycle.ts"
   - "apps/server/src/show-files.ts"
+  - "apps/server/src/show-edits.ts"
 ---
 
 Before changing these files, read [The ask tool](../../docs/architecture/ask-tool.md).

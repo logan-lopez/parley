@@ -19,6 +19,8 @@ import { questionIds, type AskInput } from '@parley/protocol/ask'
 
 // The message is model-facing: it says what to do instead.
 export class ShowFileError extends Error {}
+// The path passes the rules, but nothing is there.
+export class ShowFileMissing extends ShowFileError {}
 
 export async function readShowFiles(input: AskInput, projectDir = process.cwd()): Promise<ShowFiles> {
   const ids = questionIds(input.questions)
@@ -45,14 +47,14 @@ export async function readShowFiles(input: AskInput, projectDir = process.cwd())
 // The project directory as the cwd names it, and its real path: a cwd under a
 // symlink (macOS's /var is /private/var) is still the project, and so is an
 // absolute path through either one.
-interface Project {
+export interface Project {
   dir: string
   real: string
 }
 
 // `/` or the home directory means the client started Parley outside any
 // project (Claude Desktop's chat runs it from `/`).
-async function projectRoot(projectDir: string): Promise<Project> {
+export async function projectRoot(projectDir: string): Promise<Project> {
   const dir = resolve(projectDir)
   const real = await realpath(dir).catch(() => dir)
   const home = await realpath(homedir()).catch(() => homedir())
@@ -62,7 +64,11 @@ async function projectRoot(projectDir: string): Promise<Project> {
   return { dir, real }
 }
 
-async function readOne(path: string, lines: [number, number] | undefined, project: Project): Promise<ShowFile> {
+// Where a path really leads, under the project rules: inside the project
+// before and after realpath, and not a secret by either name. `given` is the
+// path relative to the project. Run again before an editable show's write, so
+// a file swapped for a link out since the read is refused.
+export async function locate(path: string, project: Project): Promise<{ real: string; given: string }> {
   const outside = () => new ShowFileError(`\`${path}\` is outside the project (\`${project.dir}\`); show files from inside it`)
   const absolute = resolve(project.dir, path)
   const given = [relative(project.dir, absolute), relative(project.real, absolute)].find((rel) => !escapes(rel))
@@ -73,13 +79,17 @@ async function readOne(path: string, lines: [number, number] | undefined, projec
   try {
     real = await realpath(absolute)
   } catch {
-    throw new ShowFileError(`\`${path}\` doesn't exist in the project (\`${project.dir}\`); check the path, or put the text in \`content\``)
+    throw new ShowFileMissing(`\`${path}\` doesn't exist in the project (\`${project.dir}\`); check the path, or put the text in \`content\``)
   }
   const inside = relative(project.real, real)
   if (escapes(inside)) throw outside()
   // A link inside the project can still point at a secret.
   refuseSecrets(path, inside)
+  return { real, given }
+}
 
+async function readOne(path: string, lines: [number, number] | undefined, project: Project): Promise<ShowFile> {
+  const { real, given } = await locate(path, project)
   const info = await stat(real)
   if (info.isDirectory()) {
     throw new ShowFileError(`\`${path}\` is a directory; give a file in it, or put the text in \`content\``)

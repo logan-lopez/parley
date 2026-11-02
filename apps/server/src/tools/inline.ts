@@ -10,8 +10,9 @@ import type { McpServer } from '@modelcontextprotocol/server'
 import { isWindowOnly, type InlineOutcome, type ShowFiles } from '@parley/protocol'
 import { askInputSchema, compileQuestions, DEFAULT_TIMEOUT_SECONDS, shapeAnswer } from '@parley/protocol/ask'
 import * as z from 'zod'
-import { answerInline, awaitStatus, showAsk, shownInput, waitAsk, type AskStatus } from '../ask-lifecycle.ts'
+import { answerInline, awaitStatus, showAsk, shownEdits, shownFiles, shownInput, waitAsk, type AskStatus } from '../ask-lifecycle.ts'
 import { CARD_URI, readCard } from '../card.ts'
+import { applyShowEdits } from '../show-edits.ts'
 import { readShowFiles, ShowFileError } from '../show-files.ts'
 import { description } from './ask.ts'
 
@@ -92,7 +93,12 @@ export function registerInline(server: McpServer) {
         return { content: [{ type: 'text', text }] }
       }
       const { via: _via, ...outcome } = result.ended
-      const { structured, text } = shapeAnswer(input, outcome)
+      // Applied once per ask: a second `ask_wait` gets the same edits, not a
+      // conflict with the file Parley just wrote.
+      const edits = outcome.status === 'answered'
+        ? await shownEdits(askId, () => applyShowEdits(input, shownFiles(askId) ?? {}, outcome.data))
+        : undefined
+      const { structured, text } = shapeAnswer(input, outcome, { edits })
       return { content: [{ type: 'text', text }], structuredContent: structured }
     },
   )

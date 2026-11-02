@@ -47,6 +47,13 @@
 //   from. A path-backed show compiled without its file has `x-source: { path }`
 //   and no `x-content`; the renderer says it isn't loaded. No elicitation
 //   downgrade: there's no field to fill, so a downgraded form would drop it.
+//   An editable show (`x-editable: true`, a whole file) is `type: object` with
+//   `properties: { text: string, base: string }` and `additionalProperties:
+//   false` instead, still never required. `x-original` is the file's text as
+//   read, which the editor starts from, and `x-source.sha256` its hash. The
+//   renderer writes `{ text, base }` on mount: `base` is the sha256 of the
+//   version the text started from, so the server can tell what an edit was
+//   made against.
 //
 // Markdown in `description`, `x-preview` and `x-content` is rendered without raw HTML.
 
@@ -84,6 +91,13 @@ export interface ShowSource {
   path: string
   lines?: [number, number]
   totalLines?: number          // absent when compiled without the file
+  sha256?: string              // an editable show's file hash, the `base` its edit starts from
+}
+
+// An editable show's data.
+export interface ShowEditValue {
+  text?: string
+  base?: string
 }
 
 // Loose on purpose: a raw-schema `ask_form` later passes schemas straight through.

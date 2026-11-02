@@ -7,7 +7,7 @@ The ask card and the question renderers: one ask as a form, rendered by JSON For
 compiled schema, driven from the keyboard. The same card runs in the window, in the inline card in
 Claude Desktop, and in the dev gallery.
 
-**History:** [brief 2](../briefs/archive/02-ask-tool-and-ui.md), [brief 5](../briefs/archive/05-review-question.md) (the review renderer), [brief 7](../briefs/archive/07-inline-cards.md) (the platform adapter, `html.inline`), [brief 11](../briefs/archive/11-review-decisions.md) (labelled review decisions), [brief 12](../briefs/archive/12-capture-question.md) (copy buttons, the capture renderer), [brief 13](../briefs/13-color-chips.md) (color chips, palettes), [brief 14](../briefs/14-fenced-previews.md) (HTML and SVG previews), [brief 15](../briefs/15-themes.md) (tokens from themes), [brief 16](../briefs/16-show-blocks.md) (the show renderer, `[data-passive]`)
+**History:** [brief 2](../briefs/archive/02-ask-tool-and-ui.md), [brief 5](../briefs/archive/05-review-question.md) (the review renderer), [brief 7](../briefs/archive/07-inline-cards.md) (the platform adapter, `html.inline`), [brief 11](../briefs/archive/11-review-decisions.md) (labelled review decisions), [brief 12](../briefs/archive/12-capture-question.md) (copy buttons, the capture renderer), [brief 13](../briefs/13-color-chips.md) (color chips, palettes), [brief 14](../briefs/14-fenced-previews.md) (HTML and SVG previews), [brief 15](../briefs/15-themes.md) (tokens from themes), [brief 16](../briefs/16-show-blocks.md) (the show renderer, `[data-passive]`), [brief 17](../briefs/17-editable-show.md) (Edit and View)
 
 `card/AskCard.vue` is the card. It knows nothing about the hub or Tauri. `App.vue` is the window
 around it: the queue, Send and Skip, history. `forms/` holds the renderers, their registration, the
@@ -93,6 +93,18 @@ keyboard contract and markdown. `platform.ts` is the one way renderers reach the
     `src/index.ts · lines 10–80 of 212`. With `x-source` and no `x-content` (compiled without the
     file: the gallery, `show-file`), the pane reads "`<path>` isn't loaded here." Read-only it's
     the same view, and it's never required, so it never appears in "Still needs an answer".
+    An editable show (`x-editable` with `x-original`) isn't passive: it opens on **Edit**, a
+    monospace `textarea.show-edit` (no wrapping, 12 lines growing to 30 with `field-sizing`,
+    then scrolling) that's the `[data-primary]`, so first focus lands in it, with the caret put
+    at the top on that first focus (setting the value leaves it at the end). On mount it writes
+    `{ text: x-original, base: x-source.sha256 }`, not over data already there. Edit and View
+    are a small `.segmented` toggle above it (mouse only, `tabindex="-1"`); View renders the
+    current text through `fileMarkdown`, in the ordinary pane. "Reset to original" shows under
+    the box once the text differs, line endings normalised, since a textarea gives back `\n`
+    for a CRLF file. Enter is a new line (the card leaves Enter in a textarea alone) and
+    Cmd+Enter sends. Read-only it's View with the text sent, and "· edited" after the caption
+    when it differs. The card never diffs or writes; the server does
+    ([the ask tool](ask-tool.md#editable-shows)).
 - **Markdown** (`forms/markdown.ts`, markdown-it) renders model text with no raw HTML and no
   images. Links are linkified, and ```` ```diff ```` blocks color their lines. Every fenced block
   is wrapped in `.code-block` with a `[data-copy]` button that carries nothing: `Markdown.vue`'s
@@ -157,7 +169,9 @@ keyboard contract and markdown. `platform.ts` is the one way renderers reach the
   the percentage resets it. The inline card has no zoom.
 - **The gallery** (dev only): `pnpm --filter @parley/desktop dev`, then
   `http://localhost:1420/?gallery`. It renders every fixture through `compileQuestions` and the
-  real card without the hub; submitting shows `shapeAnswer`'s output. `&fixture=<name>` picks one,
+  real card without the hub; submitting shows `shapeAnswer`'s output. Files under
+  `packages/protocol/fixtures/files/` load for a show that names one, with a stand-in hash, so
+  `show-edit` is editable there; nothing is written. `&fixture=<name>` picks one,
   and `&source=<label>` replaces the meta row's `gallery · fixtures` (the screenshots use
   `claude-code · parley`). `&theme=<id>` paints a bundled theme (`parley-light`, `parley-dark`);
   without it the pair follows the system.

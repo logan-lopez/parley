@@ -14,12 +14,13 @@ import {
   type ReviewDecision,
   type ReviewItemSchema,
   type CaptureAccept,
+  type ShowEditValue,
   type ShowFile,
   type ShowFiles,
   type ShowSource,
   type Widget,
 } from './form.ts'
-import { fileMarkdown, SHOW_CONTENT_MAX } from './show.ts'
+import { fileMarkdown, SHOW_CONTENT_MAX, type ShowEdit } from './show.ts'
 
 export const DEFAULT_TIMEOUT_SECONDS = 1800
 export const QUESTION_TYPES = ['choice', 'text', 'number', 'boolean', 'path', 'review', 'capture', 'show'] as const satisfies readonly Widget[]
@@ -92,6 +93,7 @@ const question = z.object({
     .optional(),
   path: z.string().min(1).optional(),
   lines: z.tuple([z.number().int().min(1), z.number().int().min(1)]).optional(),
+  editable: z.boolean().optional(),
 })
 
 export const askInputSchema = z.object({
@@ -206,11 +208,20 @@ export const askInputSchema = z.object({
       if (q.required === true) {
         ctx.addIssue({ code: 'custom', path: at('required'), message: `question ${n}: show blocks have nothing to answer; drop \`required\`` })
       }
+      if (q.editable === true && q.path === undefined && q.content !== undefined) {
+        ctx.addIssue({ code: 'custom', path: at('editable'), message: `question ${n} is editable without a \`path\`: only a file can be edited in place; for text you wrote, use a text question with a \`draft\`` })
+      } else if (q.editable === true && q.lines) {
+        ctx.addIssue({ code: 'custom', path: at('lines'), message: `question ${n}: an editable show is the whole file; drop \`lines\`` })
+      }
     } else {
       for (const field of ['content', 'path', 'lines'] as const) {
         if (q[field] !== undefined) {
           ctx.addIssue({ code: 'custom', path: at(field), message: `question ${n} has \`${field}\` but type '${q.type}'; \`${field}\` only applies to type 'show', so set type to 'show' and ask about it in a question after it, or drop it` })
         }
+      }
+      // `false` changes nothing, so only `true` is a mistake.
+      if (q.editable === true) {
+        ctx.addIssue({ code: 'custom', path: at('editable'), message: `question ${n} has \`editable\` but type '${q.type}'; \`editable\` only applies to a show with a \`path\`, which the user can edit in place` })
       }
     }
   })
@@ -244,6 +255,12 @@ export const askResultSchema = z.object({
     review: z.array(reviewOutcome).optional(),   // a review's every item, in order; `value` is the labels given the first decision
     edited: z.boolean().optional(),  // a text question with a draft: whether the final text differs from it
     images: z.array(z.string()).optional(),  // a capture's pasted screenshots: absolute paths of PNG files
+    // An editable show: `value` is its path, `edited` whether the user changed it.
+    written: z.boolean().optional(),       // Parley saved the edit to the file
+    conflict: z.boolean().optional(),      // not saved: the file changed on disk after it was shown
+    diff: z.string().optional(),           // unified, against the text the user was shown
+    changedLines: z.number().optional(),   // when the diff is left out for size
+    error: z.string().optional(),          // not saved: the write failed
   })).optional(),
   note: z.string().optional(),       // free text the user added for the agent, with an answer or a skip
 })
@@ -410,6 +427,7 @@ function compileQuestion(q: Question, file?: ShowFile): JsonSchema {
       }
     }
     case 'show': {
+      if (q.editable && q.path !== undefined) return compileEditable(q, base, file)
       // `type: 'null'` with no data: nothing to answer, and nothing for AJV to check.
       const show = { 'x-widget': 'show', ...base, type: 'null' }
       if (q.path === undefined) return { ...show, ...(q.content !== undefined && { 'x-content': q.content }) }
@@ -423,12 +441,37 @@ function compileQuestion(q: Question, file?: ShowFile): JsonSchema {
   }
 }
 
+// An editable show: the text and the hash it started from, never required.
+// Without its file it compiles with `x-source` alone, and the renderer says it
+// isn't loaded.
+function compileEditable(q: Question, base: { title: string; description: string }, file?: ShowFile): JsonSchema {
+  const editable = {
+    'x-widget': 'show', ...base,
+    type: 'object',
+    properties: { text: { type: 'string' }, base: { type: 'string' } },
+    additionalProperties: false,
+    'x-editable': true,
+  }
+  if (!file) return { ...editable, 'x-source': { path: q.path! } satisfies ShowSource }
+  return {
+    ...editable,
+    'x-content': fileMarkdown(file.path, file.text),
+    'x-original': file.text,
+    'x-source': { path: file.path, totalLines: file.totalLines, sha256: file.sha256 } satisfies ShowSource,
+  }
+}
+
 // A review's decisions, the positive one first: its own, or approve and reject.
 function reviewDecisions(q: Question): string[] {
   return [...(q.decisions ?? REVIEW_DECISIONS)]
 }
 
-export function shapeAnswer(input: AskInput, outcome: AskOutcome): { structured: AskResult; text: string } {
+// `edits`: what the server did with each editable show (applyShowEdits). Without
+// them (the gallery) an edited file's line says the server saves it, and
+// `files`, when given, tells an edit from the text as it was.
+export function shapeAnswer(
+  input: AskInput, outcome: AskOutcome, extra: { edits?: Record<string, ShowEdit>; files?: ShowFiles } = {},
+): { structured: AskResult; text: string } {
   const note = 'note' in outcome ? outcome.note?.trim() || undefined : undefined
   const text = (status: AskResult['status'], message: string, answers?: AskResult['answers']) => ({
     structured: { status, message, ...(answers && { answers }), ...(note && { note }) },
@@ -454,9 +497,15 @@ export function shapeAnswer(input: AskInput, outcome: AskOutcome): { structured:
   const answers: Record<string, Answer> = {}
   const lines = ['The user answered:']
   input.questions.forEach((q, i) => {
+    const id = ids[i]!
+    if (q.type === 'show' && q.editable && q.path !== undefined) {
+      const answer = readEdit(q, data[id], extra.edits?.[id], extra.files?.[id])
+      answers[id] = answer
+      lines.push(describeEdit(answer, !extra.edits))
+      return
+    }
     // A show has no answer. Its id is still taken, so the others' don't shift.
     if (q.type === 'show') return
-    const id = ids[i]!
     const answer = readAnswer(q, data[id])
     answers[id] = answer
     lines.push(answer.review
@@ -604,9 +653,50 @@ function describeCapture({ header, value, images }: Answer): string {
   if (text === undefined) return shots ? `- ${header}: pasted ${shots}` : `- ${header}: (left blank)`
   if (!text.includes('\n') && text.length <= SHORT_PASTE) return `- ${header}: pasted "${text.trim()}"${shots ? ` and ${shots}` : ''}`
   const lines = text.split('\n').length
-  const fence = '`'.repeat(Math.max(3, ...[...text.matchAll(/`+/g)].map((m) => m[0].length + 1)))
-  const block = indent(`${fence}\n${text}\n${fence}`)
+  const block = indent(fence(text))
   return `- ${header}: pasted ${lines === 1 ? '1 line' : `${lines} lines`}:\n${block}${shots ? `\n  and ${shots}` : ''}`
+}
+
+// An editable show's answer. With the server's edit, that; without it, whether
+// the text differs from the file, or with no file either, whether there's text.
+function readEdit(q: Question, raw: unknown, edit: ShowEdit | undefined, file: ShowFile | undefined): Answer {
+  const header = q.header
+  if (edit) {
+    return {
+      header, value: edit.path, edited: edit.edited,
+      ...(edit.edited && { written: edit.written }),
+      ...(edit.conflict && { conflict: true }),
+      ...(edit.diff !== undefined && { diff: edit.diff }),
+      ...(edit.changedLines !== undefined && { changedLines: edit.changedLines }),
+      ...(edit.error !== undefined && { error: edit.error }),
+    }
+  }
+  const { text } = (isRecord(raw) ? raw : {}) as ShowEditValue
+  const lf = (s: string) => s.replace(/\r\n/g, '\n')
+  const edited = typeof text === 'string' && (!file || lf(text) !== lf(file.text))
+  return { header, value: file?.path ?? q.path!, edited }
+}
+
+function describeEdit({ header, value, edited, written, conflict, diff, changedLines, error }: Answer, unshaped: boolean): string {
+  const path = String(value)
+  if (!edited) return `- ${header}: left ${path} unchanged`
+  if (unshaped) return `- ${header}: edited ${path}; the server saves it and works out the diff`
+  const block = diff !== undefined ? `\n${indent(fence(diff.replace(/\n$/, ''), 'diff'))}` : ''
+  if (conflict) {
+    return `- ${header}: edited ${path}, but the file changed on disk after it was shown, so Parley didn't save it. Their edit, against the version they saw:${block}`
+  }
+  if (error !== undefined) return `- ${header}: edited ${path}, but Parley couldn't save it (${error}). Their edit:${block}`
+  if (written && diff === undefined) {
+    const n = changedLines ?? 0
+    return `- ${header}: edited ${path} (${n} ${n === 1 ? 'line' : 'lines'} changed), and Parley saved it; run \`git diff\` to see it`
+  }
+  return `- ${header}: edited ${path}, and Parley saved it:${block}`
+}
+
+// A fence longer than any run of backticks in the text.
+function fence(text: string, info = ''): string {
+  const ticks = '`'.repeat(Math.max(3, ...[...text.matchAll(/`+/g)].map((m) => m[0].length + 1)))
+  return `${ticks}${info}\n${text}\n${ticks}`
 }
 
 // A pasted line this short or shorter is quoted in the text, not fenced.

@@ -17,7 +17,8 @@
 // `other:<text>` appends <text> to it as its last line.
 // Capture questions get <text> as pasted text under `other:<text>`, and
 // 'as you see fit' otherwise. Never a screenshot. Show blocks get nothing:
-// there's nothing to answer.
+// there's nothing to answer. An editable show is sent back unchanged, and
+// under `other:<text>` with <text> as a new last line (the draft policies).
 //   skip                    dismiss
 //   none                    never answer (let it time out or be cancelled)
 //   delay:<s>:<policy>      wait, then apply the policy
@@ -127,7 +128,16 @@ function fill(form: FormSpec, policy: string): Record<string, unknown> {
         data[key] = { text: other ?? 'as you see fit' }
         break
       }
-      case 'show': break   // nothing to answer, and no data
+      case 'show': {
+        // Nothing to answer, unless it's editable and loaded.
+        const original: string | undefined = prop['x-original']
+        if (!prop['x-editable'] || original === undefined) break
+        const other = policy.startsWith('other:') ? policy.slice(6) : undefined
+        const text = other === undefined ? original
+          : original.endsWith('\n') ? `${original}${other}\n` : `${original}\n${other}`
+        data[key] = { text, base: prop['x-source']?.sha256 }
+        break
+      }
       case 'review': {
         // The decisions are the items' enum: approve and reject, or the question's own.
         const other = policy.startsWith('other:') ? policy.slice(6) : undefined

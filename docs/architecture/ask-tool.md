@@ -1,5 +1,5 @@
 ---
-sources: ["apps/server/src/index.ts", "apps/server/src/client-capabilities.ts", "apps/server/src/tools/ask.ts", "apps/server/src/ask-lifecycle.ts", "apps/server/src/show-files.ts"]
+sources: ["apps/server/src/index.ts", "apps/server/src/client-capabilities.ts", "apps/server/src/tools/ask.ts", "apps/server/src/ask-lifecycle.ts", "apps/server/src/show-files.ts", "apps/server/src/show-edits.ts"]
 ---
 # The ask tool
 
@@ -8,12 +8,12 @@ MCP Apps get a two-step version ([inline cards](inline-cards.md)); this page is 
 every other client gets, how the server picks between them, and how long asks survive in Claude
 Code.
 
-**History:** [brief 1](../briefs/archive/01-hub-and-lifecycle.md), [brief 2](../briefs/archive/02-ask-tool-and-ui.md), [brief 3](../briefs/archive/03-trial-harness.md) (`alwaysLoad`), [brief 7](../briefs/archive/07-inline-cards.md) (two surfaces), [brief 16](../briefs/16-show-blocks.md) (show files)
+**History:** [brief 1](../briefs/archive/01-hub-and-lifecycle.md), [brief 2](../briefs/archive/02-ask-tool-and-ui.md), [brief 3](../briefs/archive/03-trial-harness.md) (`alwaysLoad`), [brief 7](../briefs/archive/07-inline-cards.md) (two surfaces), [brief 16](../briefs/16-show-blocks.md) (show files), [brief 17](../briefs/17-editable-show.md) (editable shows)
 
 `index.ts` holds the server instructions and picks the surface. `client-capabilities.ts` reads the
 client's first message. `tools/ask.ts` is the blocking `ask` and the tool description both
 surfaces share. `ask-lifecycle.ts` holds `runAsk` and the show-then-wait helpers. `show-files.ts`
-reads the files show blocks name.
+reads the files show blocks name, and `show-edits.ts` saves editable shows' edits.
 
 ## How it works
 
@@ -36,8 +36,8 @@ reads the files show blocks name.
   [the form spec](form-spec.md)), `readOnlyHint`, and `_meta["anthropic/alwaysLoad"]: true`. The
   description carries the input shape and one example. The handler reads the shows' files
   (`readShowFiles`), compiles the questions with them, calls `runAsk` with the timeout (default
-  1800 s, at most 3600), and returns `shapeAnswer`'s text as content and its structured result as
-  `structuredContent`. A refused file or an unreachable app is an `isError` result with the reason
+  1800 s, at most 3600), saves any editable show's edit (`applyShowEdits`, answers only), and
+  returns `shapeAnswer`'s text as content and its structured result as `structuredContent`. A refused file or an unreachable app is an `isError` result with the reason
   ("Parley isn't running…"), and nothing is shown.
 - **`runAsk`** sends the form through `AppClient` with the call's abort signal and the client's
   identity, and blocks until the outcome. When the request carries a `progressToken`, it sends a
@@ -78,6 +78,39 @@ The bytes are hashed as read (`sha256`, the whole file even with `lines`), decod
 kept as they are, line endings included. `path` in the result is relative to the project, with
 `./` and `..` folded and an absolute path made relative. `fake-ask` reads files the same way from
 where `pnpm` was run.
+
+## Editable shows
+
+A show with `editable: true` is a whole file the user can edit; the server saves the edit and
+hands the agent a diff ([decision](../decisions/editing-a-shown-file.md)). It's Parley's only
+write outside its own data directory. The agent never re-applies the edit: an answer Claude Code
+delivers after backgrounding the call has `<` and `>` escaped (below), so a model copying text
+back would mangle exactly the HTML a file might hold.
+
+`applyShowEdits(input, files, data, projectDir = process.cwd())` returns a `ShowEdit` per
+editable show ([the form spec](form-spec.md)), keyed by question id. For each:
+
+1. **The text.** `data[id].text`, or the file's text when none came. `base` is `data[id].base`,
+   or the file's `sha256`.
+2. **Line endings.** A textarea gives back `\n`, so when the file's first line break is `\r\n`
+   the new text gets `\r\n` throughout. Equal to the file after normalising both: `edited:
+   false`, and nothing is written.
+3. **The rules again.** The path goes through `locate`, brief 16's checks (inside the project
+   before and after `realpath`, not a secret), so a file swapped for a link out since the read
+   is refused (`error`). A file that's gone is a conflict.
+4. **The hash.** The file is read again; if it doesn't hash to `base`, it's a conflict and nothing
+   is written.
+5. **The write**, with `writeFile` on the real path, in place, so the file keeps its mode and
+   inode. A failure (a read-only file, a full disk) is `error` with the system's message.
+6. **The diff:** `createTwoFilesPatch` from jsdiff (`diff`, server only), file headers only, 3
+   lines of context, both sides with `\n` line endings, against the text the user was shown.
+   A saved edit's diff over 20,000 characters is left out for a count of changed lines; an
+   unsaved one keeps it, as the only copy of the edit.
+
+Only an `answered` outcome writes. The blocking `ask` applies edits after `runAsk`;
+`ask_wait` applies them once per ask and keeps the result ([inline
+cards](inline-cards.md)), so a second wait doesn't report Parley's own write as a conflict.
+`fake-ask` applies them too. Nothing is undone: git is the undo.
 
 ## Claude Code and long asks
 

@@ -7,7 +7,7 @@
 
 import { randomUUID } from 'node:crypto'
 import { CLIENT_INFO_META_KEY, type McpServer, type ServerContext } from '@modelcontextprotocol/server'
-import type { FormSpec, InlineOutcome, SessionInfo, ShowFiles } from '@parley/protocol'
+import type { FormSpec, InlineOutcome, SessionInfo, ShowEdit, ShowFiles } from '@parley/protocol'
 import type { AskInput } from '@parley/protocol/ask'
 import { getAppClient, type AskOutcome } from './app-client.ts'
 
@@ -60,7 +60,8 @@ export type Ended = AskOutcome & { via: Via }
 
 interface Shown {
   input: AskInput
-  files: ShowFiles       // the shows' files as read when it was shown (brief 17 diffs against them)
+  files: ShowFiles       // the shows' files as read when it was shown; editable shows' edits diff against them
+  edits?: Promise<Record<string, ShowEdit>>   // applied once, on the first ask_wait after an answer
   done: Promise<Ended>   // never rejects
   ended?: Ended
   failure?: string       // the window was unavailable, and the card can't answer this one
@@ -145,6 +146,13 @@ export function shownInput(askId: string): AskInput | undefined {
 
 export function shownFiles(askId: string): ShowFiles | undefined {
   return shown.get(askId)?.files
+}
+
+// The edits for an answered ask, applied by `apply` the first time only.
+export function shownEdits(askId: string, apply: () => Promise<Record<string, ShowEdit>>): Promise<Record<string, ShowEdit>> {
+  const entry = shown.get(askId)
+  if (!entry) return apply()
+  return (entry.edits ??= apply())
 }
 
 export async function waitAsk(ctx: ServerContext, askId: string): Promise<WaitResult> {

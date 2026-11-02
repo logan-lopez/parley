@@ -8,13 +8,13 @@ compiles it to JSON Schema with `x-widget` hints, which is all the app renders. 
 answers, the same package shapes the answer back into a structured result and a line of text per
 question.
 
-**History:** [brief 2](../briefs/archive/02-ask-tool-and-ui.md), [brief 5](../briefs/archive/05-review-question.md) (`review`), [brief 10](../briefs/archive/10-text-drafts.md) (`draft`), [brief 11](../briefs/archive/11-review-decisions.md) (review `decisions`), [brief 12](../briefs/archive/12-capture-question.md) (`capture`), [brief 16](../briefs/16-show-blocks.md) (`show`)
+**History:** [brief 2](../briefs/archive/02-ask-tool-and-ui.md), [brief 5](../briefs/archive/05-review-question.md) (`review`), [brief 10](../briefs/archive/10-text-drafts.md) (`draft`), [brief 11](../briefs/archive/11-review-decisions.md) (review `decisions`), [brief 12](../briefs/archive/12-capture-question.md) (`capture`), [brief 16](../briefs/16-show-blocks.md) (`show`), [brief 17](../briefs/17-editable-show.md) (`editable`)
 
 `ask.ts` is the `@parley/protocol/ask` entry: the tool's Zod input schema (`askInputSchema`), the
 result schema, `compileQuestions` and `shapeAnswer`. They're pure functions, shared by the server,
 `fake-ask`, the gallery, the inline card and the tests. `form.ts` documents the schema vocabulary
-the app renders and holds its types. `show.ts` has the show caps and `fileMarkdown`, with no Zod,
-so the window can import it from the root entry.
+the app renders and holds its types. `show.ts` has the show caps, `ShowEdit` and `fileMarkdown`,
+with no Zod, so the window can import it from the root entry.
 
 ## How it works
 
@@ -38,6 +38,9 @@ so the window can import it from the root entry.
     lead line. No `required`, since there's nothing to answer, and a form needs at least one
     question that isn't a show: a form of only shows would block the agent with nothing to send
     back, which is `notify` ([decision](../decisions/show-blocks.md)). Shows count toward the 1–4.
+    `editable: true` on a whole-file `path` show lets the user edit the file in place; the server
+    saves it ([the ask tool](ask-tool.md#editable-shows),
+    [decision](../decisions/editing-a-shown-file.md)).
 - **Soft limits.** The published JSON Schema (what the model reads) says `header` ≤12 and
   `description` and `detail` ≤300; the Zod schema (what's accepted) takes a header up to 24 and a
   description or detail up to 500. `.meta({ maxLength })` sets the first and `.max()` the second
@@ -54,8 +57,10 @@ so the window can import it from the root entry.
   anything but text, decisions on anything but review, `accept` on anything but capture, duplicate labels, decisions or ids, a
   `defaultDecision` that isn't one of the decisions, `min` above `max`; for shows, both or neither
   of `content` and `path`, `lines` without a path or backwards, `content`, `path` or `lines` on
-  another type, `required: true`, and a form of only shows) and says what to do instead.
-  `required: false` on a show is accepted, since it's true anyway. The SDK rejects invalid input
+  another type, `required: true`, and a form of only shows; `editable` on another type, without a
+  `path` (it points at a text question's `draft`), or with `lines`) and says what to do instead.
+  `required: false` on a show and `editable: false` anywhere are accepted, since they change
+  nothing. The SDK rejects invalid input
   before the tool runs, so the model sees the message and retries.
 - **Answer keys.** An explicit `id` wins; otherwise a slug of the header, `_2`, `_3` on
   collisions, with explicit ids reserved first (`questionIds`).
@@ -102,6 +107,13 @@ so the window can import it from the root entry.
     for a property without a `type`, so no renderer would run; `null` makes one, and with no data
     there's nothing for AJV to check (strict mode included). No elicitation downgrade: there's no
     field to fill.
+    An editable show is `type: object` instead, `properties: { text: string, base: string }` with
+    `additionalProperties: false`, `x-editable: true`, and still never required. `x-original` is
+    the file's text as read (line endings included), which the editor starts from, `x-content`
+    its markdown as for any show, and `x-source: { path, totalLines, sha256 }`. The renderer
+    writes `{ text, base }` on mount: `base` is the hash of the version the text started from,
+    which the server checks the disk against before it writes. Without the file it compiles
+    with `x-source: { path }` alone, and isn't editable.
 - **Window-only forms** (`isWindowOnly` in `form.ts`): a form with a `path` question, or a
   `capture` whose `x-accept` isn't `text`, can't be answered in an MCP Apps card (no file picker
   in the host's iframe, and nowhere to save an image). The server doesn't send it `inline`, and
@@ -126,7 +138,14 @@ so the window can import it from the root entry.
   with a draft adds `edited`: whether the final text differs from the draft, both trimmed and with
   line endings normalised, so re-wrapping the end isn't an edit. A draft cleared to blank is
   `value: null`, `edited: true`. A capture's `value` is the pasted text verbatim (null when
-  there's none, or only whitespace), and `images` its screenshots' paths.
+  there's none, or only whitespace), and `images` its screenshots' paths. An editable show's
+  `value` is its path, `edited` whether the text differs from the file (line endings
+  normalised), and, once edited, `written` (Parley saved it), `conflict` (it didn't: the file
+  changed on disk after it was shown), `error` (it didn't: the write failed or the path was
+  refused) and `diff` (unified, 3 lines of context, against the text the user was shown).
+  Past 20,000 characters a saved edit's diff is left out for `changedLines` (`SHOW_DIFF_MAX`);
+  an unsaved one keeps it, since it's the only copy of the edit. `ShowEdit` (`show.ts`) is what
+  the server hands `shapeAnswer` in `extra.edits`.
 - **The text** (`shapeAnswer`) leads with "The user answered:" and one line per question. Own
   answers are quoted and marked as not one of the options. A draft reads "accepted the draft as
   written", or "edited the draft:" with the final text indented below, or "(cleared the
@@ -138,7 +157,12 @@ so the window can import it from the root entry.
   of backticks in it; one line of 120 characters or fewer is quoted instead (`pasted "v2.1.296"`).
   Screenshots follow as paths, one per line, introduced as PNG files the agent can read. A note is quoted after the answers.
   A show has no entry in `answers` and no line; its id is still taken in `questionIds`, so the
-  ids around it don't shift.
+  ids around it don't shift. An editable one does: "left docs/plan.md unchanged", "edited
+  docs/plan.md, and Parley saved it:" with the diff fenced as ```` ```diff ```` and indented, or
+  that it wasn't saved, why, and the diff; over the cap, "(N lines changed) … run `git diff`".
+  Without `edits` (the gallery) the line says the server saves it, and `extra.files`, when given,
+  tells an edit from the file as it was. A draft's answer stays the full text: the diff is for
+  files ([decision](../decisions/drafts-to-edit.md)).
   Skips and timeouts each get a sentence that tells the model what to do next (don't ask again,
   continue and say what you assumed); a cancel only says so. `message` is the same text.
 - **Fixtures** in `packages/protocol/fixtures/` are `ask` tool input, at least one per question type.

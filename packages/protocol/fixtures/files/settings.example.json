@@ -1,0 +1,7 @@
+{
+  "currency": "USD",
+  "dateFormat": "YYYY-MM-DD",
+  "groupBy": "category",
+  "showRefunds": true,
+  "decimals": 2
+}

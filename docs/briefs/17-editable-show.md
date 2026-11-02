@@ -1,5 +1,5 @@
 ---
-status: not-started
+status: awaiting-review
 ---
 # Brief 17: Edit a shown file, get a diff back
 
@@ -241,3 +241,145 @@ By hand, for Logan:
 - Whether the plain textarea is enough, or he wants CodeMirror.
 
 Then stop. Ask Logan before committing.
+
+## Report
+
+Built 2026-11-02, every section of Shape, with every acceptance item run. The session was
+interrupted once, right after `pnpm add diff` (it had landed, nothing half-done), and picked up
+from there.
+
+### Built
+
+- **Protocol** (`packages/protocol`). `editable` on `question` with the three messages from §1
+  (`ask.ts`). An editable show compiles as §2 pins it (`compileEditable`): `type: object`,
+  `{ text, base }`, `x-editable`, `x-original`, `x-content`, and `x-source` with `sha256`. Without
+  its file it compiles with `x-source: { path }` alone. `shapeAnswer(input, outcome, { edits?,
+  files? })` gives an editable show an `answers` entry and the §5 lines; `askResultSchema` gains
+  `written`, `conflict`, `diff`, `changedLines`, `error`. A shared `fence()` replaces
+  `describeCapture`'s inline one. In `show.ts` (no Zod): `ShowEdit` and `SHOW_DIFF_MAX`. In
+  `form.ts`: `ShowSource.sha256`, `ShowEditValue`, and the vocabulary comment. Fixture
+  `show-edit.json` and `fixtures/files/settings.example.json`.
+- **Server** (`apps/server`). New `src/show-edits.ts`: `applyShowEdits`, the five steps of §4,
+  with jsdiff 9.0.0 (`diff`, a server dependency). `show-files.ts` exports its path checks as
+  `locate` and `projectRoot`, plus `ShowFileMissing`, so the write re-runs brief 16's rules.
+  Wired into the blocking `ask` (`tools/ask.ts`), `ask_wait` (`tools/inline.ts`, once per ask
+  through `shownEdits` and `Shown.edits` in `ask-lifecycle.ts`) and `fake-ask`. The tool
+  description's sentence from §6, verbatim. `fake-hub`'s editable policy (§7). A `show-edit`
+  `fake-host` scenario. `trial-score` labels an editable show `show+editable`.
+- **Desktop** (`apps/desktop`). `ShowRenderer.vue`: Edit (a monospace textarea, the
+  `[data-primary]`, with the caret put at the top on first focus) and View (the text through
+  `fileMarkdown`), writing `{ text, base }` on mount, not over existing data; "Reset to original";
+  read-only View with "· edited". Styles in `styles.css` (tokens only). The gallery loads files
+  under `packages/protocol/fixtures/files/`, so `show-edit` is editable there.
+- **Trial.** Prompt `config-tweak.md`, its row and reading notes, and the pass below.
+
+### Deviations
+
+- **`changedLines` and `error` in the result schema.** §5 lists `written?`, `conflict?` and `diff?`
+  for the answer. `ShowEdit` carries the other two as well, and an over-cap or failed save has
+  nothing else to say it with, so both are optional fields in `askResultSchema`.
+- **The size cap drops the diff only from a saved edit.** For a conflict or a write error the
+  diff is the only copy of the user's edit, so it stays in whatever its size.
+- **`ask_wait` applies the edits once per ask.** The brief didn't say. A late or repeated
+  `ask_wait` would otherwise find the file Parley had just written, report a conflict and
+  contradict the first answer. `fake-host` checks that a second wait gets the same text.
+- **A file swapped for a symlink out is `error`, not `conflict`.** The error is the refusal's own
+  message (`… is outside the project (…)`). A deleted file is a conflict, as §4 says.
+- **`shapeAnswer` also takes `extra.files`.** The renderer writes the text on mount, so without
+  the original the gallery called every send "edited". With the files it tells an edit from the
+  file as it was. The server passes `edits`, so it doesn't use this.
+- **`editable: false` is accepted anywhere.** Only `true` on another type is refused, like
+  brief 16's `required: false` on a show: it changes nothing, and a bounce costs a round trip.
+- **The diff is of `\n` text.** Both sides are diffed with `\n` line endings, so a CRLF file's
+  diff reads cleanly. The file itself is written back with `\r\n`.
+- **Acceptance 6's `git diff` and `git checkout`.** The fixture's file is new, so until this
+  commit git doesn't track it. I compared it with `diff -u` against the original and restored it
+  by hand.
+- **"Optional" stays on an editable show.** It isn't `[data-passive]` (§3), and `QuestionFrame`
+  hides the label only for passive questions. Editing is optional, so I left it; say if it
+  should go.
+- **Edit and View are mouse only** (`tabindex="-1"`), since Tab belongs to the card and a new
+  chord needs the keymap check.
+- **`areas.py`** is `docket areas` now (brief 16's follow-up).
+- **A `git stash` during the trial.** I stashed for a second to check whether a link finding was
+  older than this work, while the trial ran. The server runs from the `dist` it built first and
+  the runs go one at a time, so only a `config-format` run could have started its `fake-hub` in
+  that window, and the old `fake-hub` answers a non-editable form the same way.
+
+### Defaults taken
+
+- Diff context: 3 lines.
+- A big diff: over 20,000 characters, a saved edit's answer gives the count of changed lines and
+  points at `git diff`.
+- The box: 12 lines, growing to 30 with `field-sizing`, then scrolling.
+
+### Acceptance
+
+1. `pnpm --filter @parley/protocol test`: **pass**, 124 (12 new: the three messages,
+   `editable: false`, both compiles, every §5 line including conflict, error, over-cap, the
+   gallery's no-edits case with and without files, and a diff with backticks).
+2. `pnpm --filter @parley/server test`: **pass**, 22 (8 new in `show-edits.test.ts`: unchanged,
+   sent or not; written in place with the same inode and mode; CRLF kept; a conflict; the file
+   deleted; a symlink out; a read-only file; and over the cap).
+3. `pnpm --filter @parley/desktop test` **pass** (155; `show-edit` compiles under strict AJV);
+   `pnpm typecheck` and `pnpm --filter @parley/server build` **pass**. The window's production
+   bundle has no Zod and no jsdiff.
+4. `fake-host`: **all 11 scenarios pass**, from source and with `--server dist`. The new
+   `show-edit` scenario has 7 checks, among them the diff in `ask_wait`'s text, `EUR` on disk,
+   and a second `ask_wait` with the same text.
+5. Gallery, headless WebKit, light and dark: **pass**, 10 checks per theme. The card opens on
+   Edit with the file, and first focus lands in the box at the top. Enter adds a line without
+   sending. Reset appears after an edit and restores the file. View renders the edited text as a
+   `json` block. Cmd+Enter sends, and the line says edited and that the server saves it.
+   Untouched, it says unchanged. No console errors. `screenshots show-edit` rerun, and the guide's
+   screenshots page shows the pair.
+6. Installed build: **pass**. With Logan's go-ahead, `pnpm install:desktop`, a restart, then
+   `fake-ask show-edit`. Logan changed `showRefunds` and `decimals` and sent. The printed answer
+   had the diff, `diff -u` on the file showed the same hunk, and the file is restored.
+7. Trial pass (`--runs 3 --keep`): **done**. It's the new baseline in
+   `apps/server/trials/README.md`, compared with brief 16's. `config-tweak` used an editable
+   `path` show in 3/3 runs, and `plan-check` once more. No run wrote a saved edit a second time.
+   Every run did rewrite the file, but to repair it: `fake-hub` put the line after the closing
+   `}`, which made the JSON invalid (Follow-ups). Two first calls were invalid, both model slips
+   retried at once and unrelated to `editable`. `refactor-reports` asked 2/3 and `config-format`
+   1/3; everything else held.
+
+### Size
+
+Unsized; this session not measured (Copilot CLI, not Claude Code: `docket sessions` says
+`CLAUDE_CODE_SESSION_ID is not set`).
+
+### Spot checks for Logan
+
+- **The gallery** is running: <http://localhost:1420/?gallery&fixture=show-edit>. Edit a value,
+  try View and Reset, send.
+- **Edit the box's height.** In headless WebKit the empty part of the box looked nearer 8 lines
+  than 12 for the 7-line file. Look at it in the installed window.
+- **"Optional"** next to an editable show's chip: keep it or drop it?
+- From the brief: a real edit from a Claude Code session (the file changes, and the agent
+  doesn't redo it), and whether the plain textarea is enough. Desktop's chat has no project
+  directory, so `path` is off there; agent mode is still unchecked (brief 16).
+
+### Docs updated
+
+- Architecture: `form-spec.md` (`editable`, the compile, the answer fields and lines),
+  `ask-tool.md` (an Editable shows section, `show-edits.ts` in sources), `inline-cards.md`
+  (`ask_wait` saves once, `Shown.edits`), `card-ui.md` (Edit and View, the gallery's files),
+  `testing.md` (the tests, `fake-hub`, `fake-ask`, `show-edit`, the gallery).
+- `docket areas`: `.claude/rules/ask-tool.md`, `.claude/rules/testing.md`, the Areas table.
+  `AGENTS.md` Commands: the server's `test`.
+- Guide: `question-types.md` (Editing a shown file), `screenshots.md` (the pair); the root
+  README's feature list and "What it's built around". `answering.md` already says Enter is a new
+  line in a multi-line box.
+- `apps/server/trials/README.md`: `config-tweak`'s row and reading notes, `show+editable`, the
+  new baseline.
+- Decisions: unchanged. `editing-a-shown-file` and `drafts-to-edit` still read true.
+
+### Follow-ups
+
+- **`fake-hub`'s editable policy can't test re-applying.** `other:<text>` appends a line, which
+  for JSON lands after the `}`, so the agent has to fix the file anyway. A
+  `replace:<old>:<new>` policy would give `config-tweak` a valid edit and a clean re-apply check.
+- `docket links --paths` flags `card-ui.md:92`'s `docs/plan.md`, an example caption from brief 16
+  rather than a path. It needs a `.checklinks-ignore` entry or rewording.
+- Edit and View have no key.
