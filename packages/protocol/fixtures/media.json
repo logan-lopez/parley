@@ -1,5 +1,5 @@
 {
-  "title": "A picture in the question",
+  "title": "Pictures and sounds in the question",
   "questions": [
     {
       "header": "Layout",
@@ -17,6 +17,30 @@
         },
         {
           "label": "Try top navigation"
+        }
+      ]
+    },
+    {
+      "header": "Audition",
+      "question": "Pick a take for each sound. Each preview has three takes; a take with variants plays them in turn.",
+      "type": "review",
+      "decisions": [
+        "Take 1",
+        "Take 2",
+        "Take 3",
+        "None"
+      ],
+      "defaultDecision": "none",
+      "items": [
+        {
+          "label": "jump",
+          "detail": "Player leaves the ground",
+          "preview": "![Take 1](packages/protocol/fixtures/files/jump-1.wav) ![Take 2](packages/protocol/fixtures/files/jump-2.wav) ![Take 3](packages/protocol/fixtures/files/jump-3_*.wav)"
+        },
+        {
+          "label": "land",
+          "detail": "Player hits the ground",
+          "preview": "![Take 1](packages/protocol/fixtures/files/land-1.wav) ![Take 2](packages/protocol/fixtures/files/land-2.wav) ![Take 3](packages/protocol/fixtures/files/land-3.wav)"
         }
       ]
     }

@@ -44,7 +44,7 @@ Every question type, in light and dark: [What it looks like](docs/guide/screensh
   `AskUserQuestion`, with more types: text, number, yes/no, file and folder paths, a review that
   gives each item of a list a decision (approve or reject, or the agent's own labels), a
   capture box for pasted output and screenshots, and a show block to put a plan or a project file
-  in front of you, which you can edit in place. Project images can sit in any markdown. The
+  in front of you, which you can edit in place. Project images and sounds can sit in any markdown. The
   server compiles them to JSON Schema, which is all the app renders.
 - **An inbox, not a modal.** One app, many agents. Asks from every session queue up, labelled with
   who's asking; nothing steals your focus, and every ask is kept in history with what you sent.
@@ -106,6 +106,9 @@ How each part works, as you use it, is in [the guide](docs/guide/README.md).
 - [Project pictures](docs/guide/pictures.md) in questions, previews and shows: PNG, JPEG, GIF and
   WebP from the project, with captions, a click to open, and a notice when a file changes or goes
   missing in history. Small images appear in Claude Desktop's inline card too.
+- [Project sounds](docs/guide/pictures.md#sounds) as play chips, for auditions: WAV, AIFF, MP3,
+  M4A, FLAC and Ogg, one playing at a time, and a glob (`takes/3_*.wav`) for a take's variants,
+  played in turn. They play in the Parley window.
 - [Claude Code](docs/guide/claude-code.md) asks block until you answer, for up to an hour.
 - [Claude Desktop](docs/guide/claude-desktop.md) shows the card inline in the chat as well.
 - [History](docs/guide/history.md) of every ask for 30 days, searchable.

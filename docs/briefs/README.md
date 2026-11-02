@@ -62,7 +62,7 @@ and move to `archive/` when they're done. Ideas that aren't scheduled yet are in
     while the ask is open, by re-sending the ask with the same id; go or no-go before the build.
 22. [`22-media-images.md`](22-media-images.md) (done, awaiting review): `![caption](path)` draws a project image in any markdown,
     by reference (path and hash) through the asset protocol; starts with a PNG and Ogg spike.
-23. [`23-media-sounds.md`](23-media-sounds.md): the same syntax for audio files and globs of variants, as
+23. [`23-media-sounds.md`](23-media-sounds.md) (done, awaiting review): the same syntax for audio files and globs of variants, as
     play chips, one sound at a time; window-only in the inline card.
 24. [`24-audition-keys.md`](24-audition-keys.md): `p` cycles the focused row's takes, Shift+`p` replays,
     Esc stops; autoplay as an opt-in setting.

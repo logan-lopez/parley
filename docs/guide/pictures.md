@@ -1,8 +1,8 @@
 ---
-description: "Project images in questions, previews and shows, with changed-file notices in history"
+description: "Project images and sounds in questions, previews and shows: pictures drawn, sounds as play chips, with changed-file notices in history"
 covers: ["docs/architecture/form-spec.md", "docs/architecture/ask-tool.md", "docs/architecture/card-ui.md", "docs/architecture/inline-cards.md", "docs/architecture/desktop-shell.md"]
 ---
-# Pictures from the project
+# Pictures and sounds from the project
 
 An agent can put a screenshot or other project image in a question, an option's preview, a review
 item's preview, or a show. It writes ordinary markdown, such as `![The new layout](shots/layout.png)`.
@@ -23,3 +23,28 @@ the caption and path stay visible.
 In Claude Desktop's inline card, images up to 2 MB each and 8 MB per ask appear in the chat.
 Larger images keep their caption and say **Open in the Parley window**. You can still answer the
 card in either place.
+
+## Sounds
+
+The same markdown with a sound file, such as `![Take 1](audition/jump/1.wav)`, is a play chip:
+▶, the caption, and the sound's length once it's known. Click it to play; click it again to
+stop. Starting another chip stops the one that was playing, so only one sound plays at a time.
+Clicking a chip in a preview doesn't move focus off the row or option you're on, and a chip in
+an option's description doesn't pick the option. Answering or closing the ask stops the sound.
+
+A glob in the file name, such as `![Take 3](audition/jump/3_*.wav)`, makes one chip of
+variants: it says how many (“3 variants”), plays them one after another with a short pause, and
+shows which is playing (“2/3”). The glob matches 1 to 12 files in that one directory, in name
+order with numbers counted properly (`take_2` before `take_10`). `*` and `?` work; a glob in a
+directory name and `**` don't. Hover a chip to see its files.
+
+WAV, AIFF, MP3, M4A/AAC, FLAC and Ogg (Vorbis or Opus) play, checked by their contents rather
+than the extension. Each file counts toward the 200 per ask, variants included. Anything else is
+refused, and the agent is told to convert it first (for example with `ffmpeg`).
+
+Sounds follow the same rules as pictures: inside the project, no secret-looking files, a
+reference rather than a copy. In history, a chip whose file changed or is gone is disabled and
+says so, naming the file. In Claude Desktop's inline card, chips are disabled and say **Plays in
+the Parley window**.
+
+Keys for playing aren't there yet: a chip is played with the mouse.

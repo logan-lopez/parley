@@ -2,7 +2,7 @@
 // Dev only (`?gallery`): every shared fixture through the real compiler and
 // card, without the hub. Submitting shows what the model would get back.
 import { computed, ref, watch } from 'vue'
-import type { Media, ShowFiles } from '@parley/protocol'
+import { isMediaGlob, looksLikeSound, type Media, type ShowFiles } from '@parley/protocol'
 import { askInputSchema, askMediaRefs, compileQuestions, questionIds, shapeAnswer, DEFAULT_TIMEOUT_SECONDS, type AskInput, type AskOutcome } from '@parley/protocol/ask'
 import { setPlatform } from '../platform'
 import AskCard from '../card/AskCard.vue'
@@ -19,17 +19,29 @@ const names = Object.keys(fixtures)
 // the gallery never writes.
 const FILES = 'packages/protocol/fixtures/files/'
 const fileTexts = import.meta.glob<string>('../../../../packages/protocol/fixtures/files/*', { query: '?raw', import: 'default', eager: true })
-const fileUrls = import.meta.glob<string>('../../../../packages/protocol/fixtures/files/*.png', { query: '?url', import: 'default', eager: true })
+const fileUrls = import.meta.glob<string>('../../../../packages/protocol/fixtures/files/*.{png,wav}', { query: '?url', import: 'default', eager: true })
+const fixturePaths = Object.keys(fileUrls).map((key) => key.replace('../../../../', ''))
 setPlatform({
   mediaUrls: async (entries) => new Map(Object.values(entries).flatMap((entry) => entry.files.map((file) => [
     file.sha256, { status: 'ok' as const, url: fileUrls[`../../../../${file.path}`] },
   ]))),
 })
 
+// As the server would resolve them, for the fixtures' own files: a glob
+// expands within its directory, sorted by name. The path stands in for a hash.
 function fixtureMedia(input: AskInput, files: ShowFiles): Media {
-  return Object.fromEntries(askMediaRefs(input, files).filter((src) => Object.prototype.hasOwnProperty.call(fileUrls, `../../../../${src}`)).map((src) => [
-    src, { kind: 'image', files: [{ path: src, abs: src, sha256: src, bytes: 0, mime: 'image/png' }] },
-  ]))
+  const media: Media = {}
+  for (const src of askMediaRefs(input, files)) {
+    const paths = isMediaGlob(src) ? fixturePaths.filter((path) => globMatch(src, path)).sort() : fixturePaths.includes(src) ? [src] : []
+    if (!paths.length) continue
+    const sound = looksLikeSound(src)
+    media[src] = { kind: sound ? 'audio' : 'image', files: paths.map((path) => ({ path, abs: path, sha256: path, bytes: 0, mime: sound ? 'audio/wav' : 'image/png' })) }
+  }
+  return media
+}
+function globMatch(glob: string, path: string): boolean {
+  const re = glob.replace(/[.+^$(){}|[\]\\]/g, '\\$&').replace(/\*/g, '[^/]*').replace(/\?/g, '[^/]')
+  return new RegExp(`^${re}$`).test(path)
 }
 function fixtureFiles(input: AskInput): ShowFiles {
   const ids = questionIds(input.questions)

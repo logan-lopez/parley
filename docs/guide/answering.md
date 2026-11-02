@@ -50,6 +50,8 @@ theme changes. A wide one is shrunk to fit the card. If the agent's HTML or SVG 
 An agent can also show [an image file from the project](pictures.md), such as a screenshot, with
 its caption and path. Click it in the window to open it in Preview. Old asks keep the reference:
 if the file changed or is gone, the card says so.
+A [sound file](pictures.md#sounds) is a ▶ chip: click to play, click again to stop. Only one
+sound plays at a time.
 
 ## Keys
 

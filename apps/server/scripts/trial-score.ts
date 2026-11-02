@@ -21,6 +21,7 @@ export interface RunMeta {
   reply: string            // the first reply policy
   replies?: string[]       // all of them, in the order the asks arrive, when the prompt has more than one
   match?: string           // searched for instead of the reply, when set
+  media?: 'audio'          // the asks should play project sounds through `![…](…)` refs
   model: string
   clientVersion: string
   startedAt: string
@@ -53,6 +54,9 @@ export interface RunScore {
   drafted: boolean | null      // a later ask has a `text` question with a draft
   saved: boolean | null        // the diff adds a line to AGENTS.md or CLAUDE.md
   savedEarly: boolean | null   // ...before the draft was answered, or with no draft at all
+  // Prompts with `media: audio` (brief 23), else null: an ask that reached the app carried a
+  // sound in `x-media`, and no form told the user to run a player in a terminal.
+  soundRefs: boolean | null
   questions: { header: string; type: string }[][]
   hubAsks: number          // asks that reached fake-hub; fewer than askCount means rejected input
   toolLoaded: boolean | null // the client had the ask tool; null when its stream doesn't say (Codex)
@@ -100,6 +104,8 @@ export function scoreRun(dir: string): RunResult {
     savedEarly = !saved ? null : draftAnswered === -1 ? true : firstWrite === -1 ? false : firstWrite < draftAnswered
   }
 
+  const soundRefs = meta.media === 'audio' ? playsSounds(hub) : null
+
   const failed: string[] = []
   if (stream.toolLoaded === false) failed.push('toolMissing')
   if (meta.timedOut) failed.push('timedOut')
@@ -111,6 +117,7 @@ export function scoreRun(dir: string): RunResult {
   if (drafted === false) failed.push('notDrafted')
   if (saved === false) failed.push('notSaved')
   if (savedEarly) failed.push('savedEarly')
+  if (soundRefs === false) failed.push('noSoundRefs')
 
   return {
     ...meta,
@@ -125,6 +132,7 @@ export function scoreRun(dir: string): RunResult {
     drafted,
     saved,
     savedEarly,
+    soundRefs,
     questions: asks.map((a) => a.questions),
     hubAsks: hub.filter((e) => e.type === 'ask').length,
     toolLoaded: stream.toolLoaded,
@@ -279,6 +287,17 @@ function addedLines(diff: string, only?: (path: string) => boolean): string[] {
   return added
 }
 
+// Sounds as play chips: an audio entry in some form's `x-media`, and no form text that names a
+// command-line player (the copy-and-paste loops this replaces).
+// `play` (sox's) only with a sound file after it: the prompt's own "play when" is prose.
+const PLAYER_COMMAND = /\b(?:afplay|ffplay|aplay|paplay|mpv)\s+\S|\bplay\s+\S+\.(?:wav|aiff?|mp3|m4a|flac|ogg)\b/i
+
+function playsSounds(hub: any[]): boolean {
+  const forms = hub.filter((e) => e.type === 'ask').map((e) => e.form)
+  const audio = forms.some((form) => Object.values(form?.schema?.['x-media'] ?? {}).some((m: any) => m?.kind === 'audio'))
+  return audio && !forms.some((form) => PLAYER_COMMAND.test(JSON.stringify(form?.schema ?? {})))
+}
+
 // The files a standing answer is saved to.
 function isInstructions(path: string): boolean {
   return /(^|\/)(AGENTS|CLAUDE)\.md$/.test(path)
@@ -317,6 +336,7 @@ export interface Summary {
   reAsked: number
   errors: number
   standing?: { drafted: number; saved: number; early: number }   // "Don't ask again" prompts only
+  sounds?: number          // runs whose asks played project sounds, for `media: audio` prompts
 }
 
 export function summarize(results: RunResult[]): Summary[] {
@@ -338,6 +358,7 @@ export function summarize(results: RunResult[]): Summary[] {
     underAsked: rs.filter((r) => r.failed.includes('underAsked')).length,
     reAsked: rs.filter((r) => r.reAskedAfterSkip).length,
     errors: rs.filter((r) => r.failed.includes('timedOut') || r.failed.includes('exitCode')).length,
+    ...(rs.some((r) => r.soundRefs !== null) && { sounds: rs.filter((r) => r.soundRefs).length }),
     ...(rs.some((r) => r.drafted !== null) && {
       standing: {
         drafted: rs.filter((r) => r.drafted).length,
@@ -352,12 +373,14 @@ export function summarize(results: RunResult[]): Summary[] {
 export function formatSummary(rows: Summary[]): string {
   // The "Don't ask again" columns appear only when a prompt in the run has them.
   const standing = rows.some((s) => s.standing)
+  const sounds = rows.some((s) => s.sounds !== undefined)
   const lines = [
-    `| prompt | client | expect | asked | first call valid | used | over-asked | re-asked after skip |${standing ? ' drafted | saved | saved early |' : ''} errors |`,
-    `| --- | --- | --- | --- | --- | --- | --- | --- |${standing ? ' --- | --- | --- |' : ''} --- |`,
+    `| prompt | client | expect | asked | first call valid | used | over-asked | re-asked after skip |${standing ? ' drafted | saved | saved early |' : ''}${sounds ? ' sound refs |' : ''} errors |`,
+    `| --- | --- | --- | --- | --- | --- | --- | --- |${standing ? ' --- | --- | --- |' : ''}${sounds ? ' --- |' : ''} --- |`,
   ]
   for (const s of rows) {
-    const extra = standing ? ` ${s.standing ? `${s.standing.drafted}/${s.runs} | ${s.standing.saved}/${s.runs} | ${s.standing.early}` : '– | – | –'} |` : ''
+    const extra = (standing ? ` ${s.standing ? `${s.standing.drafted}/${s.runs} | ${s.standing.saved}/${s.runs} | ${s.standing.early}` : '– | – | –'} |` : '')
+      + (sounds ? ` ${s.sounds !== undefined ? `${s.sounds}/${s.runs}` : '–'} |` : '')
     lines.push(
       `| ${s.prompt} | ${s.client} | ${s.expect} | ${s.asked}/${s.runs} | ${s.asked ? `${s.validFirst}/${s.asked}` : '–'} | ${s.usedOf[1] ? `${s.usedOf[0]}/${s.usedOf[1]}` : '–'} | ${s.expect === 'no-ask' ? s.overAsked : '–'} | ${s.skip ? s.reAsked : '–'} |${extra} ${s.errors || ''} |`,
     )

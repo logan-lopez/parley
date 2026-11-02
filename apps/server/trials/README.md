@@ -64,6 +64,7 @@ expect: ask          # ask | no-ask
 reply: first         # a fake-hub policy: first | second | other:<text> | skip | none | remember:<policy>
                      # `reply:` may repeat: one line per ask, in the order the asks arrive (the last repeats)
 match: zephyrExport  # optional: what to search for instead of the reply
+media: audio         # optional: score whether the asks play project sounds (brief 23)
 ---
 Add a way to export the ledger.
 ```
@@ -91,6 +92,7 @@ A changed prompt resets the comparison for that prompt.
 | sort-helpers | ask | first | a per-item assignment: should be one `review` with `decisions` |
 | crash-output | ask | other:… | output only the user can get: should be one `capture` |
 | screenshot-look | ask | first | a committed screenshot shown before a layout choice; should use `![caption](path)` |
+| sound-audition | ask | first | three committed WAV takes to pick from; should play them as `![…](…)` sound refs, not shell commands (`media: audio`) |
 | report-look | ask | first | a visual choice: should preview layouts or colors (`html preview`, chips, a palette) |
 | plan-check | ask | first | a plan to check: should put the file in front of the user (`show` with `path`) and ask about it |
 | config-tweak | ask | other:… | a file for the user to adjust: should be a `show` with `path` and `editable` |
@@ -138,11 +140,12 @@ check go in `results/<timestamp>/<prompt>.<client>.<run>/`: `events.jsonl`, `hub
 | `matchedExpect` | `asked` agrees with `expect` |
 | `used` | a choice answer fake-hub sent (minus " (Recommended)"), or `match`, appears in the final message or the diff's added lines, ignoring case and punctuation. Null when there was no choice answer to use. |
 | `reAskedAfterSkip` | `reply: skip` only: another `ask` after the first dismissed one |
+| `soundRefs` | prompts with `media: audio` only, else null. Some ask that reached fake-hub has an audio entry in `x-media`, and no form's text names a command-line player (`afplay`, `ffplay`, `aplay`, `paplay`, `mpv`, or `play` with a sound file after it). |
 | `drafted`, `saved`, `savedEarly` | prompts with a `remember:` reply only, else null. A later ask has a `text` question with a `draft`; the diff adds a line to `AGENTS.md` or `CLAUDE.md`; that save came before the draft was answered, or there was no draft. |
 | `questions` | the headers and types the model wrote, per call, for reading by eye |
 | `hubAsks` | asks that reached fake-hub. Fewer than `askCount` means rejected input. |
 | `toolLoaded` | Claude only: `mcp__parley__ask` was in the init event's tool list. Codex doesn't report one, so it's null. |
-| `failed` | the checks the run failed: `overAsked`, `underAsked`, `firstValid`, `used`, `reAskedAfterSkip`, `notDrafted`, `notSaved`, `savedEarly`, `toolMissing`, `timedOut`, `exitCode` |
+| `failed` | the checks the run failed: `overAsked`, `underAsked`, `firstValid`, `used`, `reAskedAfterSkip`, `notDrafted`, `notSaved`, `savedEarly`, `noSoundRefs`, `toolMissing`, `timedOut`, `exitCode` |
 
 **`used` is approximate, on purpose.** It's a string search, so it misses paraphrases, and
 `reply: first` makes that worse: models write short generic labels (`Keep`, `Remove all`), then
@@ -449,3 +452,39 @@ gitignored `results/2026-11-02T22-13-51-072Z.jsonl` and
 - Both `plan-check` runs showed `docs/csv-plan.md` by path. Their raw `used` misses remain
   recorded; no scorer or prompt was changed to make the pass look green. The earlier Claude
   baseline also recorded 0/3 on this proxy.
+
+## Brief 23: project sounds, targeted pass (2026-11-02)
+
+The tool description's image sentence gained one more: "An audio file, or a glob of variants
+(`takes/1_*.wav`), is a play button." Three short WAV chime takes, `project/sounds/chime/take_{1,2,3}.wav`,
+and the `sound-audition` prompt (`media: audio`) were added. A targeted pass, not a new
+full-suite baseline. Claude Code 2.1.316 with `claude-opus-5-5`; Codex CLI 0.166.0 with
+`gpt-6-astra`.
+
+Commands: `trial --client all --runs 3 --prompt sound-audition`, then
+`trial --client all --runs 1 --prompt screenshot-look`. Results are the local, gitignored
+`results/2026-11-02T22-55-06-181Z.jsonl` and `results/2026-11-02T22-56-52-368Z.jsonl`.
+
+| prompt | client | asked | first call valid | used | sound refs (raw) | sound refs (re-scored) |
+| --- | --- | --- | --- | --- | --- | --- |
+| sound-audition | Claude | 3/3 | 3/3 | 3/3 | 1/3 | 3/3 |
+| sound-audition | Codex | 3/3 | 3/3 | 3/3 | 1/3 | 3/3 |
+| screenshot-look | Claude | 1/1 | 1/1 | 1/1 | – | – |
+| screenshot-look | Codex | 1/1 | 1/1 | 1/1 | – | – |
+
+- **The raw sound-refs misses were the scorer's.** Its first player-command pattern counted a
+  bare `play` followed by a word, which matched the question's own prose ("to play when a
+  report finishes"). All four failing runs had audio entries in `x-media` and no command. The
+  pattern now needs `play` to be followed by a sound file; `--score` on the four kept
+  transcripts gives `soundRefs: true` for each. The prompt and tool text were not changed after
+  measuring.
+- **Takes as chips, read in the four kept transcripts** (passing runs' transcripts aren't kept,
+  so the other two passed the check but weren't read). Three gave one chip per take,
+  `![Take 1](sounds/chime/take_1.wav)` and so on, in a single choice question's text. Claude run
+  2 wrote one glob, `![chime takes](sounds/chime/take_*.wav)`, which plays the three takes in a
+  row as variants of one sound, with options Take 1–3. It counts as sound refs, but it isn't a
+  side-by-side comparison: the glob in the description's sentence reads as "several files" to a
+  model. Watch this in the next full pass before changing the wording.
+- Every run asked once, a single `choice` question. No form named a command-line player.
+- `screenshot-look` stayed valid on the first call in both runs, each a `show` and then a
+  `choice`, and used the answer.

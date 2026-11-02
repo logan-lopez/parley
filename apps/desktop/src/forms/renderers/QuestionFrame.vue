@@ -43,7 +43,7 @@ const offered = computed(() => !!remember && !!props.rememberable && !!props.id 
         >Don't ask again here</button>
       </template>
     </div>
-    <Markdown v-if="question" class="question-text" :source="question" />
+    <Markdown v-if="question" class="question-text" :source="question" :scope="id && `${id}/question`" />
     <p v-if="on && !remember!.locked.value" class="hint remember-hint">The agent will draft a line for AGENTS.md for you to approve.</p>
     <slot />
     <p v-if="error" class="field-error">{{ error }}</p>

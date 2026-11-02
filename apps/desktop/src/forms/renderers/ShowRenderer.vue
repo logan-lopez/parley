@@ -103,7 +103,7 @@ const caption = computed(() => {
       @focus="onFocus"
     />
     <div v-else class="show-pane" tabindex="0" data-primary role="region" :aria-label="frame.header">
-      <Markdown v-if="content" :source="content" />
+      <Markdown v-if="content" :source="content" :scope="`${frame.id}/show`" />
       <p v-else class="show-missing"><code>{{ source?.path ?? 'This' }}</code> isn't loaded here.</p>
     </div>
     <div v-if="caption || (enabled && changed)" class="show-foot">

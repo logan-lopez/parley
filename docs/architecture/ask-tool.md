@@ -87,19 +87,30 @@ kept as they are, line endings included. `path` in the result is relative to the
 `./` and `..` folded and an absolute path made relative. `fake-ask` reads files the same way from
 where `pnpm` was run.
 
-## Project images
+## Project media
 
 `show-media.ts` resolves local markdown image references from every markdown surface with
 `readShowMedia(input, files, projectDir = process.cwd())`. It reuses `projectRoot` and `locate`
 from `show-files.ts`, including realpath containment and the secret-name checks above. It opens
-regular files only, reads at most the size cap plus one byte, sniffs PNG/JPEG/GIF/WebP headers
-regardless of extension, and hashes the bytes. SVG asks the model to use a `show` with `path`.
-More than 200 distinct refs or a file over 25 MB is refused with a corrective message, before
-anything is shown. The form carries `x-media` references, never image bytes. Shown markdown
+regular files only, reads at most the size cap plus one byte, sniffs the first bytes regardless
+of extension, and hashes them. Images: PNG, JPEG, GIF, WebP. Sounds (`audioMime`): WAV
+(`RIFF`…`WAVE`), AIFF/AIFC (`FORM`), MP3 (`ID3` or an MPEG frame sync), ADTS AAC, M4A (`ftyp`
+with an audio or general MP4 brand, not HEIF), FLAC (`fLaC`), and Ogg only when its first packet
+is Vorbis or Opus. Anything else is refused with the format list and an `ffmpeg` hint; Parley
+never transcodes. SVG asks the model to use a `show` with `path`.
+
+A `*` or `?` in a ref's last segment is a glob of sound variants. `expand` lists that one
+directory (located like a file, so a secret or outside directory is refused), matches names with
+`*` and `?` (no `**`; a dotfile only when the pattern starts with a dot), and sorts them by name
+with numbers in order (`take_2` before `take_10`). Each match is then located, read and sniffed
+like a named file, so a secret or non-media match fails the ask, naming it. No match, more than
+12, a glob in a directory name, or a glob that matches images (one image per `![]()`) is
+refused. More than 200 distinct refs or 200 files counting every variant, or a file over 25 MB,
+is refused with a corrective message, before anything is shown. The form carries `x-media` references, never image bytes. Shown markdown
 uses project-relative media destinations, just like every other field. `fake-ask` resolves them
 the same way. Remote images and images inside code are ignored.
 
-`inlineMediaUrls` rereads images under the inline caps and verifies their hashes before encoding
+`inlineMediaUrls` rereads images (never sounds) under the inline caps and verifies their hashes before encoding
 them for result metadata ([inline cards](inline-cards.md)); a changed or missing file is omitted.
 
 ## Editable shows

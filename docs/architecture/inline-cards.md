@@ -66,7 +66,9 @@ app is the card: `McpApp.vue` around the same `AskCard` the window uses, and `th
   references only. Images use at most 2 MB per file and 8 MB per ask (source bytes), with no URL
   for an oversized, changed or missing file. `McpApp.vue` waits for metadata when input names
   media, compiles with the references, and overrides `mediaUrls` to use those data URLs. Omitted
-  images keep the caption/path and say “Open in the Parley window”. Images don't make a form
+  images keep the caption/path and say “Open in the Parley window”. Sounds are never sent: their
+  chips are disabled and say “Plays in the Parley window”
+  ([decision](../decisions/media-in-the-inline-card.md)). Media doesn't make a form
   window-only. Repeated content hashes can reuse a payload already sent for another reference.
   Actual Claude Desktop rendering remains a hands-on check.
 - **The card** (`McpApp.vue`). The host sends the tool input (the questions), then the result (the

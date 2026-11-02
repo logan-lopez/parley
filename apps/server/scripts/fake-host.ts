@@ -251,6 +251,10 @@ const scenarios: Record<string, Scenario> = {
         urls?.[src]?.startsWith('data:image/png;base64,') && refs?.[src]?.files?.[0]?.sha256?.length === 64, meta && Object.keys(meta))
       const card = compileQuestions(askInputSchema.parse(input), undefined, refs)
       check('the card compiles x-media from result metadata', !!card.schema['x-media'], card.schema['x-media'])
+      const glob = 'packages/protocol/fixtures/files/jump-3_*.wav'
+      check('a sound glob expands to its variants, in order',
+        refs?.[glob]?.kind === 'audio' && refs[glob].files.map((f: { path: string }) => f.path.split('/').pop()).join() === 'jump-3_a.wav,jump-3_b.wav,jump-3_c.wav', refs?.[glob])
+      check('sounds never go inline', !Object.keys(urls ?? {}).some((key) => key.endsWith('.wav')), urls && Object.keys(urls))
       check('media stays out of model content', !JSON.stringify(result.structuredContent).includes('base64') && !textOf(result).includes('sha256'), result.structuredContent)
       await sleep(300)
       const sent = hubLog().find((l) => l.type === 'ask')

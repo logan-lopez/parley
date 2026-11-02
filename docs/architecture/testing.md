@@ -1,5 +1,5 @@
 ---
-sources: ["apps/server/scripts/", "apps/desktop/scripts/screenshots.ts", "apps/server/trials/", "apps/server/fixtures/", "packages/protocol/src/ask.test.ts", "apps/server/src/show-files.test.ts", "apps/server/src/show-edits.test.ts", "apps/server/src/show-media.test.ts", "packages/protocol/src/media.test.ts", "apps/desktop/src/forms/media.test.ts", "apps/desktop/src/asks/persist.test.ts", "apps/desktop/src/asks/store.test.ts", "apps/desktop/src/forms/schemas.test.ts", "apps/desktop/src/forms/markdown.test.ts", "apps/desktop/src/forms/preview.test.ts"]
+sources: ["apps/server/scripts/", "apps/desktop/scripts/screenshots.ts", "apps/server/trials/", "apps/server/fixtures/", "packages/protocol/src/ask.test.ts", "apps/server/src/show-files.test.ts", "apps/server/src/show-edits.test.ts", "apps/server/src/show-media.test.ts", "packages/protocol/src/media.test.ts", "apps/desktop/src/forms/media.test.ts", "apps/desktop/src/forms/player.test.ts", "apps/desktop/src/asks/persist.test.ts", "apps/desktop/src/asks/store.test.ts", "apps/desktop/src/forms/schemas.test.ts", "apps/desktop/src/forms/markdown.test.ts", "apps/desktop/src/forms/preview.test.ts"]
 ---
 # Testing
 
@@ -7,7 +7,7 @@ How Parley is checked without a person at the keyboard or a real client: unit te
 parts, stand-ins for each side of the socket and for an MCP Apps host, and a harness that runs real
 models against a fake app.
 
-**History:** [brief 1](../briefs/archive/01-hub-and-lifecycle.md) (`fake-ask`), [brief 3](../briefs/archive/03-trial-harness.md) (`fake-hub`, trials), [brief 7](../briefs/archive/07-inline-cards.md) (`fake-host`), [brief 12](../briefs/archive/12-capture-question.md) (the `capture` scenario), [brief 19](../briefs/19-usage-report.md) (`usage`), [brief 16](../briefs/16-show-blocks.md) (the server's vitest, `show-file`), [brief 17](../briefs/17-editable-show.md) (`show-edits.test.ts`, `show-edit`), [brief 21](../briefs/21-dont-ask-again.md) ("Don't ask again here")
+**History:** [brief 1](../briefs/archive/01-hub-and-lifecycle.md) (`fake-ask`), [brief 3](../briefs/archive/03-trial-harness.md) (`fake-hub`, trials), [brief 7](../briefs/archive/07-inline-cards.md) (`fake-host`), [brief 12](../briefs/archive/12-capture-question.md) (the `capture` scenario), [brief 19](../briefs/19-usage-report.md) (`usage`), [brief 16](../briefs/16-show-blocks.md) (the server's vitest, `show-file`), [brief 17](../briefs/17-editable-show.md) (`show-edits.test.ts`, `show-edit`), [brief 21](../briefs/21-dont-ask-again.md) ("Don't ask again here"), [brief 22](../briefs/22-media-images.md) (media), [brief 23](../briefs/23-media-sounds.md) (sounds, `media: audio` trials)
 
 The commands are in [`AGENTS.md`](../../AGENTS.md#commands). This page is what each one covers
 and when to reach for it.
@@ -39,11 +39,17 @@ and when to reach for it.
     (`load.test.ts`); the setting, `settings.json` and its `sound` (`setting.test.ts`); and no color literal
     outside `src/theme/` (`no-color-literals.test.ts`) ([themes](themes.md)).
   - Project media: `media.test.ts` in the protocol checks markdown discovery across every field,
-    code/scheme exclusions and `x-media`; `show-media.test.ts` checks project/secret refusals,
-    sniffing, symlinks, caps and inline encoding. Desktop `forms/media.test.ts` mounts the real
-    Markdown component for status, load/error/open behavior and shared grants. `markdown.test.ts`
-    checks escaped placeholders with no model-supplied `src`; the `media` gallery fixture draws
-    a question, option preview and show image, covered by the AJV fixture sweep.
+    code/scheme exclusions, glob refs and `x-media`; `show-media.test.ts` checks project/secret
+    refusals, sniffing (images and every sound format, and what isn't one), symlinks, caps, globs
+    (sorted, dotfiles, the 12-variant cap, no match, a secret or non-sound match, globs in
+    directory names, image globs, every variant counted against 200) and inline encoding.
+    Desktop `forms/media.test.ts` mounts the real Markdown component for status, load/error/open
+    behavior, shared grants, and sound chips (variants and duration, one playing at a time,
+    disabled states, focus kept); `forms/player.test.ts` drives the player on a fake element
+    (order, gap, skips, stop, stale callbacks, durations). `markdown.test.ts` checks escaped
+    placeholders and chips with no model-supplied `src`; the `media` gallery fixture draws a
+    question, option preview and show image and an audition review (three takes per item, one a
+    glob of three WAVs), covered by the AJV fixture sweep.
   - `apps/desktop/src-tauri` (`cargo test`): a line through the hub keeps its key order, which is
     the question order (`hub.rs`), and media hash/changed/missing/refused checks (`media.rs`).
 - **`fake-ask`** (`scripts/fake-session.ts`) acts as one server session without an MCP client:
@@ -74,8 +80,9 @@ and when to reach for it.
   card compiles them with content, the window gets them in the form, the answer has no line for
   the shows, and a second server started from `/` returns the "no project directory" error and
   shows nothing; `Session.connect(cwd)` starts that one on the same hub), `media` (image data
-  URLs and references reach only the card metadata, the window gets references only, answers
-  work, and refused media sends no form), `show-edit` (a server
+  URLs and references reach only the card metadata, a sound glob expands to its variants in
+  order and never goes inline, the window gets references only, answers work, and refused media
+  sends no form), `show-edit` (a server
   started in a scratch project under `$TMPDIR`: the card sends an edited file, `ask_wait`'s text
   says it was saved and carries the diff, the file on disk changed, and a second `ask_wait` gets
   the same text rather than a conflict), `old-app`, `plain`.
@@ -112,7 +119,8 @@ whether it used the answer, and whether it re-asked after a skip. For `standing-
 replies `remember:first` and then `first`, it also scores whether the model drafted a line for
 `AGENTS.md` in a `text` question and saved it only after the draft was answered (the order comes
 from the client's event stream; the save itself from the diff). A prompt's `reply:` may repeat,
-one line per ask in order. `apps/server/trials/README.md`
+one line per ask in order. A prompt with `media: audio` (`sound-audition`) also scores whether an
+ask carried a sound in `x-media` and no form named a command-line player. `apps/server/trials/README.md`
 has the run options (including `--score` and `--summary` to re-score a saved run), what a run
 does, the prompts, the scoring and the baseline.
 

@@ -99,6 +99,7 @@ interface Prompt {
   expect: 'ask' | 'no-ask'
   replies: string[]   // fake-hub policies, in the order the asks arrive; the last repeats
   match?: string
+  media?: 'audio'     // the score checks the asks play project sounds, not shell commands
 }
 
 async function runOne(prompt: Prompt, client: Client, run: number): Promise<RunResult> {
@@ -134,6 +135,7 @@ async function runOne(prompt: Prompt, client: Client, run: number): Promise<RunR
     reply: prompt.replies[0]!,
     ...(prompt.replies.length > 1 ? { replies: prompt.replies } : {}),
     ...(prompt.match ? { match: prompt.match } : {}),
+    ...(prompt.media ? { media: prompt.media } : {}),
     model,
     clientVersion: versions[client],
     startedAt: startedAt.toISOString(),
@@ -325,12 +327,14 @@ function parsePrompt(path: string): Prompt {
   }
   const expect = fields.expect
   if (expect !== 'ask' && expect !== 'no-ask') throw new Error(`${path}: expect must be ask or no-ask`)
+  if (fields.media && fields.media !== 'audio') throw new Error(`${path}: media must be audio`)
   return {
     name: basename(path, '.md'),
     text: match[2]!.trim(),
     expect,
     replies: replies.length ? replies : ['first'],
     ...(fields.match ? { match: fields.match } : {}),
+    ...(fields.media ? { media: 'audio' as const } : {}),
   }
 }
 

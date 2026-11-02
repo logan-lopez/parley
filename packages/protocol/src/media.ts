@@ -9,6 +9,20 @@ export const MEDIA_FILE_MAX_BYTES = 25 * 1024 * 1024
 export const MEDIA_ASK_MAX_FILES = 200
 export const INLINE_MEDIA_FILE_MAX_BYTES = 2 * 1024 * 1024
 export const INLINE_MEDIA_ASK_MAX_BYTES = 8 * 1024 * 1024
+// A sound ref may be a glob of variants (`takes/1_*.wav`), played in order.
+export const MEDIA_VARIANTS_MAX = 12
+export const SOUND_GAP_MS = 150
+
+// A `*` or `?` in the last path segment makes a ref a glob of variants.
+export function isMediaGlob(src: string): boolean {
+  return /[*?]/.test(src.slice(src.lastIndexOf('/') + 1))
+}
+
+// Before the server has resolved a ref (the gallery, an unresolved ref), its
+// shape is guessed from the name: a glob or a sound extension draws a chip.
+export function looksLikeSound(src: string): boolean {
+  return isMediaGlob(src) || /\.(?:wav|wave|aiff?|aifc|mp3|m4a|aac|flac|ogg|oga|opus)$/i.test(src)
+}
 
 export function isMediaRef(src: string): boolean {
   return !!src && !/^(?:[a-z][a-z\d+.-]*:|\/\/)/i.test(src)

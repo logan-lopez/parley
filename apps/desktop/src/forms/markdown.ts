@@ -1,4 +1,4 @@
-import { isMediaRef, mediaMarkdown } from '@parley/protocol'
+import { isMediaRef, looksLikeSound, mediaMarkdown, type Media } from '@parley/protocol'
 import { isColor, parsePalette } from './colors'
 import { parsePreviewInfo } from './preview'
 
@@ -8,18 +8,47 @@ import { parsePreviewInfo } from './preview'
 // added, removed and hunk-header lines.
 const md = mediaMarkdown()
 md.options.highlight = (source, lang) => (lang === 'diff' ? diff(source) : '')
-md.renderer.rules.image = (tokens, idx, _options, _env, self) => {
+md.renderer.rules.image = (tokens, idx, _options, renderEnv, self) => {
+  const env = (renderEnv ?? {}) as RenderEnv
   const token = tokens[idx]
   const src = String(token.attrGet('src') ?? '')
   const caption = self.renderInlineAsText(token.children ?? [], md.options, {})
   const escape = md.utils.escapeHtml
   // A scheme or protocol-relative URL stays text. No remote fetch is tried.
   if (!isMediaRef(src)) return escape(`![${caption}](${src})`)
+  const entry = env.media && Object.prototype.hasOwnProperty.call(env.media, src) ? env.media[src] : undefined
+  if (entry ? entry.kind === 'audio' : looksLikeSound(src)) {
+    env.sounds = (env.sounds ?? 0) + 1
+    return sound(src, caption, `${env.scope ?? ''}#${env.sounds}`)
+  }
   return `<figure class="md-media" data-media="${escape(src)}">`
     + `<button type="button" class="md-media-open" data-media-open tabindex="-1" disabled aria-label="Open ${escape(caption || src)}">`
     + `<img class="md-media-img" alt="${escape(caption)}" hidden></button>`
     + `<figcaption>${escape(caption)}</figcaption><span class="md-media-path">${escape(src)}</span>`
     + `<span class="md-media-status" role="status">${escape(src)} isn't loaded here</span></figure>`
+}
+
+// What a render knows beyond the text: the form's resolved media, so a ref
+// draws as the kind the server sniffed, and a scope that makes each chip's id
+// stable within the form (the question id and the surface; then the ref's
+// position in that markdown).
+export interface RenderEnv {
+  media?: Media
+  scope?: string
+  sounds?: number
+}
+
+// A sound is a play chip, disabled until Markdown.vue has the file's grant.
+// Like an image, it carries no URL from model text: `data-media` is the key
+// into `x-media`, and the path goes in a title once it's resolved.
+function sound(src: string, caption: string, id: string): string {
+  const escape = md.utils.escapeHtml
+  const name = caption || src.slice(src.lastIndexOf('/') + 1)
+  return `<button type="button" class="md-sound" data-media="${escape(src)}" data-sound="${escape(id)}" tabindex="-1" aria-disabled="true" title="${escape(src)}">`
+    + '<span class="md-sound-icon" aria-hidden="true">▶</span>'
+    + `<span class="md-sound-caption">${escape(name)}</span>`
+    + '<span class="md-sound-meta"></span>'
+    + `<span class="md-sound-status" role="status">${escape(src)} isn't loaded here</span></button>`
 }
 
 // Every fenced block gets a copy button. It carries nothing: Markdown.vue's
@@ -83,6 +112,7 @@ function diff(source: string): string {
   }).join('\n')
 }
 
-export function renderMarkdown(source: string, inline = false): string {
-  return inline ? md.renderInline(source) : md.render(source)
+export function renderMarkdown(source: string, inline = false, env: RenderEnv = {}): string {
+  const fresh = { ...env, sounds: 0 }
+  return inline ? md.renderInline(source, fresh) : md.render(source, fresh)
 }

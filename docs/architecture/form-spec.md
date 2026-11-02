@@ -126,16 +126,21 @@ with no Zod, so the window can import it from the root entry.
   picture ([the card](card-ui.md)); the schema carries them as plain markdown, so a client without
   Parley's renderer shows the text. Previews are capped at 10,000 characters, since they're kept
   in `history.jsonl`; question text isn't.
-- **Project images** (`media.ts`): root `x-media` is a map keyed by the markdown destination,
-  `MediaEntry = { kind: 'image' | 'audio', files: MediaFile[] }` (images have one file). Each file
+- **Project media** (`media.ts`): root `x-media` is a map keyed by the markdown destination,
+  `MediaEntry = { kind: 'image' | 'audio', files: MediaFile[] }`. An image has one file; a sound
+  has one, or a glob's variants in play order (`isMediaGlob`: a `*` or `?` in the last path
+  segment). Each file
   carries `{ path, abs, sha256, bytes, mime }`: project-relative name, real absolute path, and
   the hash, size and sniffed type. No bytes go over the hub or into history. `compileQuestions(input, files?, media?)`
   attaches resolved entries; absent entries render as unloaded. `mediaRefs(text)` shares
   markdown-it's grammar with the renderer, preserves destination spelling, and skips code,
   fences, schemes and protocol-relative URLs. `askMediaRefs` scans questions, option descriptions
   and previews, review details and previews, show content and shown markdown files. The tool's
-  Zod input is unchanged. Caps: 25 MB per image, 200 media refs per ask; inline payloads use
-  2 MB per image and 8 MB per ask (source bytes). SVG uses a path-backed show.
+  Zod input is unchanged. Caps: 25 MB per file, 200 media files per ask (each variant counts),
+  1–12 variants per glob (`MEDIA_VARIANTS_MAX`); inline payloads use 2 MB per image and 8 MB per
+  ask (source bytes), and never carry sounds. `SOUND_GAP_MS` (150) is the pause between
+  variants. `looksLikeSound(src)` guesses a ref's kind from its name before it's resolved (a
+  glob, or a sound extension). SVG uses a path-backed show.
 - **Show caps** (`show.ts`): `content` up to 20,000 characters (in the Zod schema); a file's text,
   after `lines`, up to 100,000 characters, and at most 2 MB read from disk; everything one ask
   shows, content and files together, up to 200,000, with an editable file counted twice (its

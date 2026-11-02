@@ -8,6 +8,7 @@ import { firstToAnswer, focusQuestion, questionsIn } from '../forms/keyboard'
 import { renderers } from '../forms/renderers'
 import { REMEMBER } from '../forms/remember'
 import { MEDIA, mediaContext } from '../forms/media'
+import { player } from '../forms/player'
 import { useNow } from './now'
 
 type ErrorObject = NonNullable<JsonFormsChangeEvent['errors']>[number]
@@ -267,6 +268,7 @@ onMounted(() => {
   })
 })
 onBeforeUnmount(() => {
+  player.stop()   // an answered or withdrawn ask stops its sound
   window.removeEventListener('keydown', onKey)
   window.removeEventListener('focus', onWindowFocus)
   document.removeEventListener('focusin', onFocusIn)

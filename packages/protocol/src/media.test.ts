@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { mediaRefs, type Media } from './media.ts'
+import { isMediaGlob, looksLikeSound, mediaRefs, type Media } from './media.ts'
 import { askInputSchema, askMediaRefs, compileQuestions } from './ask.ts'
 
 describe('mediaRefs', () => {
@@ -11,6 +11,13 @@ describe('mediaRefs', () => {
     expect(mediaRefs('`![x](code.png)`\n\n```md\n![x](fence.png)\n```\n\n    ![x](indent.png)\n\n'
       + '\\![x](escaped.png) ![x](https://example.com/a.png) ![x](data:image/png;base64,AA) ![x](file:///a.png) ![x](//example.com/a.png)'))
       .toEqual([])
+  })
+  it('keeps glob characters in sound refs, and tells globs and sounds apart', () => {
+    expect(mediaRefs('![Take 1](audition/jump/1_*.wav) ![Take 2](a/take_?.ogg)')).toEqual(['audition/jump/1_*.wav', 'a/take_?.ogg'])
+    expect(isMediaGlob('a/1_*.wav')).toBe(true)
+    expect(isMediaGlob('a*/1.wav')).toBe(false)
+    expect(['a.WAV', 'b.mp3', 'c.m4a', 'd.flac', 'e.ogg', 'f.aif', 'g/*'].every(looksLikeSound)).toBe(true)
+    expect(looksLikeSound('shot.png')).toBe(false)
   })
   it('handles reference images and ignores unclaimed compare fences', () => {
     expect(mediaRefs('![x][shot]\n\n[shot]: a.png\n\n```compare\n![x](later.png)\n```')).toEqual(['a.png'])

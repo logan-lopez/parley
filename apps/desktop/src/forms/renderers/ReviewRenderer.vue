@@ -153,7 +153,7 @@ const hasPreview = computed(() => items.value.some((item) => item['x-preview']))
 const viewed = ref<number | null>(null)
 const preview = computed(() => {
   const item = viewed.value === null ? undefined : items.value[viewed.value]
-  return item?.['x-preview'] ? { label: item.title, source: item['x-preview'] } : undefined
+  return item?.['x-preview'] ? { label: item.title, source: item['x-preview'], index: viewed.value! } : undefined
 })
 
 function onFocusIn(event: FocusEvent) {
@@ -214,7 +214,7 @@ function rowClass(i: number) {
           <div class="review-main" @click="focusRow(i)">
             <span class="review-body">
               <span class="review-label">{{ item.title }}</span>
-              <Markdown v-if="item.description" inline class="option-desc" :source="item.description" />
+              <Markdown v-if="item.description" inline class="option-desc" :source="item.description" :scope="`${frame.id}/item-${i}`" />
             </span>
             <span class="review-actions">
               <button
@@ -283,7 +283,7 @@ function rowClass(i: number) {
 
       <div v-if="preview?.source" class="preview" aria-live="polite">
         <div class="preview-label">{{ preview.label }}</div>
-        <Markdown :source="preview.source" />
+        <Markdown :source="preview.source" :scope="`${frame.id}/preview-${preview.index}`" />
       </div>
       <div v-else-if="hasPreview" class="preview empty">Focus an item to preview it.</div>
 

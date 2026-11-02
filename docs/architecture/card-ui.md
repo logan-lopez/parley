@@ -139,6 +139,26 @@ keyboard contract and markdown. `platform.ts` is the one way renderers reach the
   keep the caption and path too. Bitmaps keep natural size, at most the column's width. Clicking
   a drawn image opens the granted file through the platform adapter. An inline image above the
   caps says “Open in the Parley window”. No new key chord.
+- **Sound chips** (`forms/markdown.ts`, `Markdown.vue`, `forms/player.ts`): the image rule draws
+  an audio ref (by its `x-media` kind, or by `looksLikeSound` when unresolved) as
+  `button.md-sound[data-media][data-sound]` with ▶, the caption (the file name without one), and
+  no URL from the text. `renderMarkdown(source, inline, env)` takes the form's media and a
+  `scope`; renderers pass the question id and surface (`<id>/question`, `/option-<i>`,
+  `/item-<i>`, `/preview-<i>`, `/show`), and the chip's id is the scope plus its position in
+  that markdown (`audition/preview-1#2`), so it survives a preview being swapped out and back.
+  `paintChip` enables a chip only when every variant's grant is `ok`; otherwise it stays
+  `aria-disabled` and says why, naming the first file that failed (“Plays in the Parley window”
+  in the inline card). Its `title` lists the variants' paths. The meta reads “3 variants · 0.4 s”
+  (the first variant's length, from `soundDuration`'s cached `loadedmetadata`), and “2/3” with ■
+  while playing. A click plays, a click on the playing chip stops; the click doesn't reach an
+  option underneath, and mousedown is prevented so focus stays on the row or option. The chip is
+  `tabindex="-1"`: keys come with brief 24.
+  The player (**pinned**, brief 24 drives it) is one `HTMLAudioElement` for the window:
+  `play(id, urls, gapMs = SOUND_GAP_MS)` stops whatever was playing and plays the urls in order
+  with the gap; a variant that errors is skipped. `stop()`, reactive `state` (`id`, `variant`,
+  `count`, `playing`), and `onEnd(id)` after the last variant ends on its own (not after a stop).
+  `paintSounds` repaints every chip from `state`. `AskCard` stops the player on unmount, so an
+  answered or withdrawn ask goes quiet.
 - **Previews** (`forms/preview.ts`): a fence whose info string is `html preview` or `svg preview`
   (then optional `width=N` and `height=N`, clamped to 200–800 by 40–800, default 400×200;
   `parsePreviewInfo`) renders as a `figure.md-preview` holding an `img` with no `src`, a caption

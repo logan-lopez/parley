@@ -111,3 +111,24 @@ describe('renderMarkdown', () => {
     }
   })
 })
+
+describe('sound chips', () => {
+  it('draws an audio ref as a chip with no URL from the text, ids scoped and counted', () => {
+    const html = renderMarkdown('![Take 1](a.wav) ![Take "2"](takes/2_*.wav) ![Shot](a.png)', false, { scope: 'q/preview-0' })
+    expect(html).toContain('<button type="button" class="md-sound" data-media="a.wav" data-sound="q/preview-0#1" tabindex="-1" aria-disabled="true"')
+    expect(html).toContain('data-sound="q/preview-0#2"')
+    expect(html).toContain('Take &quot;2&quot;')
+    expect(html).not.toMatch(/\ssrc=/)
+    expect(html).toContain('class="md-media" data-media="a.png"')
+  })
+  it('takes the kind from the resolved entry over the name', () => {
+    const file = { path: 'x', abs: '/x', sha256: 'h', bytes: 1, mime: 'audio/wav' }
+    expect(renderMarkdown('![x](clip.bin)', false, { media: { 'clip.bin': { kind: 'audio', files: [file] } } })).toContain('md-sound')
+    expect(renderMarkdown('![x](odd.wav)', false, { media: { 'odd.wav': { kind: 'image', files: [file] } } })).toContain('md-media')
+  })
+  it('names an uncaptioned chip by its file, and restarts the count per render', () => {
+    const html = renderMarkdown('![](dir/take.wav)', true, { scope: 's' })
+    expect(html).toContain('<span class="md-sound-caption">take.wav</span>')
+    expect(renderMarkdown('![](dir/take.wav)', true, { scope: 's' })).toContain('data-sound="s#1"')
+  })
+})

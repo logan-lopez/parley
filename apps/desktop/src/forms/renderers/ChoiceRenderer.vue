@@ -92,7 +92,7 @@ const preview = computed(() => {
   const option = viewed.value !== null
     ? options.value[viewed.value]
     : options.value.find((o) => o.const === picked.value[picked.value.length - 1])
-  return option ? { label: option.title, source: option['x-preview'] } : undefined
+  return option ? { label: option.title, source: option['x-preview'], index: options.value.indexOf(option) } : undefined
 })
 </script>
 
@@ -122,7 +122,7 @@ const preview = computed(() => {
         <span class="indicator" :class="multi ? 'box' : 'dot'" aria-hidden="true" />
         <span class="option-body">
           <span class="option-label">{{ option.title }}</span>
-          <Markdown v-if="option.description" inline class="option-desc" :source="option.description" />
+          <Markdown v-if="option.description" inline class="option-desc" :source="option.description" :scope="`${frame.id}/option-${i}`" />
         </span>
         <kbd class="key">{{ i + 1 }}</kbd>
       </div>
@@ -154,7 +154,7 @@ const preview = computed(() => {
 
     <div v-if="preview?.source" class="preview" aria-live="polite">
       <div class="preview-label">{{ preview.label }}</div>
-      <Markdown :source="preview.source" />
+      <Markdown :source="preview.source" :scope="`${frame.id}/preview-${preview.index}`" />
     </div>
     <div v-else-if="hasPreview" class="preview empty">Focus an option to preview it.</div>
   </QuestionFrame>
