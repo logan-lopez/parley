@@ -11,6 +11,7 @@ paths:
   - "packages/protocol/src/media.test.ts"
   - "apps/desktop/src/forms/media.test.ts"
   - "apps/desktop/src/forms/player.test.ts"
+  - "apps/desktop/src/forms/audition.test.ts"
   - "apps/desktop/src/asks/persist.test.ts"
   - "apps/desktop/src/asks/store.test.ts"
   - "apps/desktop/src/forms/schemas.test.ts"

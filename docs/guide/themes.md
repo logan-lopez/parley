@@ -33,7 +33,8 @@ To follow the system with themes of your own, give a pair:
 It switches when the appearance does while Parley runs: when you flip System Settings →
 Appearance, and when Auto switches at sunrise and sunset, with the window shown or hidden.
 
-The file's other setting is `sound`, the [notification sound](the-app.md#the-sound). Any other key
+The file's other settings are `sound`, the [notification sound](the-app.md#the-sound), and
+`autoplay`, which plays [a row's first sound](pictures.md#autoplay) when you move onto it. Any other key
 gets a banner (`settings.json: unknown key "thme"`), so a typo shows.
 
 ## Where themes come from

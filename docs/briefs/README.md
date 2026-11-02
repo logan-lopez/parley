@@ -64,7 +64,7 @@ and move to `archive/` when they're done. Ideas that aren't scheduled yet are in
     by reference (path and hash) through the asset protocol; starts with a PNG and Ogg spike.
 23. [`23-media-sounds.md`](23-media-sounds.md) (done, awaiting review): the same syntax for audio files and globs of variants, as
     play chips, one sound at a time; window-only in the inline card.
-24. [`24-audition-keys.md`](24-audition-keys.md): `p` cycles the focused row's takes, Shift+`p` replays,
+24. [`24-audition-keys.md`](24-audition-keys.md) (done, awaiting review): `p` cycles the focused row's takes, Shift+`p` replays,
     Esc stops; autoplay as an opt-in setting.
 25. [`25-compare-images.md`](25-compare-images.md): a ```` ```compare ```` fence of two images, flipped in place
     at full width.

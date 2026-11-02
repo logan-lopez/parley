@@ -64,6 +64,7 @@ hurried Enter can't approve everything, and Send waits until each item has a dec
 | Space | Flip it. |
 | `c` | Comment on it. Esc leaves the comment; ↑/↓ move to the item above or below. |
 | Shift+`a`, Shift+`r` | Approve or reject them all. |
+| `p`, Shift+`p` | When the item's preview has [sounds](pictures.md#playing-from-the-keyboard): play the next one, or the last one again. Esc stops it. |
 
 If items come with previews, the one for the item you last moved to shows below the list, and stays
 when you click elsewhere. The agent gets the
@@ -82,7 +83,7 @@ item. The line above the list counts each decision, plus any items still undecid
 | `1`–`4` | Give the focused item that decision. The hint under the list says which is which. |
 | Shift+`1`–`4` | Give every item that decision. |
 | Space | Move the focused item to the next decision. |
-| ↑/↓, `j`/`k`, Home, End, `c` | As above. |
+| ↑/↓, `j`/`k`, Home, End, `c`, `p` | As above. |
 
 `a` and `r` do nothing here, and there are no "all" links: Shift with a number does that. The
 agent gets each item's decision and your comments, grouped by decision.

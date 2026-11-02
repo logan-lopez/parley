@@ -2,6 +2,7 @@ import { isTauri } from '@tauri-apps/api/core'
 import { homeDir, join } from '@tauri-apps/api/path'
 import { exists, readDir, readTextFile } from '@tauri-apps/plugin-fs'
 import { ref } from 'vue'
+import { setAutoplay } from '../forms/audition'
 import { currentAppearance, watchAppearance } from './appearance'
 import type { ThemeDir, ThemeFs, ThemeProblem } from './load'
 import { loadThemes, pickThemes } from './load'
@@ -132,6 +133,7 @@ export async function refreshTheme(): Promise<void> {
     }
     const settings = parseSettingsFile(text)
     problems.push(...settings.problems)
+    if (mine === generation) setAutoplay(settings.autoplay)
     try {
       const sound = soundProblem(settings.sound, await listSounds(home))
       if (sound) problems.push(sound)

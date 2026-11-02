@@ -7,7 +7,7 @@ The ask card and the question renderers: one ask as a form, rendered by JSON For
 compiled schema, driven from the keyboard. The same card runs in the window, in the inline card in
 Claude Desktop, and in the dev gallery.
 
-**History:** [brief 2](../briefs/archive/02-ask-tool-and-ui.md), [brief 5](../briefs/archive/05-review-question.md) (the review renderer), [brief 7](../briefs/archive/07-inline-cards.md) (the platform adapter, `html.inline`), [brief 11](../briefs/archive/11-review-decisions.md) (labelled review decisions), [brief 12](../briefs/archive/12-capture-question.md) (copy buttons, the capture renderer), [brief 13](../briefs/13-color-chips.md) (color chips, palettes), [brief 14](../briefs/14-fenced-previews.md) (HTML and SVG previews), [brief 15](../briefs/15-themes.md) (tokens from themes), [brief 16](../briefs/16-show-blocks.md) (the show renderer, `[data-passive]`), [brief 17](../briefs/17-editable-show.md) (Edit and View), [brief 21](../briefs/21-dont-ask-again.md) ("Don't ask again here")
+**History:** [brief 2](../briefs/archive/02-ask-tool-and-ui.md), [brief 5](../briefs/archive/05-review-question.md) (the review renderer), [brief 7](../briefs/archive/07-inline-cards.md) (the platform adapter, `html.inline`), [brief 11](../briefs/archive/11-review-decisions.md) (labelled review decisions), [brief 12](../briefs/archive/12-capture-question.md) (copy buttons, the capture renderer), [brief 13](../briefs/13-color-chips.md) (color chips, palettes), [brief 14](../briefs/14-fenced-previews.md) (HTML and SVG previews), [brief 15](../briefs/15-themes.md) (tokens from themes), [brief 16](../briefs/16-show-blocks.md) (the show renderer, `[data-passive]`), [brief 17](../briefs/17-editable-show.md) (Edit and View), [brief 21](../briefs/21-dont-ask-again.md) ("Don't ask again here"), [brief 24](../briefs/24-audition-keys.md) (audition keys)
 
 `card/AskCard.vue` is the card. It knows nothing about the hub or Tauri. `App.vue` is the window
 around it: the queue, Send and Skip, history. `forms/` holds the renderers, their registration, the
@@ -61,7 +61,8 @@ keyboard contract and markdown. `platform.ts` is the one way renderers reach the
 - **Renderers** (`forms/renderers/`) are JSON Forms controls, one per `x-widget`, each ranked 10
   by `widgetTester` so it beats the vanilla set, which stays as the fallback
   (`forms/renderers.ts`). `useQuestion` gives each one its schema, data and frame.
-  - Choice: option cards as radios or checkboxes; with an Other branch, the last row is a text
+  - Choice: option cards as radios or checkboxes (`p`, Shift+`p` and Esc on a focused option, as
+    in the review; not in the Other input, where `p` types and only Esc applies); with an Other branch, the last row is a text
     input, and typing in it selects it. ↑/↓ move among options and Space picks. The `x-preview` of the
     option last focused or picked shows below the list (the last picked one's before that). It
     isn't cleared on blur, so a click in the preview, on a missed copy button say, doesn't swap it
@@ -84,6 +85,8 @@ keyboard contract and markdown. `platform.ts` is the one way renderers reach the
     focused row, and Space cycles; `a`/`r` are off. The row handler prevents the digit, and the
     card skips a prevented event, so its `pick` never runs as well. Long labels wrap the control
     under the item (the label keeps 12rem) and cut with an ellipsis if they still don't fit.
+    On the row (never in a comment box), `p`, Shift+`p` and Esc drive its sound chips
+    (the Audition keys bullet below); the hint lists them when the form has an audio ref.
   - Capture: a monospace textarea (6 lines, growing to 14 with `field-sizing`, `maxlength`
     50,000) that keeps the text verbatim and sets `{ text?, images? }`, or nothing when both are
     empty, so `required` catches it at the top. A paste carrying an image file, anywhere in the
@@ -152,13 +155,36 @@ keyboard contract and markdown. `platform.ts` is the one way renderers reach the
   (the first variant's length, from `soundDuration`'s cached `loadedmetadata`), and “2/3” with ■
   while playing. A click plays, a click on the playing chip stops; the click doesn't reach an
   option underneath, and mousedown is prevented so focus stays on the row or option. The chip is
-  `tabindex="-1"`: keys come with brief 24.
-  The player (**pinned**, brief 24 drives it) is one `HTMLAudioElement` for the window:
+  `tabindex="-1"`: the keys are on the row, below.
+  The player (**pinned**; `forms/audition.ts` drives it) is one `HTMLAudioElement` for the window:
   `play(id, urls, gapMs = SOUND_GAP_MS)` stops whatever was playing and plays the urls in order
   with the gap; a variant that errors is skipped. `stop()`, reactive `state` (`id`, `variant`,
   `count`, `playing`), and `onEnd(id)` after the last variant ends on its own (not after a stop).
   `paintSounds` repaints every chip from `state`. `AskCard` stops the player on unmount, so an
   answered or withdrawn ask goes quiet.
+- **Audition keys** (`forms/audition.ts`): the review and choice renderers each call
+  `useAudition(rootsOf, canAutoplay)`, where `rootsOf(i)` is the DOM holding row i's chips: the
+  row or option itself (its description) and, while it's the previewed one, the preview pane. A
+  chip is playable when `chipUrls` has it (`Markdown.vue` sets the WeakMap once every variant has
+  its grant and clears it otherwise), so a disabled chip is never in the cycle. `p` plays the chip
+  after the last one played in that row (`createCycle`: one remembered chip id per row, for the
+  life of the renderer, so a row that comes back continues after the take heard last; the first
+  when nothing was played or the remembered chip is gone); Shift+`p` plays the remembered one
+  again, or the first. A chip played with the mouse moves the memory on too, through a watch on
+  `player.state.id`. A row with no playable chip ignores both keys. `escStops` stops the player
+  and the event when something is playing, so `App.vue`'s window-level Esc never sees it; with
+  nothing playing, Esc is untouched. The review handles all three on the row (`@keydown.self`),
+  so a comment box is untouched; the choice handles `p` on the option and Esc on the whole
+  options list, which includes the Other input. The chip `p` plays next, when the row has two or
+  more, is `audition.next`, a reactive chip id that `paintSounds` turns into `.next` (an accent
+  outline and a `p` from `::after`), cleared when focus leaves the question.
+  **Autoplay** (`audition.autoplay`, from settings.json) plays a row's first chip when focus
+  *moved* onto it: `enter(row, moved)` is called with `relatedTarget instanceof Element`, which
+  is false when the card put focus there itself (mount on a new ask, the window regaining focus,
+  where `focusout` had already left the question) and true for keys, clicks and Tab. It waits
+  for the render and for `settled()` (every `Markdown.vue` media paint in flight, registered
+  through `track`), because a preview that has just been swapped in has no URLs yet. It stays off
+  when the card isn't `enabled` (history), and for a row focus has already left.
 - **Previews** (`forms/preview.ts`): a fence whose info string is `html preview` or `svg preview`
   (then optional `width=N` and `height=N`, clamped to 200–800 by 40–800, default 400×200;
   `parsePreviewInfo`) renders as a `figure.md-preview` holding an `img` with no `src`, a caption
@@ -225,7 +251,8 @@ keyboard contract and markdown. `platform.ts` is the one way renderers reach the
 - **Renderers import `platform.ts`, never `@tauri-apps/*`,** so they run in the inline card. The
   card keeps no Tauri import either.
 - **Keys:** the card claims digits, Enter, Tab and Cmd chords; the window claims Esc. A renderer
-  that needs Esc for itself stops its propagation. `Cmd+.` skips because it's macOS's cancel and
+  that needs Esc for itself stops its propagation (the audition keys do, but only while a sound
+  plays). `p` is a renderer's, on a focused row or option: never bind it on the card. `Cmd+.` skips because it's macOS's cancel and
   isn't an editing key (`Cmd+Backspace` is). `Cmd+N` opens the note because plain `n` is No on a
   focused Yes/No. `Cmd+0` belongs to AeroSpace, so zoom reset is a click. Check
   `~/.config/keymap/keymap.md` before adding a chord.

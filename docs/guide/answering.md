@@ -51,7 +51,8 @@ An agent can also show [an image file from the project](pictures.md), such as a 
 its caption and path. Click it in the window to open it in Preview. Old asks keep the reference:
 if the file changed or is gone, the card says so.
 A [sound file](pictures.md#sounds) is a ▶ chip: click to play, click again to stop. Only one
-sound plays at a time.
+sound plays at a time. On a review row or a choice option, `p` plays its next chip and Esc stops
+it ([from the keyboard](pictures.md#playing-from-the-keyboard)).
 
 ## Keys
 
@@ -64,7 +65,7 @@ sound plays at a time.
 | Cmd+. | Skip the ask. |
 | Cmd+N | Open the note for the agent. |
 | Cmd+[, Cmd+] | Previous and next ask in the queue. |
-| Esc | Hide the window. The ask stays waiting. |
+| Esc | Hide the window. The ask stays waiting. While a sound is playing, it stops the sound first. |
 | Cmd+Y | History, and back. |
 
 Some question types add their own keys; see [Question types](question-types.md).

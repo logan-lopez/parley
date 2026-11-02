@@ -1,5 +1,5 @@
 ---
-sources: ["apps/server/scripts/", "apps/desktop/scripts/screenshots.ts", "apps/server/trials/", "apps/server/fixtures/", "packages/protocol/src/ask.test.ts", "apps/server/src/show-files.test.ts", "apps/server/src/show-edits.test.ts", "apps/server/src/show-media.test.ts", "packages/protocol/src/media.test.ts", "apps/desktop/src/forms/media.test.ts", "apps/desktop/src/forms/player.test.ts", "apps/desktop/src/asks/persist.test.ts", "apps/desktop/src/asks/store.test.ts", "apps/desktop/src/forms/schemas.test.ts", "apps/desktop/src/forms/markdown.test.ts", "apps/desktop/src/forms/preview.test.ts"]
+sources: ["apps/server/scripts/", "apps/desktop/scripts/screenshots.ts", "apps/server/trials/", "apps/server/fixtures/", "packages/protocol/src/ask.test.ts", "apps/server/src/show-files.test.ts", "apps/server/src/show-edits.test.ts", "apps/server/src/show-media.test.ts", "packages/protocol/src/media.test.ts", "apps/desktop/src/forms/media.test.ts", "apps/desktop/src/forms/player.test.ts", "apps/desktop/src/forms/audition.test.ts", "apps/desktop/src/asks/persist.test.ts", "apps/desktop/src/asks/store.test.ts", "apps/desktop/src/forms/schemas.test.ts", "apps/desktop/src/forms/markdown.test.ts", "apps/desktop/src/forms/preview.test.ts"]
 ---
 # Testing
 
@@ -46,10 +46,12 @@ and when to reach for it.
     Desktop `forms/media.test.ts` mounts the real Markdown component for status, load/error/open
     behavior, shared grants, and sound chips (variants and duration, one playing at a time,
     disabled states, focus kept); `forms/player.test.ts` drives the player on a fake element
-    (order, gap, skips, stop, stale callbacks, durations). `markdown.test.ts` checks escaped
+    (order, gap, skips, stop, stale callbacks, durations); `forms/audition.test.ts` mounts real chips
+    under `useAudition` (the cycle and its wrap, Shift+`p`, Esc stopping the event only while a
+    sound plays, a row without chips, the next-chip marker, autoplay's rules). `markdown.test.ts` checks escaped
     placeholders and chips with no model-supplied `src`; the `media` gallery fixture draws a
-    question, option preview and show image and an audition review (three takes per item, one a
-    glob of three WAVs), covered by the AJV fixture sweep.
+    question, option preview and show image, an audition review (three takes per item, one a
+    glob of three WAVs) and a choice whose options preview takes, covered by the AJV fixture sweep.
   - `apps/desktop/src-tauri` (`cargo test`): a line through the hub keeps its key order, which is
     the question order (`hub.rs`), and media hash/changed/missing/refused checks (`media.rs`).
 - **`fake-ask`** (`scripts/fake-session.ts`) acts as one server session without an MCP client:

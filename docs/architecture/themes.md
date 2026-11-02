@@ -59,7 +59,7 @@ derived shades. All but `paint.ts`, `appearance.ts` and `index.ts` are pure and 
   (`DEFAULT_THEME_SETTING`, the one line that differs between apps). `resolveThemeSetting` picks
   the id for an appearance; a single id ignores it.
 - **settings.json** (`parseSettingsFile`): no file is no settings. A file that isn't a JSON object
-  means the defaults and says why. The keys are `theme` and `sound`; a bad one gets its default
+  means the defaults and says why. The keys are `theme`, `sound` and `autoplay`; a bad one gets its default
   and a problem without stopping the other, and any other key is reported. Parley never writes
   the file or creates the folder. `settings.ts` is the whole file's parser, so it lives here only
   because `theme` came first.
@@ -70,6 +70,12 @@ derived shades. All but `paint.ts`, `appearance.ts` and `index.ts` are pure and 
   `.wav`, `.caf`, `.m4a` and `.mp3` files) and puts a name none of them has in the banner
   (`soundProblem`, without case, as the file system matches). Failing to list only loses that
   check.
+- **`autoplay`** (`parseAutoplaySetting`): a boolean, off when missing; anything else is a problem
+  (`"autoplay" must be true or false, got …`) and off. It's the card's, not the theme's: each
+  refresh hands it to `setAutoplay` in `forms/audition.ts`, which the review and choice renderers
+  read when focus moves onto a row with sound chips ([the card](card-ui.md)). The gallery has no
+  settings file; `&autoplay=1` stands in. The inline card never reads the file, so it never
+  autoplays, and its chips are disabled anyway.
 - **Loading** (`loadThemes`, over a `{ list, read }` interface): the bundled themes, then
   `~/.config/inn/themes/`, then `~/.config/parley/themes/`; on the same id a later folder wins. A
   missing folder is none. Files are `<id>.yaml` with a theme id for a stem; anything else is

@@ -108,7 +108,8 @@ How each part works, as you use it, is in [the guide](docs/guide/README.md).
   missing in history. Small images appear in Claude Desktop's inline card too.
 - [Project sounds](docs/guide/pictures.md#sounds) as play chips, for auditions: WAV, AIFF, MP3,
   M4A, FLAC and Ogg, one playing at a time, and a glob (`takes/3_*.wav`) for a take's variants,
-  played in turn. They play in the Parley window.
+  played in turn. `p` plays a row's next take, so an audition is a keyboard pass. They play in the
+  Parley window.
 - [Claude Code](docs/guide/claude-code.md) asks block until you answer, for up to an hour.
 - [Claude Desktop](docs/guide/claude-desktop.md) shows the card inline in the chat as well.
 - [History](docs/guide/history.md) of every ask for 30 days, searchable.

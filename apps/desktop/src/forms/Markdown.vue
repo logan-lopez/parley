@@ -2,6 +2,7 @@
 import { computed, inject, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { copyText, openExternal, openMedia, type MediaUrl } from '../platform'
 import type { MediaEntry } from '@parley/protocol'
+import { audition, chipUrls, track } from './audition'
 import { MEDIA } from './media'
 import { renderMarkdown } from './markdown'
 import { formatDuration, player, soundDuration } from './player'
@@ -27,7 +28,7 @@ function paint() {
     el.style.setProperty('--swatch', el.dataset.color!)
   }
   paintPreviews()
-  void paintMedia()
+  void track(paintMedia())
 }
 
 async function paintMedia() {
@@ -93,10 +94,9 @@ function failure(status: string | undefined, path: string, window: string): stri
     : `${path} isn't loaded here`
 }
 
-// A chip plays only when every variant has its grant; otherwise it's
-// disabled and says why, naming the first file that failed.
-const chipUrls = new WeakMap<HTMLElement, string[]>()
-
+// A chip plays only when every variant has its grant (`chipUrls`, shared with
+// the audition keys); otherwise it's disabled and says why, naming the first
+// file that failed.
 function paintChip(chip: HTMLElement, entry: MediaEntry | undefined, urls: Map<string, MediaUrl>) {
   const status = chip.querySelector<HTMLElement>('.md-sound-status')!
   const files = entry?.kind === 'audio' ? entry.files : []
@@ -131,6 +131,7 @@ function paintSounds() {
     const on = playing && chip.dataset.sound === id
     const variants = Number(chip.dataset.variants ?? 0)
     chip.classList.toggle('playing', on)
+    chip.classList.toggle('next', !on && chip.dataset.sound === audition.next)
     chip.setAttribute('aria-pressed', String(on))
     chip.querySelector('.md-sound-icon')!.textContent = on ? '■' : '▶'
     const meta = on && count > 1 ? `${variant + 1}/${count}`
@@ -191,8 +192,9 @@ onBeforeUnmount(() => {
   resize.disconnect()
 })
 watch(html, paint, { flush: 'post' })
-watch(() => media?.entries(), () => void paintMedia(), { flush: 'post' })
+watch(() => media?.entries(), () => void track(paintMedia()), { flush: 'post' })
 watch(() => ({ ...player.state }), paintSounds, { flush: 'post' })
+watch(() => audition.next, paintSounds, { flush: 'post' })
 
 // Links open in the default browser; the webview never navigates. A code
 // block's button copies it, and a preview's flips between picture and source.

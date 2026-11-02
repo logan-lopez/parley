@@ -4,11 +4,13 @@
 // the items' `decision` enum. The data is a tuple: entry i is item i. Rows
 // aren't `[data-pick]` (number keys don't scale to 30), so the row keys live
 // here; with the agent's own decisions, digits pick a decision for the row.
-import { computed, nextTick, onMounted, ref } from 'vue'
+import { computed, inject, nextTick, onMounted, ref } from 'vue'
 import { rendererProps, type RendererProps } from '@jsonforms/vue'
 import type { ControlElement } from '@jsonforms/core'
 import { REVIEW_DECISIONS, type DefaultDecision, type ReviewDecision, type ReviewEntry, type ReviewItemSchema } from '@parley/protocol'
+import { useAudition } from '../audition'
 import Markdown from '../Markdown.vue'
+import { MEDIA } from '../media'
 import QuestionFrame from './QuestionFrame.vue'
 import { useQuestion } from './useQuestion'
 
@@ -105,6 +107,9 @@ function closeComment(i: number) {
 
 function onRowKey(event: KeyboardEvent, i: number) {
   if (event.metaKey || event.ctrlKey || event.altKey) return
+  // p plays the row's next sound chip, Shift+p replays it, Esc stops it. On
+  // the row only: in a comment box, p types.
+  if (audition.key(event, i)) return
   // The agent's decisions: digit n is decision n, for this row or, with
   // Shift, every row. By `code`, since Shift+1 is `!` in `key`. This runs
   // before the card's digit handler, which skips a handled event.
@@ -151,6 +156,12 @@ function onCommentKey(event: KeyboardEvent, i: number) {
 // the pointer.
 const hasPreview = computed(() => items.value.some((item) => item['x-preview']))
 const viewed = ref<number | null>(null)
+const previewPane = ref<HTMLElement>()
+const media = inject(MEDIA, undefined)
+const hasSounds = computed(() => Object.values(media?.entries() ?? {}).some((entry) => entry.kind === 'audio'))
+// A row's chips are in the row (its description) and in the preview pane while
+// it's the one previewed.
+const audition = useAudition((i) => [rowAt(i), viewed.value === i ? previewPane.value : null], () => enabled.value)
 const preview = computed(() => {
   const item = viewed.value === null ? undefined : items.value[viewed.value]
   return item?.['x-preview'] ? { label: item.title, source: item['x-preview'], index: viewed.value! } : undefined
@@ -158,12 +169,18 @@ const preview = computed(() => {
 
 function onFocusIn(event: FocusEvent) {
   const row = (event.target as HTMLElement).closest<HTMLElement>('[data-review-row]')
-  if (row) focused.value = viewed.value = Number(row.dataset.reviewRow)
+  if (!row) return
+  const i = Number(row.dataset.reviewRow)
+  focused.value = viewed.value = i
+  void audition.enter(i, event.relatedTarget instanceof Element)
 }
 
 function onFocusOut(event: FocusEvent) {
   const root = (event.currentTarget as HTMLElement)
-  if (!root.contains(event.relatedTarget as Node | null)) focused.value = null
+  if (!root.contains(event.relatedTarget as Node | null)) {
+    focused.value = null
+    audition.leave()
+  }
 }
 
 function state(i: number) {
@@ -281,17 +298,17 @@ function rowClass(i: number) {
         </div>
       </div>
 
-      <div v-if="preview?.source" class="preview" aria-live="polite">
+      <div v-if="preview?.source" ref="previewPane" class="preview" aria-live="polite">
         <div class="preview-label">{{ preview.label }}</div>
         <Markdown :source="preview.source" :scope="`${frame.id}/preview-${preview.index}`" />
       </div>
       <div v-else-if="hasPreview" class="preview empty">Focus an item to preview it.</div>
 
       <p v-if="enabled && labelled" class="hint">
-        <template v-for="(d, n) in decisions" :key="d"><kbd>{{ n + 1 }}</kbd> {{ d }} · </template><kbd>⇧</kbd> + digit for all · <kbd>space</kbd> next · <kbd>↑</kbd><kbd>↓</kbd> or <kbd>j</kbd><kbd>k</kbd> move · <kbd>c</kbd> comment
+        <template v-for="(d, n) in decisions" :key="d"><kbd>{{ n + 1 }}</kbd> {{ d }} · </template><kbd>⇧</kbd> + digit for all · <kbd>space</kbd> next · <kbd>↑</kbd><kbd>↓</kbd> or <kbd>j</kbd><kbd>k</kbd> move · <kbd>c</kbd> comment<template v-if="hasSounds"> · <kbd>p</kbd> play <kbd>⇧P</kbd> again <kbd>esc</kbd> stop</template>
       </p>
       <p v-else-if="enabled" class="hint">
-        <kbd>↑</kbd><kbd>↓</kbd> or <kbd>j</kbd><kbd>k</kbd> move · <kbd>space</kbd> toggle · <kbd>a</kbd> approve · <kbd>r</kbd> reject · <kbd>c</kbd> comment
+        <kbd>↑</kbd><kbd>↓</kbd> or <kbd>j</kbd><kbd>k</kbd> move · <kbd>space</kbd> toggle · <kbd>a</kbd> approve · <kbd>r</kbd> reject · <kbd>c</kbd> comment<template v-if="hasSounds"> · <kbd>p</kbd> play <kbd>⇧P</kbd> again <kbd>esc</kbd> stop</template>
       </p>
     </div>
   </QuestionFrame>

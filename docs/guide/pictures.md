@@ -47,4 +47,36 @@ reference rather than a copy. In history, a chip whose file changed or is gone i
 says so, naming the file. In Claude Desktop's inline card, chips are disabled and say **Plays in
 the Parley window**.
 
-Keys for playing aren't there yet: a chip is played with the mouse.
+### Playing from the keyboard
+
+When a review item or a choice option has chips in its preview (or its description), you can
+audition without the mouse. Move with `j`/`k` or the arrows, and:
+
+| Key | What it does |
+| --- | --- |
+| `p` | Play the focused row's next chip: the first, then the second, and round again. |
+| Shift+`p` | Play the last one again. |
+| Esc | Stop what's playing. With nothing playing, Esc hides the window as it always does. |
+
+`1`–`4` still decide the row (Take 1, Take 2, Take 3, None in an audition), so you can listen,
+decide and move on with the keys alone. A row with no chips ignores `p`, and in a comment box or
+the Other box it types. Each row remembers the take you heard last, so coming back to it and
+pressing `p` plays the take after that one. The chip `p` plays next is marked: an accent outline
+and a small `p`. A chip you click plays from the mouse and moves that place on too.
+
+The key list under a review shows `p` when the ask has sounds.
+
+### Autoplay
+
+Off by default, because a window that starts making noise when a notification brings it up is a
+bad surprise. To have moving onto a row play its first chip, set `autoplay` in
+`~/.config/parley/settings.json` (the file [themes](themes.md) use; make the folder yourself):
+
+```json
+{ "autoplay": true }
+```
+
+It plays when focus moves onto a row or option with `j`/`k`, the arrows, Tab or a click, then `p`
+goes on to the second take. It never plays when a new ask arrives, when the window comes back to
+the front, or in [history](history.md). A value that isn't `true` or `false` is ignored, with a
+banner saying so. Parley reads the file each time the window comes up.

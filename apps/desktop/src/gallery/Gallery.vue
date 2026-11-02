@@ -4,6 +4,7 @@
 import { computed, ref, watch } from 'vue'
 import { isMediaGlob, looksLikeSound, type Media, type ShowFiles } from '@parley/protocol'
 import { askInputSchema, askMediaRefs, compileQuestions, questionIds, shapeAnswer, DEFAULT_TIMEOUT_SECONDS, type AskInput, type AskOutcome } from '@parley/protocol/ask'
+import { setAutoplay } from '../forms/audition'
 import { setPlatform } from '../platform'
 import AskCard from '../card/AskCard.vue'
 import ZoomControl from '../ZoomControl.vue'
@@ -57,6 +58,8 @@ function fixtureFiles(input: AskInput): ShowFiles {
 }
 
 const params = new URLSearchParams(location.search)
+// `&autoplay=1` is settings.json's `autoplay`, which the gallery doesn't read.
+setAutoplay(params.get('autoplay') === '1')
 const initial = params.get('fixture')
 // What the meta row says is asking; screenshots set a realistic one.
 const source = params.get('source') ?? 'gallery · fixtures'

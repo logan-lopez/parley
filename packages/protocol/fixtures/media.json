@@ -43,6 +43,26 @@
           "preview": "![Take 1](packages/protocol/fixtures/files/land-1.wav) ![Take 2](packages/protocol/fixtures/files/land-2.wav) ![Take 3](packages/protocol/fixtures/files/land-3.wav)"
         }
       ]
+    },
+    {
+      "header": "Voice",
+      "question": "Which set of footsteps? Each option's preview has its takes.",
+      "options": [
+        {
+          "label": "Soft set",
+          "description": "Rubber soles",
+          "preview": "![Take 1](packages/protocol/fixtures/files/land-1.wav) ![Take 2](packages/protocol/fixtures/files/land-2.wav) ![Take 3](packages/protocol/fixtures/files/land-3.wav)"
+        },
+        {
+          "label": "Hard set",
+          "description": "Boots on stone",
+          "preview": "![Take 1](packages/protocol/fixtures/files/jump-1.wav) ![Take 2](packages/protocol/fixtures/files/jump-2.wav)"
+        },
+        {
+          "label": "No footsteps"
+        }
+      ],
+      "required": false
     }
   ]
 }

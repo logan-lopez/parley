@@ -5,6 +5,7 @@ import { computed, ref } from 'vue'
 import { rendererProps, type RendererProps } from '@jsonforms/vue'
 import type { ControlElement } from '@jsonforms/core'
 import type { ChoiceOptionSchema } from '@parley/protocol'
+import { escStops, useAudition } from '../audition'
 import Markdown from '../Markdown.vue'
 import { moveAmongPicks } from '../keyboard'
 import QuestionFrame from './QuestionFrame.vue'
@@ -68,7 +69,13 @@ function onOtherInput(event: Event) {
   commit(multi.value || !otherOn.value ? picked.value : [])
 }
 
-function onOptionKey(event: KeyboardEvent, label: string) {
+function onOptionFocus(event: FocusEvent, i: number) {
+  viewed.value = i
+  void audition.enter(i, event.relatedTarget instanceof Element)
+}
+
+function onOptionKey(event: KeyboardEvent, label: string, i: number) {
+  if (audition.key(event, i)) return
   if (event.key === ' ') {
     event.preventDefault()
     choose(label)
@@ -87,6 +94,14 @@ const primary = computed(() => {
 // swap it out from under the pointer.
 const hasPreview = computed(() => options.value.some((o) => o['x-preview']))
 const viewed = ref<number | null>(null)
+const optionList = ref<HTMLElement>()
+const previewPane = ref<HTMLElement>()
+// An option's chips are in the option (its description) and in the preview pane
+// while it's the one previewed. Not the Other input: p types there.
+const audition = useAudition(
+  (i) => [optionList.value?.querySelector(`.option[data-pick="${i + 1}"]`), viewed.value === i ? previewPane.value : null],
+  () => enabled.value,
+)
 const preview = computed(() => {
   if (!hasPreview.value) return undefined
   const option = viewed.value !== null
@@ -99,10 +114,12 @@ const preview = computed(() => {
 <template>
   <QuestionFrame v-bind="frame" :advance-on-pick="!multi" :rememberable="!multi">
     <div
+      ref="optionList"
       class="options"
       :role="multi ? 'group' : 'radiogroup'"
       :aria-label="frame.header"
-      @keydown="moveAmongPicks($event, { prev: ['ArrowUp'], next: ['ArrowDown'] })"
+      @keydown="escStops($event) || moveAmongPicks($event, { prev: ['ArrowUp'], next: ['ArrowDown'] })"
+      @focusout="!optionList?.contains($event.relatedTarget as Node | null) && audition.leave()"
     >
       <div
         v-for="(option, i) in options"
@@ -116,8 +133,8 @@ const preview = computed(() => {
         :data-pick="i + 1"
         :data-primary="i === primary || undefined"
         @click="choose(option.const)"
-        @keydown="onOptionKey($event, option.const)"
-        @focus="viewed = i"
+        @keydown="onOptionKey($event, option.const, i)"
+        @focus="onOptionFocus($event, i)"
       >
         <span class="indicator" :class="multi ? 'box' : 'dot'" aria-hidden="true" />
         <span class="option-body">
@@ -146,13 +163,13 @@ const preview = computed(() => {
           :data-pick="options.length + 1"
           :data-primary="primary === options.length || undefined"
           @input="onOtherInput"
-          @focus="!multi && otherText.trim() && !otherOn && toggleOther()"
+          @focus="audition.leave(); !multi && otherText.trim() && !otherOn && toggleOther()"
         >
         <kbd class="key">{{ options.length + 1 }}</kbd>
       </div>
     </div>
 
-    <div v-if="preview?.source" class="preview" aria-live="polite">
+    <div v-if="preview?.source" ref="previewPane" class="preview" aria-live="polite">
       <div class="preview-label">{{ preview.label }}</div>
       <Markdown :source="preview.source" :scope="`${frame.id}/preview-${preview.index}`" />
     </div>

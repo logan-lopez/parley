@@ -329,6 +329,10 @@ span.remember { cursor: default; }
 }
 .md .md-sound:hover:not([aria-disabled="true"]) { background: var(--hover); }
 .md .md-sound.playing { background: var(--accent-subtle); border-color: var(--accent); color: var(--accent); }
+/* The take `p` plays next on the focused row. */
+.md .md-sound.next { border-color: var(--accent); }
+.md .md-sound.next .md-sound-icon { color: var(--accent); }
+.md .md-sound.next::after { content: "p"; flex: none; font-size: 10px; color: var(--accent); }
 .md .md-sound[aria-disabled="true"] { cursor: default; background: none; border-style: dashed; color: var(--text-muted); }
 .md .md-sound-icon { flex: none; width: 1em; text-align: center; font-size: 10px; }
 .md .md-sound-caption { overflow-wrap: anywhere; }

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { DEFAULT_THEME_SETTING, parseThemeSetting, resolveThemeSetting } from './setting'
-import { DEFAULT_SOUND, parseSettingsFile, soundNames, soundProblem } from './settings'
+import { DEFAULT_SOUND, parseAutoplaySetting, parseSettingsFile, soundNames, soundProblem } from './settings'
 
 describe('parseThemeSetting', () => {
   it('takes a theme id', () => {
@@ -54,14 +54,15 @@ describe('resolveThemeSetting', () => {
 
 describe('parseSettingsFile', () => {
   it('is no settings when the file is missing', () => {
-    expect(parseSettingsFile(null)).toEqual({ theme: DEFAULT_THEME_SETTING, sound: DEFAULT_SOUND, problems: [] })
+    expect(parseSettingsFile(null)).toEqual({ theme: DEFAULT_THEME_SETTING, sound: DEFAULT_SOUND, autoplay: false, problems: [] })
   })
 
   it('reads theme and sound', () => {
-    expect(parseSettingsFile('{ "theme": "telnet" }')).toEqual({ theme: 'telnet', sound: 'default', problems: [] })
+    expect(parseSettingsFile('{ "theme": "telnet" }')).toEqual({ theme: 'telnet', sound: 'default', autoplay: false, problems: [] })
     expect(parseSettingsFile('{ "theme": "telnet", "sound": "Glass" }')).toEqual({
       theme: 'telnet',
       sound: 'Glass',
+      autoplay: false,
       problems: [],
     })
     expect(parseSettingsFile('{ "sound": null }').sound).toBeNull()
@@ -71,6 +72,7 @@ describe('parseSettingsFile', () => {
     expect(parseSettingsFile('{ "theme": "telnet", "thme": "x" }')).toEqual({
       theme: 'telnet',
       sound: DEFAULT_SOUND,
+      autoplay: false,
       problems: ['settings.json: unknown key "thme"'],
     })
   })
@@ -83,6 +85,7 @@ describe('parseSettingsFile', () => {
     expect(parseSettingsFile('{ "theme": 3 }')).toEqual({
       theme: DEFAULT_THEME_SETTING,
       sound: DEFAULT_SOUND,
+      autoplay: false,
       problems: ['settings.json: "theme" must be a theme id, or { "light": "<id>", "dark": "<id>" }, got 3'],
     })
   })
@@ -94,6 +97,25 @@ describe('parseSettingsFile', () => {
       expect(parsed.sound).toBe(DEFAULT_SOUND)
       expect(parsed.problems).toEqual([`settings.json: "sound" must be a sound's name, "default", or null, got ${sound}`])
     }
+  })
+})
+
+describe('autoplay', () => {
+  it('is off unless the file says true', () => {
+    expect(parseSettingsFile(null).autoplay).toBe(false)
+    expect(parseSettingsFile('{}').autoplay).toBe(false)
+    expect(parseSettingsFile('{ "autoplay": false }').autoplay).toBe(false)
+    expect(parseSettingsFile('{ "autoplay": true }')).toMatchObject({ autoplay: true, problems: [] })
+  })
+
+  it('falls back to off for a bad value, with the banner message, and keeps the other keys', () => {
+    for (const value of ['"yes"', '1', 'null', '[]']) {
+      const parsed = parseSettingsFile(`{ "theme": "telnet", "autoplay": ${value} }`)
+      expect(parsed.autoplay).toBe(false)
+      expect(parsed.theme).toBe('telnet')
+      expect(parsed.problems).toEqual([`settings.json: "autoplay" must be true or false, got ${value}`])
+    }
+    expect(parseAutoplaySetting('true')).toEqual({ ok: false, problem: '"autoplay" must be true or false, got "true"' })
   })
 })
 
