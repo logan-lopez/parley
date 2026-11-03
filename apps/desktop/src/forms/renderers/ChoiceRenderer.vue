@@ -1,6 +1,7 @@
 <script setup lang="ts">
 // Option cards that act as radios (single) or checkboxes (multi). With an
-// `anyOf` Other branch, the last row is a text input; typing in it selects it.
+// `anyOf` Other branch, the last row is a text box (a textarea that grows to four
+// lines); typing in it selects it.
 import { computed, ref } from 'vue'
 import { rendererProps, type RendererProps } from '@jsonforms/vue'
 import type { ControlElement } from '@jsonforms/core'
@@ -64,7 +65,7 @@ function toggleOther() {
 }
 
 function onOtherInput(event: Event) {
-  otherText.value = (event.target as HTMLInputElement).value
+  otherText.value = (event.target as HTMLTextAreaElement).value
   if (otherText.value.trim()) otherOn.value = true
   commit(multi.value || !otherOn.value ? picked.value : [])
 }
@@ -151,9 +152,9 @@ const preview = computed(() => {
           role="presentation"
           @mousedown.prevent="toggleOther"
         />
-        <input
-          type="text"
-          class="other-input"
+        <textarea
+          rows="1"
+          class="other-input grow"
           placeholder="Other…"
           aria-label="Your own answer"
           :value="otherText"
@@ -164,7 +165,7 @@ const preview = computed(() => {
           :data-primary="primary === options.length || undefined"
           @input="onOtherInput"
           @focus="audition.leave(); !multi && otherText.trim() && !otherOn && toggleOther()"
-        >
+        />
         <kbd class="key">{{ options.length + 1 }}</kbd>
       </div>
     </div>

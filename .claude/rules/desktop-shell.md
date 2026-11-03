@@ -1,5 +1,6 @@
 ---
 paths:
+  - "apps/desktop/src/blur.ts"
   - "apps/desktop/src-tauri/src/lib.rs"
   - "apps/desktop/src-tauri/src/media.rs"
   - "apps/desktop/src-tauri/src/window.rs"
@@ -20,6 +21,8 @@ Before changing these files, read [The desktop shell](../../docs/architecture/de
 
 Decisions that bind these files, newest first:
 
+- [Hide on blur](../../docs/decisions/hide-on-blur.md): `hideOnBlur` in settings.json, on by default, hides the window when it loses focus; the file picker doesn't count
+- [No title bar](../../docs/decisions/no-title-bar.md): On macOS the panel has no title bar or traffic lights; it's dragged by its top row
 - [Media by reference](../../docs/decisions/media-by-reference.md): Images and sounds in a form are references (path, sha256, size) the window reads from disk, never copies or base64
 - [AeroSpace workspace jump](../../docs/decisions/aerospace-workspace-jump.md): On macOS the main window is a non-activating `NSPanel` (`tauri-nspanel`)
 - [Dock and Cmd+Tab](../../docs/decisions/dock-and-cmd-tab.md): Menu-bar only (`ActivationPolicy::Accessory`)

@@ -6,7 +6,7 @@ and move to `archive/` when they're done. Ideas that aren't scheduled yet are in
 
 ## Where things stand
 
-*Updated 2026-11-02.*
+*Updated 2026-11-03.*
 
 - Built: the hub, `ask`, the trial harness, history and `review` (briefs 1–5), inline cards in
   Claude Desktop (6–7), the window as a non-activating panel, menu-bar only (8–9), and three
@@ -26,6 +26,8 @@ and move to `archive/` when they're done. Ideas that aren't scheduled yet are in
 - Then briefs 22–25, written 2026-11-02 from an ideate on media in asks: project images in
   markdown (22, with a spike first), sounds as play chips (23), audition keys (24) and
   before/after compare (25). 22 goes first; 23 and 25 need only 22, and 24 needs 23.
+- Brief 26, written 2026-11-03 from daily use: growing text boxes, `hideOnBlur` and no title
+  bar on the panel. Independent of the others.
   `crash-output` asked 2/3 in brief 14's pass (0/3 before); `sort-helpers` dropped `decisions`
   in 2/3 and wants a rerun.
 - Loose ends waiting on Logan: the hand checks from briefs 10–12 (a draft and a copy button in
@@ -68,6 +70,8 @@ and move to `archive/` when they're done. Ideas that aren't scheduled yet are in
     Esc stops; autoplay as an opt-in setting.
 25. [`25-compare-images.md`](25-compare-images.md) (done, awaiting review): a ```` ```compare ```` fence of two images, flipped in place
     at full width.
+26. [`26-panel-polish.md`](26-panel-polish.md) (done, awaiting review): one-line text boxes grow to four rows (Enter is a new line),
+    `hideOnBlur` hides the window when you click outside it (on by default), and no title bar.
 
 ## Done
 

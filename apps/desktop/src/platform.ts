@@ -9,6 +9,7 @@ import { appDataDir, join } from '@tauri-apps/api/path'
 import { open } from '@tauri-apps/plugin-dialog'
 import { BaseDirectory, mkdir, writeFile } from '@tauri-apps/plugin-fs'
 import { openUrl } from '@tauri-apps/plugin-opener'
+import { duringDialog } from './blur'
 
 export interface PickOptions {
   kind: 'file' | 'directory'
@@ -23,14 +24,15 @@ export async function pickPaths(opts: PickOptions): Promise<string[]> {
     const typed = window.prompt(`Path${opts.multiple ? 's, comma-separated' : ''}:`)
     return typed ? typed.split(',').map((p) => p.trim()).filter(Boolean) : []
   }
-  const picked = await open({
+  // The dialog takes focus from the window; `hideOnBlur` mustn't read that as leaving.
+  const picked = await duringDialog(() => open({
     directory: opts.kind === 'directory',
     multiple: opts.multiple,
     ...(opts.title && { title: opts.title }),
     ...(opts.kind === 'file' && opts.extensions?.length && {
       filters: [{ name: opts.extensions.join(', '), extensions: opts.extensions }],
     }),
-  })
+  }))
   if (picked === null) return []
   return Array.isArray(picked) ? picked : [picked]
 }

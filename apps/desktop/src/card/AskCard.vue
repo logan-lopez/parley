@@ -24,6 +24,7 @@ const props = defineProps<{
   withdrawnHint?: string  // the footer line then; "Nothing was sent." by default
   readonly?: boolean  // history: no Send or Skip, no keys, a `footer` slot instead
   embedded?: boolean  // in a host's page (the MCP Apps card): no focus on mount, no esc hint
+  dragRegion?: boolean  // the window's: the meta row drags it (the attribute is Tauri's; the card never imports Tauri)
   initialData?: unknown
   initialNote?: string
   initialRemember?: string[]   // question ids with "Don't ask again here" on
@@ -180,7 +181,8 @@ function pick(n: number) {
   const question = activeQuestion()
   const target = question?.querySelector<HTMLElement>(`[data-pick="${n}"]`)
   if (!question || !target) return
-  if (target instanceof HTMLInputElement) return target.focus()
+  // A text box (the Other row) is focused, not clicked.
+  if (target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement) return target.focus()
   target.click()
   if (question.hasAttribute('data-advance-on-pick')) {
     // Never onto the note: Enter there would open it instead of sending.
@@ -224,7 +226,7 @@ function onKey(event: KeyboardEvent) {
   if (event.key === 'Enter' && !mod && !event.shiftKey) {
     if (target?.matches('textarea')) return
     // A focused option that isn't picked yet: Enter picks it, like Space.
-    if (target instanceof HTMLElement && target.matches('[data-pick]:not(input)') && target.getAttribute('aria-checked') !== 'true') {
+    if (target instanceof HTMLElement && target.matches('[data-pick]:not(input):not(textarea)') && target.getAttribute('aria-checked') !== 'true') {
       event.preventDefault()
       return pick(Number(target.dataset.pick))
     }
@@ -277,7 +279,7 @@ onBeforeUnmount(() => {
 
 <template>
   <article ref="root" class="card" :class="{ withdrawn: !!withdrawn && !readonly }">
-    <header class="meta">
+    <header class="meta" :data-tauri-drag-region="dragRegion ? 'deep' : undefined">
       <span class="source" :title="source">{{ source }}</span>
       <span class="sep">·</span>
       <span>{{ age }}</span>

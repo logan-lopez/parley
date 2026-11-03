@@ -515,6 +515,25 @@ textarea.text-input.draft {
   min-height: calc(4lh + 14px);
   max-height: calc(12lh + 14px);
 }
+/* The one-line boxes (a text question without `multiline`, choice's Other row,
+   a review comment) are textareas that start one row high and grow to four,
+   then scroll. `--grow-pad` is the box's own vertical padding and border, so a
+   one-row box is as tall as the input it replaced. Where field-sizing isn't
+   supported, the `rows="1"` box stays one row and scrolls. */
+textarea.grow {
+  --grow-pad: 0px;
+  field-sizing: content;
+  resize: none;
+  /* Text wraps, so never a horizontal scrollbar. With "always show scroll bars"
+     a sub-pixel overflow draws one, and in a one-line box it covers the text.
+     Past four lines the box still scrolls, by keys and wheel, without chrome. */
+  overflow-x: hidden;
+  scrollbar-width: none;
+  min-height: calc(1lh + var(--grow-pad));
+  max-height: calc(4lh + var(--grow-pad));
+}
+textarea.text-input.grow { --grow-pad: 14px; line-height: inherit; }
+textarea.review-comment.grow { --grow-pad: 8px; }
 .draft-reset { align-self: flex-start; }
 
 .number-row { display: flex; align-items: center; gap: 10px; }

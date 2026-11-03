@@ -7,7 +7,7 @@ import { sourceLabel } from '../asks/source'
 import type { AskRecord } from '../asks/store'
 import { noteOf, statusOf, timeOf } from './filter'
 
-const props = defineProps<{ record: AskRecord }>()
+const props = defineProps<{ record: AskRecord; dragRegion?: boolean }>()
 const emit = defineEmits<{ back: [] }>()
 
 const status = computed(() => statusOf(props.record))
@@ -28,7 +28,7 @@ const sent = computed(() => {
 
 <template>
   <div class="history-detail">
-    <div class="detail-strip">
+    <div class="detail-strip" :data-tauri-drag-region="dragRegion ? 'deep' : undefined">
       <button type="button" class="link-button" @click="emit('back')">← History</button>
       <span class="status-chip" :class="status?.group">{{ status?.label }}</span>
       <span class="detail-time">{{ timeOf(record) }}</span>
@@ -37,6 +37,7 @@ const sent = computed(() => {
     <AskCard
       :key="record.id"
       readonly
+      :drag-region="dragRegion"
       :form="record.form"
       :source="sourceLabel(record.session)"
       :created-at="record.createdAt"

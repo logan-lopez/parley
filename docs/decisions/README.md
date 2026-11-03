@@ -22,6 +22,7 @@ from each file's frontmatter, so change a decision in its own file, not here.
 
 ## The card
 
+- [Growing text boxes](growing-text-boxes.md): One-line text boxes (text, choice's Other, review comments) are textareas that grow from one row to four; Enter is a new line and Cmd+Enter sends (2026-11-03)
 - [Audition play keys](audition-play-keys.md): `p` plays the focused row's next sound chip, Shift+`p` replays, Esc stops; digits keep deciding the row (2026-11-02)
 - [Colors in markdown](colors-in-markdown.md): A color in a code span (hex or a CSS color function, no named colors) gets a swatch (2026-10-11)
 - [HTML and SVG previews](html-and-svg-previews.md): Opt-in ```` ```html preview ```` / ```` ```svg preview ```` fences, drawn as an SVG image from a `data:` URL at a size the agent gives (2026-10-11)
@@ -30,6 +31,8 @@ from each file's frontmatter, so change a decision in its own file, not here.
 
 ## The desktop shell
 
+- [Hide on blur](hide-on-blur.md): `hideOnBlur` in settings.json, on by default, hides the window when it loses focus; the file picker doesn't count (2026-11-03)
+- [No title bar](no-title-bar.md): On macOS the panel has no title bar or traffic lights; it's dragged by its top row (2026-11-03)
 - [AeroSpace workspace jump](aerospace-workspace-jump.md): On macOS the main window is a non-activating `NSPanel` (`tauri-nspanel`) (2026-10-10)
 - [Dock and Cmd+Tab](dock-and-cmd-tab.md): Menu-bar only (`ActivationPolicy::Accessory`) (2026-10-10)
 - [Panel on more than one monitor](panel-on-more-than-one-monitor.md): Shows at its remembered position (2026-10-10)

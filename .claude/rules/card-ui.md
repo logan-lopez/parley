@@ -15,6 +15,7 @@ Before changing these files, read [The card](../../docs/architecture/card-ui.md)
 
 Decisions that bind these files, newest first:
 
+- [Growing text boxes](../../docs/decisions/growing-text-boxes.md): One-line text boxes (text, choice's Other, review comments) are textareas that grow from one row to four; Enter is a new line and Cmd+Enter sends
 - [Audition play keys](../../docs/decisions/audition-play-keys.md): `p` plays the focused row's next sound chip, Shift+`p` replays, Esc stops; digits keep deciding the row
 - [Media by reference](../../docs/decisions/media-by-reference.md): Images and sounds in a form are references (path, sha256, size) the window reads from disk, never copies or base64
 - [Don't ask again](../../docs/decisions/dont-ask-again.md): A per-question "Don't ask again here" toggle; the agent drafts a standing line for AGENTS.md and saves it only after Logan accepts the draft; Parley never answers on his behalf
@@ -24,5 +25,4 @@ Decisions that bind these files, newest first:
 - [Pasted screenshots](../../docs/decisions/pasted-screenshots.md): `capture` saves them as PNGs under `$APPDATA/captures/<day>/` and returns the paths
 - [Review decisions](../../docs/decisions/review-decisions.md): `review` takes 2–4 `decisions` of its own
 - [`review` question](../../docs/decisions/review-question.md): 1–30 items, each approved or rejected with an optional comment
-- [Note for the agent](../../docs/decisions/note-for-the-agent.md): Every card has an optional note, sent with an answer or a skip, returned as `note` and quoted in the text
-- 1 more: `docket context docs/architecture/card-ui.md`
+- 2 more: `docket context docs/architecture/card-ui.md`

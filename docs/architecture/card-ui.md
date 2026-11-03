@@ -45,13 +45,13 @@ keyboard contract and markdown. `platform.ts` is the one way renderers reach the
 - **The note for the agent:** a collapsed textarea (2,000 characters) opened with `Cmd+N`, sent
   with an answer or a skip, and kept in the draft.
 - **Keys the card owns:** `1`–`9` pick in the active question, Tab and Shift+Tab move between
-  questions, Enter picks a focused unpicked option or else sends (not in a textarea or on another
-  button), `Cmd+Enter` sends, `Cmd+.` skips, `Cmd+N` opens the note, `Cmd+[` and `Cmd+]` move
+  questions, Enter picks a focused unpicked option or else sends (not in a textarea, which is every
+  text box, or on another button), `Cmd+Enter` sends, `Cmd+.` skips, `Cmd+N` opens the note, `Cmd+[` and `Cmd+]` move
   through the queue. When the window regains focus, focus goes back where it was, without
   scrolling.
 - **The keyboard contract** (`forms/keyboard.ts`) is how renderers and the card talk, through the
   DOM only: `[data-question]` marks each question's root in order, `[data-pick="n"]` is what key
-  n picks (clicked, or focused if it's a text input), `[data-primary]` is where focus lands, and
+  n picks (clicked, or focused if it's a text box, an input or a textarea), `[data-primary]` is where focus lands, and
   `[data-advance-on-pick]` moves to the next question after a number-key pick. `[data-passive]`
   marks a question with nothing to answer (a show): Tab still stops on it, but the card's first
   focus on mount, and its fallback when the window regains focus with nowhere to return to, go to
@@ -62,23 +62,37 @@ keyboard contract and markdown. `platform.ts` is the one way renderers reach the
   by `widgetTester` so it beats the vanilla set, which stays as the fallback
   (`forms/renderers.ts`). `useQuestion` gives each one its schema, data and frame.
   - Choice: option cards as radios or checkboxes (`p`, Shift+`p` and Esc on a focused option, as
-    in the review; not in the Other input, where `p` types and only Esc applies); with an Other branch, the last row is a text
-    input, and typing in it selects it. ↑/↓ move among options and Space picks. The `x-preview` of the
+    in the review; not in the Other box, where `p` types and only Esc applies); with an Other branch,
+    the last row is a growing textarea (below), and typing in it selects it. ↑/↓ move among options
+    and Space picks; in the Other box they leave only from its first line (↑) or last (↓), and move
+    the caret otherwise. The `x-preview` of the
     option last focused or picked shows below the list (the last picked one's before that). It
     isn't cleared on blur, so a click in the preview, on a missed copy button say, doesn't swap it
     out from under the pointer. The review renderer keeps its last focused row's preview the same
     way.
-  - Text, number: inputs with the schema's limits. A text question with `x-draft` writes the
-    draft into the data on mount (not over data already there: a restored draft or history), sizes
+  - Text, number: the number is an input with the schema's limits; the text question is always a
+    textarea. Without `x-multiline` it's a **growing box**: one row (`rows="1"`), growing to four as
+    lines are added, then scrolling (`textarea.grow`: `field-sizing: content`, `min-height` one
+    line and `max-height` four plus the box's own padding in `--grow-pad`, `resize: none`; where
+    `field-sizing` isn't supported it stays one row and scrolls). Choice's Other row and a review
+    comment are the same box, so all three take Enter as a new line and `Cmd+Enter` to send; there's
+    no Enter-sends and no Shift+Enter chord. `x-multiline` (`multiline`, or a draft with a line
+    break) keeps the 4-row resizable box. A text question with `x-draft` writes the draft into
+    the data on mount (not over data already there: a restored draft or history), sizes
     its textarea to the text, 4 to 12 lines (`field-sizing: content`, with a `rows` estimate as
     the fallback), puts the caret at the end on first focus rather than selecting all, and shows
-    "Reset to draft" once the text differs.
+    "Reset to draft" once the text differs. A one-line draft isn't multiline, so it's a growing box.
+    **↑/↓ in a growing box** (`caretOnEdgeLine` in `forms/keyboard.ts`, used by `moveAmongPicks` and
+    the review's comment handler): the arrow leaves for the neighbouring option or row only when the
+    caret is on the box's first line (↑) or last (↓) *as drawn*, so a wrapped line counts as several;
+    otherwise the browser moves the caret. The helper measures on a hidden copy of the box, because a
+    textarea doesn't say where it breaks lines.
   - Boolean: Yes and No, with `y` and `n`, and the arrow keys between them.
   - Path: a button that opens the native picker through `pickPaths`; paths only, never contents.
   - Review: one row per item. `j`/`k` or the arrows move, `a`/`r` approve or reject, Space toggles,
-    `c` opens a comment, Shift+`a`/`r` decide all. It writes the default decision into every entry
+    `c` opens a comment (a growing textarea, 500 characters), Shift+`a`/`r` decide all. It writes the default decision into every entry
     when it mounts (an empty entry per item under `none`). In a comment, Esc goes back to the row
-    instead of hiding the window. The decisions come from the items' `decision.enum`; any set
+    instead of hiding the window, and ↑/↓ leave it only from its first or last line. The decisions come from the items' `decision.enum`; any set
     other than approve/reject is labelled: a segmented control per row (the first decision in
     the accent, the rest neutral, no strike-through), counts per decision in the header and no
     "all" links. Digits `1`–`4` (by `event.code`, so Shift+digit sets every row) decide the
@@ -228,8 +242,9 @@ keyboard contract and markdown. `platform.ts` is the one way renderers reach the
   Previews are drawn again when the theme changes, through one shared `MutationObserver` on
   `:root`'s `style` and a `prefers-color-scheme` listener (`onThemeChange`), and when the
   Markdown's width changes (a `ResizeObserver` per instance).
-- **The platform adapter** (`platform.ts`): `pickPaths` (the Tauri dialog, or `window.prompt`
-  outside Tauri), `openExternal` (http(s) and mailto only; the opener plugin in Tauri, the
+- **The platform adapter** (`platform.ts`): `pickPaths` (the Tauri dialog, run inside
+  `duringDialog` so the window's `hideOnBlur` doesn't hide it ([the shell](desktop-shell.md)), or
+  `window.prompt` outside Tauri), `openExternal` (http(s) and mailto only; the opener plugin in Tauri, the
   host's `openLink` in the inline card through `setPlatform`, `window.open` in a plain browser),
   `copyText` (`navigator.clipboard.writeText`, false on failure), and `saveImage`, which writes a
   PNG to `$APPDATA/captures/<YYYY-MM-DD>/<8 hex>.png` with the fs plugin and returns the

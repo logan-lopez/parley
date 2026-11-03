@@ -9,6 +9,7 @@ import { rendererProps, type RendererProps } from '@jsonforms/vue'
 import type { ControlElement } from '@jsonforms/core'
 import { REVIEW_DECISIONS, type DefaultDecision, type ReviewDecision, type ReviewEntry, type ReviewItemSchema } from '@parley/protocol'
 import { useAudition } from '../audition'
+import { caretOnEdgeLine } from '../keyboard'
 import Markdown from '../Markdown.vue'
 import { MEDIA } from '../media'
 import QuestionFrame from './QuestionFrame.vue'
@@ -95,7 +96,7 @@ async function openComment(i: number) {
   if (!enabled.value) return
   commentOpen.value = new Set(commentOpen.value).add(i)
   await nextTick()
-  rowAt(i)?.querySelector<HTMLInputElement>('.review-comment')?.focus()
+  rowAt(i)?.querySelector<HTMLTextAreaElement>('.review-comment')?.focus()
 }
 
 function closeComment(i: number) {
@@ -141,10 +142,13 @@ function onRowKey(event: KeyboardEvent, i: number) {
 }
 
 // In a comment, Esc goes back to the row instead of hiding the window, and
-// ↑/↓ leave for the neighbouring row. Enter falls through to the card: Send.
+// ↑/↓ leave for the neighbouring row when the caret is on the box's first or
+// last line (otherwise they move the caret). Enter is a new line, as in any
+// text box; the card's Cmd+Enter sends.
 function onCommentKey(event: KeyboardEvent, i: number) {
   const step = { Escape: 0, ArrowUp: -1, ArrowDown: 1 }[event.key]
   if (step === undefined || event.metaKey || event.ctrlKey || event.altKey) return
+  if (step !== 0 && !caretOnEdgeLine(event.target as HTMLTextAreaElement, step < 0 ? 'up' : 'down')) return
   event.preventDefault()
   event.stopPropagation()
   focusRow(i + step)
@@ -281,20 +285,20 @@ function rowClass(i: number) {
               </span>
             </span>
           </div>
-          <input
+          <textarea
             v-if="showComment(i)"
-            type="text"
-            class="review-comment"
+            rows="1"
+            class="review-comment grow"
             placeholder="Comment for the agent"
             :aria-label="`Comment on ${item.title}`"
             :value="entries[i]?.comment ?? ''"
             :disabled="!enabled"
             tabindex="-1"
             maxlength="500"
-            @input="setComment(i, ($event.target as HTMLInputElement).value)"
+            @input="setComment(i, ($event.target as HTMLTextAreaElement).value)"
             @keydown="onCommentKey($event, i)"
             @blur="closeComment(i)"
-          >
+          />
         </div>
       </div>
 

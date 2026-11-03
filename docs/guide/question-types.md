@@ -20,14 +20,18 @@ recommendation usually comes first, marked "(Recommended)". Press a number to pi
   where each number toggles.
 - **Your own answer.** Unless the agent turned it off, the last row is a text box: type in it and
   that's your answer instead of an option (in a multi-select, alongside your picks). The agent is told it's your own wording.
+  The box starts one line high and grows to four lines as you add them, then scrolls. Enter is a
+  new line, Cmd+Enter sends, and ↑/↓ leave the box for the options only from its first or last
+  line; in between they move the cursor.
 - **Previews.** When options come with a preview (a code sketch, a diff, a picture of a layout),
   it shows below the list for the option you last moved to or picked, so ↑/↓ flips between them.
   Clicking elsewhere in the card leaves it showing.
 
 ## Text
 
-A one-line box, or a larger one for longer answers, sometimes with a hint inside. In the larger
-box Enter is a new line; send with Cmd+Enter.
+A box that starts one line high and grows to four as you add lines, then scrolls, or a larger
+one for longer answers, sometimes with a hint inside. In either, Enter is a new line (so you can
+break a line or format a little); send with Cmd+Enter.
 
 Sometimes the box starts with a draft the agent wrote, such as a commit message or a PR
 description, with the cursor at the end. Edit it in place, or press Cmd+Enter to send it as it is.
@@ -62,7 +66,7 @@ hurried Enter can't approve everything, and Send waits until each item has a dec
 | ↑/↓ or `j`/`k` | Move between items (Home and End jump to the ends). |
 | `a`, `r` | Approve or reject the focused item. |
 | Space | Flip it. |
-| `c` | Comment on it. Esc leaves the comment; ↑/↓ move to the item above or below. |
+| `c` | Comment on it. The box grows to four lines and Enter is a new line. Esc leaves the comment; ↑/↓ move to the item above or below once the cursor is on the box's first or last line. |
 | Shift+`a`, Shift+`r` | Approve or reject them all. |
 | `p`, Shift+`p` | When the item's preview has [sounds](pictures.md#playing-from-the-keyboard): play the next one, or the last one again. Esc stops it. |
 

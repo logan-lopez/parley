@@ -3,7 +3,8 @@
 //
 // - `[data-question]` marks each question's root, in order.
 // - `[data-pick="n"]` is what number key n picks: clicked, or focused if it's
-//   a text input (the Other row). `aria-checked` says whether it's picked.
+//   a text box, an input or a textarea (the Other row). `aria-checked` says
+//   whether it's picked.
 // - `[data-primary]` is where focus lands when the question becomes active.
 // - `[data-advance-on-pick]` on the root moves focus to the next question
 //   after a number-key pick (single choice, boolean).
@@ -54,10 +55,45 @@ function reveal(question: HTMLElement) {
   scroller.scrollBy({ top: box.top - view.top - 12, behavior: smooth ? 'smooth' : 'auto' })
 }
 
-// Arrow-key movement between a question's pickable items.
+// Whether ↑ or ↓ would leave a textarea: the caret is on its first (up) or last
+// (down) line as drawn, so a wrapped line counts as several. A selection never
+// leaves; the arrow collapses it. Measured on a hidden copy of the box, since
+// a textarea says nothing about where its lines break.
+export function caretOnEdgeLine(el: HTMLTextAreaElement, dir: 'up' | 'down'): boolean {
+  const { selectionStart: from, selectionEnd: to, value } = el
+  if (from === null || to === null || from !== to) return false
+  if (dir === 'up' ? value.slice(0, from).includes('\n') : value.slice(from).includes('\n')) return false
+  const style = getComputedStyle(el)
+  const mirror = document.createElement('div')
+  Object.assign(mirror.style, {
+    position: 'absolute', visibility: 'hidden', top: '0', left: '-9999px',
+    boxSizing: 'border-box', width: `${el.clientWidth}px`, border: '0',
+    whiteSpace: 'pre-wrap', overflowWrap: 'break-word',
+    font: style.font, letterSpacing: style.letterSpacing, wordSpacing: style.wordSpacing,
+    textTransform: style.textTransform, textIndent: style.textIndent, tabSize: style.tabSize,
+    padding: style.padding, lineHeight: style.lineHeight,
+  })
+  const mark = () => {
+    const span = document.createElement('span')
+    span.textContent = '\u200b'
+    return span
+  }
+  const [first, caret, last] = [mark(), mark(), mark()]
+  mirror.append(first, value.slice(0, from), caret, value.slice(from), last)
+  document.body.append(mirror)
+  const top = caret.offsetTop
+  const edge = dir === 'up' ? first.offsetTop : last.offsetTop
+  mirror.remove()
+  return top === edge
+}
+
+// Arrow-key movement between a question's pickable items. From a textarea (the
+// Other row) the arrow only leaves when the caret is on the box's edge line;
+// otherwise it moves the caret.
 export function moveAmongPicks(event: KeyboardEvent, keys: { prev: string[]; next: string[] }) {
   const step = keys.next.includes(event.key) ? 1 : keys.prev.includes(event.key) ? -1 : 0
   if (!step) return
+  if (event.target instanceof HTMLTextAreaElement && !caretOnEdgeLine(event.target, step < 0 ? 'up' : 'down')) return
   const question = (event.target as HTMLElement).closest<HTMLElement>(QUESTION)
   const items = [...(question?.querySelectorAll<HTMLElement>('[data-pick]') ?? [])]
   const i = items.indexOf(event.target as HTMLElement)

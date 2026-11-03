@@ -59,7 +59,7 @@ derived shades. All but `paint.ts`, `appearance.ts` and `index.ts` are pure and 
   (`DEFAULT_THEME_SETTING`, the one line that differs between apps). `resolveThemeSetting` picks
   the id for an appearance; a single id ignores it.
 - **settings.json** (`parseSettingsFile`): no file is no settings. A file that isn't a JSON object
-  means the defaults and says why. The keys are `theme`, `sound` and `autoplay`; a bad one gets its default
+  means the defaults and says why. The keys are `theme`, `sound`, `autoplay` and `hideOnBlur`; a bad one gets its default
   and a problem without stopping the other, and any other key is reported. Parley never writes
   the file or creates the folder. `settings.ts` is the whole file's parser, so it lives here only
   because `theme` came first.
@@ -76,6 +76,10 @@ derived shades. All but `paint.ts`, `appearance.ts` and `index.ts` are pure and 
   read when focus moves onto a row with sound chips ([the card](card-ui.md)). The gallery has no
   settings file; `&autoplay=1` stands in. The inline card never reads the file, so it never
   autoplays, and its chips are disabled anyway.
+- **`hideOnBlur`** (`parseHideOnBlurSetting`): a boolean, on when missing; anything else is a
+  problem (`"hideOnBlur" must be true or false, got …`) and on. Each refresh hands it to
+  `setHideOnBlur` in `blur.ts`, which the window's focus listener reads ([the desktop
+  shell](desktop-shell.md)). The gallery and the inline card never start that listener.
 - **Loading** (`loadThemes`, over a `{ list, read }` interface): the bundled themes, then
   `~/.config/inn/themes/`, then `~/.config/parley/themes/`; on the same id a later folder wins. A
   missing folder is none. Files are `<id>.yaml` with a theme id for a stem; anything else is

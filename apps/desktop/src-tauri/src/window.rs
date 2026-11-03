@@ -28,9 +28,31 @@ pub fn init_panel(app: &AppHandle) -> Result<(), Box<dyn std::error::Error>> {
         .get_webview_window(MAIN)
         .ok_or("main window missing")?;
     let panel = window.to_panel::<panel::ParleyPanel>()?;
-    // add_, not set_: keep Tauri's title bar, resize and close styles.
+    // add_, not set_: keep Tauri's resize and rounded-corner styles. The title bar is
+    // there too, but `titleBarStyle: Overlay` in tauri.conf.json draws content under it
+    // and `hiddenTitle` drops the title; the three buttons are hidden below.
     panel.add_style_mask(StyleMask::empty().nonactivating_panel().into())?;
+    hide_window_buttons(panel.as_panel());
     Ok(())
+}
+
+// No title bar: Tauri has no key for hiding the traffic lights, so hide them on the
+// NSWindow. Closing only ever hid the panel (Esc, the hotkey and the tray do that too),
+// and miniaturize and zoom mean nothing to it. The window drags by the card's top row
+// (`data-tauri-drag-region`, which `core:window:allow-start-dragging` permits).
+#[cfg(target_os = "macos")]
+fn hide_window_buttons(window: &tauri_nspanel::NSWindow) {
+    use tauri_nspanel::objc2_app_kit::NSWindowButton;
+
+    for kind in [
+        NSWindowButton::CloseButton,
+        NSWindowButton::MiniaturizeButton,
+        NSWindowButton::ZoomButton,
+    ] {
+        if let Some(button) = window.standardWindowButton(kind) {
+            button.setHidden(true);
+        }
+    }
 }
 
 #[cfg(target_os = "macos")]

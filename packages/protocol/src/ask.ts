@@ -669,9 +669,16 @@ function describe({ header, value, custom, edited }: Answer, labels: Set<string>
   if (typeof value === 'number') return `- ${header}: ${value}`
   if (Array.isArray(value)) {
     const own = (v: string) => custom !== undefined && !labels.has(v)
-    return `- ${header}: ${value.map((v) => (own(v) ? `"${v}" ${OWN_ANSWER}` : v)).join(', ')}`
+    // An own answer with a line break would split the list, so it gets its own block.
+    const blocks = value.filter((v) => own(v) && v.includes('\n'))
+    const inline = value.filter((v) => !blocks.includes(v)).map((v) => (own(v) ? `"${v}" ${OWN_ANSWER}` : v))
+    const head = `- ${header}:${inline.length ? ` ${inline.join(', ')}` : ''}`
+    return [head, ...blocks.map((b) => `  - ${OWN_ANSWER}:\n${indent(indent(b))}`)].join('\n')
   }
-  if (custom !== undefined) return `- ${header}: "${value}" ${OWN_ANSWER}`
+  if (custom !== undefined) {
+    // A quoted string spanning lines reads as a mistake; a block, as a text answer does.
+    return value.includes('\n') ? `- ${header}: ${OWN_ANSWER}\n${indent(value)}` : `- ${header}: "${value}" ${OWN_ANSWER}`
+  }
   if (value.includes('\n')) return `- ${header}:\n${indent(value)}`
   return `- ${header}: ${value}`
 }

@@ -85,10 +85,11 @@ References: the [elicitation spec](https://modelcontextprotocol.io/specification
 How each part works, as you use it, is in [the guide](docs/guide/README.md).
 
 - [A menu bar app](docs/guide/the-app.md), with no Dock icon or Cmd+Tab entry: a notification per
-  ask with a sound you can pick, a count in the menu bar, and a window on Cmd+Ctrl+P that takes your typing without pulling
-  you out of the app you're in.
+  ask with a sound you can pick, a count in the menu bar, and a title-bar-less window on Cmd+Ctrl+P that takes your typing without pulling
+  you out of the app you're in, and hides when you click away (`hideOnBlur`, on by default).
 - [Cards built for the keyboard](docs/guide/answering.md): number keys to pick, Cmd+Enter to send,
-  a note for the agent, drafts that survive a restart.
+  a note for the agent, text boxes that grow to four lines (Enter is a new line), drafts that
+  survive a restart.
 - [Don't ask again here](docs/guide/answering.md#dont-ask-again-here) on a single-choice or yes/no
   question: the agent drafts a line for your project's `AGENTS.md` and saves it only if you accept
   it.

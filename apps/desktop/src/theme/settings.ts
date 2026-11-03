@@ -3,10 +3,10 @@ import { DEFAULT_THEME_SETTING, parseThemeSetting } from './setting'
 
 /**
  * `~/.config/parley/settings.json`: Parley's own file, not part of the shared contract. Read-only
- * for Parley, which never writes it or creates the folder. Its keys are `theme`, `sound` and `autoplay`. Pure.
+ * for Parley, which never writes it or creates the folder. Its keys are `theme`, `sound`, `autoplay` and `hideOnBlur`. Pure.
  */
 
-export const SETTINGS_KEYS = ['theme', 'sound', 'autoplay'] as const
+export const SETTINGS_KEYS = ['theme', 'sound', 'autoplay', 'hideOnBlur'] as const
 
 /**
  * `sound`: the name of a sound in one of `SOUND_FOLDERS`, `"default"` for the system's
@@ -27,13 +27,26 @@ const SOUND_FILE = /^(.+)\.(aiff?|wav|caf|m4a|mp3)$/i
  */
 export const DEFAULT_AUTOPLAY = false
 
+/**
+ * `hideOnBlur`: whether the window hides when it loses focus (a click on another app or the
+ * desktop). On unless the file says `false`: a floating panel that stays up after you've gone
+ * elsewhere is what this setting exists to stop. Parley's own native dialogs don't count.
+ */
+export const DEFAULT_HIDE_ON_BLUR = true
+
 export interface Settings {
   theme: ThemeSetting
   sound: SoundSetting
   autoplay: boolean
+  hideOnBlur: boolean
 }
 
-const DEFAULTS: Settings = { theme: DEFAULT_THEME_SETTING, sound: DEFAULT_SOUND, autoplay: DEFAULT_AUTOPLAY }
+const DEFAULTS: Settings = {
+  theme: DEFAULT_THEME_SETTING,
+  sound: DEFAULT_SOUND,
+  autoplay: DEFAULT_AUTOPLAY,
+  hideOnBlur: DEFAULT_HIDE_ON_BLUR,
+}
 
 /**
  * The settings to use, and what was wrong with the file. Null text (no file) is no settings.
@@ -59,6 +72,8 @@ export function parseSettingsFile(text: string | null): Settings & { problems: s
   if (!sound.ok) problems.push(`settings.json: ${sound.problem}`)
   const autoplay = parseAutoplaySetting(settings.autoplay)
   if (!autoplay.ok) problems.push(`settings.json: ${autoplay.problem}`)
+  const hideOnBlur = parseHideOnBlurSetting(settings.hideOnBlur)
+  if (!hideOnBlur.ok) problems.push(`settings.json: ${hideOnBlur.problem}`)
   problems.push(
     ...Object.keys(settings)
       .filter((key) => !(SETTINGS_KEYS as readonly string[]).includes(key))
@@ -68,6 +83,7 @@ export function parseSettingsFile(text: string | null): Settings & { problems: s
     theme: theme.ok ? theme.setting : DEFAULT_THEME_SETTING,
     sound: sound.ok ? sound.sound : DEFAULT_SOUND,
     autoplay: autoplay.ok ? autoplay.autoplay : DEFAULT_AUTOPLAY,
+    hideOnBlur: hideOnBlur.ok ? hideOnBlur.hideOnBlur : DEFAULT_HIDE_ON_BLUR,
     problems,
   }
 }
@@ -84,6 +100,13 @@ export function parseAutoplaySetting(value: unknown): { ok: true; autoplay: bool
   if (value === undefined) return { ok: true, autoplay: DEFAULT_AUTOPLAY }
   if (typeof value === 'boolean') return { ok: true, autoplay: value }
   return { ok: false, problem: `"autoplay" must be true or false, got ${JSON.stringify(value)}` }
+}
+
+/** settings.json's `hideOnBlur` value, or the problem with it. Missing → on. */
+export function parseHideOnBlurSetting(value: unknown): { ok: true; hideOnBlur: boolean } | { ok: false; problem: string } {
+  if (value === undefined) return { ok: true, hideOnBlur: DEFAULT_HIDE_ON_BLUR }
+  if (typeof value === 'boolean') return { ok: true, hideOnBlur: value }
+  return { ok: false, problem: `"hideOnBlur" must be true or false, got ${JSON.stringify(value)}` }
 }
 
 /** The sound names in a folder's file names: the stems of the audio files. */

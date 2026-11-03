@@ -94,10 +94,11 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKey))
 <template>
   <div class="window">
     <p v-if="themeError" class="theme-error" role="status">{{ themeError }}</p>
-    <HistoryView v-if="view === 'history'" @back="view = 'queue'" />
+    <HistoryView v-if="view === 'history'" drag-region @back="view = 'queue'" />
     <AskCard
       v-else-if="shown"
       :key="shown.id"
+      drag-region
       :form="shown.form"
       :source="sourceLabel(shown.session)"
       :created-at="shown.createdAt"
@@ -123,7 +124,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKey))
         <button type="button" class="history-button" tabindex="-1" title="History (⌘Y)" @click="view = 'history'">History <kbd>⌘Y</kbd></button>
       </template>
     </AskCard>
-    <main v-else class="empty-state">
+    <main v-else class="empty-state" data-tauri-drag-region="deep">
       <ZoomControl class="corner" />
       <p>Nothing is waiting.</p>
       <button type="button" class="button history-open" @click="view = 'history'">History <kbd class="key">⌘Y</kbd></button>

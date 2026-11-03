@@ -518,6 +518,31 @@ describe('shapeAnswer', () => {
     ].join('\n'))
   })
 
+  it('prints an Other answer with a line break as an indented block', () => {
+    const input = parse({
+      questions: [
+        { header: 'Name', question: '?', options: [{ label: 'parley' }, { label: 'ask' }] },
+        { header: 'Checks', question: '?', multiSelect: true, options: [{ label: 'Lint' }, { label: 'Test' }] },
+        { header: 'Other', question: '?', options: [{ label: 'a' }, { label: 'b' }] },
+      ],
+    })
+    const { text } = shapeAnswer(input, {
+      status: 'answered',
+      data: { name: 'parley-ui\nor parley-app', checks: ['Lint', 'Fuzzing\nand more'], other: 'one line' },
+    })
+    expect(text).toBe([
+      'The user answered:',
+      '- Name: (their own answer, not one of the options)',
+      '  parley-ui',
+      '  or parley-app',
+      '- Checks: Lint',
+      '  - (their own answer, not one of the options):',
+      '    Fuzzing',
+      '    and more',
+      '- Other: "one line" (their own answer, not one of the options)',
+    ].join('\n'))
+  })
+
   it('shapes text, boolean, path and blanks', () => {
     const { structured, text } = shapeAnswer(fixture('four-questions'), {
       status: 'answered',

@@ -34,7 +34,9 @@ It switches when the appearance does while Parley runs: when you flip System Set
 Appearance, and when Auto switches at sunrise and sunset, with the window shown or hidden.
 
 The file's other settings are `sound`, the [notification sound](the-app.md#the-sound), and
-`autoplay`, which plays [a row's first sound](pictures.md#autoplay) when you move onto it. Any other key
+`autoplay`, which plays [a row's first sound](pictures.md#autoplay) when you move onto it, and
+`hideOnBlur`, which hides the window when you click outside it (`true` unless you say `false`;
+[the window](the-app.md#the-window)). Any other key
 gets a banner (`settings.json: unknown key "thme"`), so a typo shows.
 
 ## Where themes come from

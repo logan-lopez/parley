@@ -60,8 +60,8 @@ it ([from the keyboard](pictures.md#playing-from-the-keyboard)).
 | --- | --- |
 | `1`–`9` | Pick that option in the current question. For a single choice or yes/no, focus moves on to the next question. |
 | Tab, Shift+Tab | Next and previous question. |
-| Enter | Pick the focused option if it isn't picked yet; otherwise send. In a multi-line text box it's a new line. |
-| Cmd+Enter | Send, from anywhere. |
+| Enter | Pick the focused option if it isn't picked yet; otherwise send. In any text box it's a new line. |
+| Cmd+Enter | Send, from anywhere, including from inside a text box. |
 | Cmd+. | Skip the ask. |
 | Cmd+N | Open the note for the agent. |
 | Cmd+[, Cmd+] | Previous and next ask in the queue. |

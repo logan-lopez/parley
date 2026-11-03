@@ -12,9 +12,11 @@ const { schema, data, frame, enabled, set } = useQuestion(props as RendererProps
 const text = ref(typeof data.value === 'string' ? data.value : '')
 
 function onInput(event: Event) {
-  text.value = (event.target as HTMLInputElement | HTMLTextAreaElement).value
+  text.value = (event.target as HTMLTextAreaElement).value
   set(text.value.trim() ? text.value : undefined)
 }
+
+const multiline = computed(() => !!schema.value['x-multiline'])
 
 // The agent's draft, written into the data on mount (JSON Forms doesn't apply
 // defaults), so an untouched draft satisfies `required` and Cmd+Enter sends it.
@@ -39,7 +41,7 @@ const rows = computed(() => {
 // The first focus puts the caret at the end of the draft. Not select-all,
 // where a stray keystroke would replace it, and only the first, so coming back
 // to the window keeps the caret where the user left it.
-const input = ref<HTMLInputElement | HTMLTextAreaElement>()
+const input = ref<HTMLTextAreaElement>()
 let placed = false
 
 function onFocus() {
@@ -61,12 +63,14 @@ function reset() {
 
 <template>
   <QuestionFrame v-bind="frame">
+    <!-- Always a textarea: `multiline` is the agent saying a long answer is expected (4 rows,
+         resizable; a draft sizes to its text). Without it the box starts one row high and grows to
+         four (`.grow`), so a line break or some formatting is never refused. -->
     <textarea
-      v-if="schema['x-multiline']"
       ref="input"
       class="text-input"
-      :class="{ draft: draft !== undefined }"
-      :rows="rows"
+      :class="multiline ? { draft: draft !== undefined } : 'grow'"
+      :rows="multiline ? rows : 1"
       :value="text"
       :placeholder="schema['x-placeholder']"
       :disabled="!enabled"
@@ -75,19 +79,6 @@ function reset() {
       @input="onInput"
       @focus="onFocus"
     />
-    <input
-      v-else
-      ref="input"
-      type="text"
-      class="text-input"
-      :value="text"
-      :placeholder="schema['x-placeholder']"
-      :disabled="!enabled"
-      :aria-label="frame.header"
-      data-primary
-      @input="onInput"
-      @focus="onFocus"
-    >
     <button
       v-if="enabled && draft !== undefined && text !== draft"
       type="button"

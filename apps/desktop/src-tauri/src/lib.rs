@@ -47,7 +47,7 @@ pub fn run() {
             Ok(())
         })
         .on_window_event(|window, event| {
-            // The close button hides; quitting is only from the tray menu.
+            // There's no close button now, but any close request still hides: quitting is only from the tray menu.
             if let WindowEvent::CloseRequested { api, .. } = event {
                 api.prevent_close();
                 window::hide(window.app_handle());

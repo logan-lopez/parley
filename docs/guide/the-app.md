@@ -16,7 +16,7 @@ first and quits. To start it at login, add it under System Settings → General 
 
 Parley's icon, a white flag, sits in the menu bar, with a number beside it while questions are waiting. Click it
 to show or hide the window. Its menu has **Show Parley** and **Quit**, and Quit is the only way to
-stop the app: the window's close button only hides it.
+stop the app: the window has no close button, and Esc, the hotkey and a click on the icon only hide it.
 
 ## Notifications
 
@@ -57,6 +57,16 @@ On macOS the window is a panel that takes your typing without making Parley the 
 app you were in stays active, so under AeroSpace the window shows on the workspace you're on
 instead of pulling you back to wherever it was last. While it's up it floats over every workspace
 as you switch. Esc hides it, and your typing goes straight back to the app you were in.
+
+The window has no title bar and no close, minimise or zoom buttons. Drag it by the top row (the
+source, age and countdown), and resize it from its edges; the zoom control and the History button
+in that row still click.
+
+It hides when you click outside it: another app's window, or the desktop. The hotkey brings it
+back on the same question with what you'd typed. The file picker doesn't count as leaving. To keep
+the window up until you hide it yourself, put `"hideOnBlur": false` in `~/.config/parley/settings.json`
+([themes](themes.md#picking-one) has the file). A link or an image you open takes you
+to another app, so that hides it too.
 
 Parley has no Dock icon and isn't in Cmd+Tab: the hotkey and the tray are the ways in.
 

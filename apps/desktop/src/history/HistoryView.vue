@@ -9,6 +9,7 @@ import { saveFailing } from '../asks/persist'
 import HistoryDetail from './HistoryDetail.vue'
 import { apply, byDay, filters, noteOf, statusOf, timeOf, titleOf, type StatusGroup } from './filter'
 
+defineProps<{ dragRegion?: boolean }>()
 const emit = defineEmits<{ back: [] }>()
 
 const shown = computed(() => apply(history.value))
@@ -107,9 +108,9 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKey))
 </script>
 
 <template>
-  <HistoryDetail v-if="opened" :record="opened" @back="close" />
+  <HistoryDetail v-if="opened" :record="opened" :drag-region="dragRegion" @back="close" />
   <section v-else class="history">
-    <header class="meta">
+    <header class="meta" :data-tauri-drag-region="dragRegion ? 'deep' : undefined">
       <span class="history-title">History</span>
       <span v-if="saveFailing" class="not-saving" title="Writing history.jsonl failed. Asks still work; see the console for the error.">
         · not being saved

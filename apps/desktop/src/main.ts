@@ -1,5 +1,6 @@
 import { createApp } from 'vue'
 import './styles.css'
+import { startBlurHide } from './blur'
 import { initGalleryTheme, initTheme, startTheme } from './theme'
 import { initZoom } from './zoom'
 
@@ -30,6 +31,7 @@ async function startApp() {
   initZoom()
   createApp(App).mount('#app')
   startTheme()
+  startBlurHide().catch((error) => console.warn('hideOnBlur unavailable:', error))
 
   // History loads before the hub: servers re-send their pending asks on
   // connect, and those must find their records (and drafts) already there.

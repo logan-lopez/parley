@@ -1,5 +1,5 @@
 ---
-sources: ["apps/desktop/src-tauri/src/lib.rs", "apps/desktop/src-tauri/src/media.rs", "apps/desktop/src-tauri/src/window.rs", "apps/desktop/src-tauri/src/tray.rs", "apps/desktop/src-tauri/src/shortcut.rs", "apps/desktop/src-tauri/tauri.conf.json", "apps/desktop/src-tauri/capabilities/", "apps/desktop/src-tauri/Cargo.toml", "apps/desktop/src-tauri/Info.plist", "apps/desktop/src-tauri/build.rs", "apps/desktop/vite.config.ts", "apps/desktop/scripts/install.sh", "apps/desktop/icons/", "apps/desktop/scripts/icons.ts"]
+sources: ["apps/desktop/src/blur.ts", "apps/desktop/src-tauri/src/lib.rs", "apps/desktop/src-tauri/src/media.rs", "apps/desktop/src-tauri/src/window.rs", "apps/desktop/src-tauri/src/tray.rs", "apps/desktop/src-tauri/src/shortcut.rs", "apps/desktop/src-tauri/tauri.conf.json", "apps/desktop/src-tauri/capabilities/", "apps/desktop/src-tauri/Cargo.toml", "apps/desktop/src-tauri/Info.plist", "apps/desktop/src-tauri/build.rs", "apps/desktop/vite.config.ts", "apps/desktop/scripts/install.sh", "apps/desktop/icons/", "apps/desktop/scripts/icons.ts"]
 ---
 # The desktop shell
 
@@ -8,11 +8,12 @@ macOS), the plugins, the permissions and the CSP, and the installer. It stays sm
 the socket hub is the only other thing in Rust ([the hub](hub.md)), and everything else is in the
 webview.
 
-**History:** [brief 1](../briefs/archive/01-hub-and-lifecycle.md), [brief 8](../briefs/archive/08-nspanel-spike.md) (the panel), [brief 9](../briefs/archive/09-panel-window.md) (menu-bar only)
+**History:** [brief 1](../briefs/archive/01-hub-and-lifecycle.md), [brief 8](../briefs/archive/08-nspanel-spike.md) (the panel), [brief 9](../briefs/archive/09-panel-window.md) (menu-bar only), [brief 26](../briefs/26-panel-polish.md) (no title bar, `hideOnBlur`)
 
 `lib.rs` builds the app: plugins, setup, the close handler and the commands. `window.rs` is the
 panel and `show`/`hide`/`toggle`. `tray.rs` is the tray icon, its menu and the pending count.
-`shortcut.rs` is the global hotkey. `tauri.conf.json` has the window and the CSP;
+`shortcut.rs` is the global hotkey. `apps/desktop/src/blur.ts` is the one piece of the shell that
+lives in the webview: hide on losing focus. `tauri.conf.json` has the window and the CSP;
 `capabilities/default.json` has the permissions. `Info.plist` is merged into the bundle's and sets
 `LSUIElement`.
 
@@ -23,23 +24,52 @@ panel and `show`/`hide`/`toggle`. `tray.rs` is the tray icon, its menu and the p
   never visibility (`StateFlags::all() - VISIBLE`).
 - **Startup** (`setup`): on macOS, set the activation policy to `Accessory` and turn the main
   window into a panel; bind the socket hub; build the tray; register the hotkey. The window is declared hidden, 440×600, always on top, so the app
-  starts with nothing on screen.
+  starts with nothing on screen. It has no title bar (below).
 - **The panel** (`window.rs`, macOS). `init_panel` converts the `main` window to a `ParleyPanel`
   (can become key, can't become main, floating) and adds the non-activating style mask with
-  `add_style_mask`, keeping Tauri's title bar, resize and close styles. `show` is
+  `add_style_mask`, keeping Tauri's resize and rounded-corner styles, then hides the three standard
+  buttons (`hide_window_buttons`). `show` is
   `show_and_make_key()`: the panel takes keys without activating Parley, so the app you were in
   stays active. `hide` is the panel's `hide()` (`orderOut:`), and `toggle` picks between them on
   the panel's own visibility. Other platforms keep a plain window path (show, unminimize, focus,
   hide) under `cfg(not(target_os = "macos"))`.
+- **No title bar** (macOS). `tauri.conf.json` sets `titleBarStyle: "Overlay"` and `hiddenTitle`:
+  the content runs under the title strip, which draws nothing, and the title is dropped. Tauri has
+  no key for the traffic lights, so `init_panel` hides the close, miniaturize and zoom buttons
+  on the `NSWindow` (`standardWindowButton:` then `setHidden:`, through the `objc2_app_kit`
+  that `tauri-nspanel` re-exports). It keeps the native rounded corners, shadow and edge resize.
+  A `decorations: false` or a borderless style mask would lose those, and wasn't needed. The window
+  drags by `data-tauri-drag-region="deep"` on the card's meta row, the history list's header, the
+  history detail's strip and the empty state: `deep` makes text in the row drag, and Tauri's drag
+  script skips buttons, so the zoom control, History and "n waiting" still click. `App.vue` passes a
+  `dragRegion` prop down, so `AskCard` emits the attribute only in the window, never in the
+  inline card. The drag needs `core:window:allow-start-dragging`. Not on other platforms: the
+  attribute does no harm, and the buttons are macOS-only code. No title bar also means no close
+  button: Esc, the hotkey, the tray and `hideOnBlur` hide the window.
+- **Hide on blur** (`apps/desktop/src/blur.ts`, started from `main.ts`, the window only). The
+  webview listens with `getCurrentWindow().onFocusChanged` and calls `hide()` when focus is lost,
+  `settings.json`'s `hideOnBlur` is on (the default; `refreshTheme` pushes it with `setHideOnBlur`
+  on every focus, [themes](themes.md)), and no native dialog is open. The brief 26 probe on the
+  panel showed `onFocusChanged`, the DOM `blur` and Rust's `WindowEvent::Focused(false)` all fire
+  on a click on another app's window, on the desktop, on Mission Control and on a workspace switch,
+  with the window still visible. So the webview event is enough and Rust stays out of it.
+  `tauri-nspanel`'s `set_event_handler` would replace Tauri's window delegate, so nothing uses it.
+  **The picker guard:** `pickPaths` in `platform.ts` runs the dialog inside `duringDialog`, a
+  counter that `shouldHideOnBlur` checks, because the native picker takes focus from the panel (the
+  probe saw a blur with the window visible, and focus coming back when it closed). Opening a link
+  or a media file moves focus to another app, so the window hides then too. Clicking the tray icon
+  while the window is up hid it with no blur first, and showing it from the tray didn't blur it, so
+  the tray needs no guard.
 - **Menu-bar only** (macOS). No Dock icon and no Cmd+Tab entry: both activate the app, which the
   panel exists to avoid, and the hotkey and the tray are the ways in. Two places set it. The
   bundle's `Info.plist` has `LSUIElement`, so the installed app is an agent from launch, before any
   Rust runs. `setup` also calls `set_activation_policy(Accessory)`, because the unbundled `tauri
   dev` binary doesn't get the plist.
-- **Hiding.** Every Rust hide goes through `window::hide`: the close button (quitting is only from
-  the tray), the hotkey and a tray click. The webview's own hides (Esc in the queue, the last ask
-  answered) call Tauri's `hide()`. Both end in `orderOut:`, so they work on the panel, and routing
-  the webview's through a command would buy nothing.
+- **Hiding.** Every Rust hide goes through `window::hide`: the hotkey and a tray click (there's no
+  close button, and quitting is only from the tray). The webview's own hides (Esc in the queue, the
+  last ask answered, and a blur under `hideOnBlur`) call Tauri's `hide()`. Both end in `orderOut:`,
+  so they work on the panel, and routing the webview's through a command would buy nothing. The
+  close handler in `lib.rs` still turns any close request into a hide, as a backstop.
 - **The tray.** A left click toggles the window; the menu has Show Parley and Quit.
   `set_pending_count` sets the number beside the icon (empty at zero); the store calls it whenever
   the queue changes. The icon is `src-tauri/icons/tray.png`, embedded with `include_image!` and
@@ -55,7 +85,7 @@ panel and `show`/`hide`/`toggle`. `tray.rs` is the tray icon, its menu and the p
   `tauri-plugin-notification` on desktop shows only a title, body, icon and sound; `onAction` is
   mobile-only, so a click can't open the window.
 - **Permissions** (`capabilities/default.json`, the `main` window only): core defaults, window
-  hide, dialog, notification, opening URLs in the opener's default scope (http(s), mailto, tel),
+  hide and start-dragging (the title-bar-less drag), dialog, notification, opening URLs in the opener's default scope (http(s), mailto, tel),
   the hub/tray commands (`hub_ready`, `hub_send`, `hub_close`, `set_pending_count`), the media
   commands (`allow_media`, `open_media`), and fs:
   read-text-file, write-text-file and rename for history, and write-file, mkdir, read-dir and
