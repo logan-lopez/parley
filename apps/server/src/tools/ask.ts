@@ -27,7 +27,7 @@ Each question has a \`header\` (a chip of 12 characters or fewer), the \`questio
 
 In markdown, a color in a code span (\`#38bdf8\`, \`oklch(70% 0.15 230)\`) shows with a swatch, and a \`\`\`palette block, one color per line with an optional name after it, shows large labelled swatches. A \`\`\`html preview or \`\`\`svg preview block (static HTML and CSS, or SVG: no scripts, no external images or fonts) is drawn as a picture instead of shown as code, 400×200 by default; set the size on its first line, such as \`\`\`html preview width=400 height=240. Use it in an option's \`preview\` for layouts, UI options and visual designs.
 
-An image file in the project, written as \`![caption](path)\`, is shown as the picture: use it for screenshots instead of asking the user to open them. An audio file, or a glob of variants (\`takes/1_*.wav\`), is a play button.
+An image file in the project, written as \`![caption](path)\`, is shown as the picture: use it for screenshots instead of asking the user to open them. A \`\`\`compare block with two image paths (each with an optional label) shows a before and after that the user flips between. An audio file, or a glob of variants (\`takes/1_*.wav\`), is a play button.
 
 Questions are required unless \`required: false\`. Answers are keyed by \`id\`, which defaults to a slug of the header.
 

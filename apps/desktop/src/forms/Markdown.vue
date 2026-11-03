@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, inject, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { copyText, openExternal, openMedia, type MediaUrl } from '../platform'
-import type { MediaEntry } from '@parley/protocol'
+import type { Media, MediaEntry } from '@parley/protocol'
 import { audition, chipUrls, track } from './audition'
 import { MEDIA } from './media'
 import { renderMarkdown } from './markdown'
@@ -33,11 +33,18 @@ function paint() {
 
 async function paintMedia() {
   const figures = [...(root.value?.querySelectorAll<HTMLElement>('.md-media') ?? [])]
+  const compares = [...(root.value?.querySelectorAll<HTMLElement>('.md-compare') ?? [])]
   const chips = [...(root.value?.querySelectorAll<HTMLElement>('.md-sound') ?? [])]
-  if ((!figures.length && !chips.length) || !media) return
+  if ((!figures.length && !compares.length && !chips.length) || !media) return
   const entries = media.entries()
   for (const el of [...figures, ...chips]) {
     if (own(entries, el.dataset.media!)) el.querySelector('.md-media-status, .md-sound-status')!.textContent = 'Loading…'
+  }
+  for (const compare of compares) {
+    const items = [...compare.querySelectorAll<HTMLElement>('.md-compare-item')]
+    if (items.some((item) => own(entries, item.dataset.media!))) {
+      compare.querySelector('.md-compare-status')!.textContent = 'Loading…'
+    }
   }
   const urls = await media.urls().catch(() => new Map<string, MediaUrl>())
   // v-html or the form may have changed while the grant was being checked.
@@ -71,9 +78,123 @@ async function paintMedia() {
       status.textContent = failure(result?.status, file?.path ?? src, 'Open in the Parley window')
     }
   }
+  for (const compare of compares) {
+    if (root.value?.contains(compare)) paintCompare(compare, entries, urls)
+  }
   for (const chip of chips) {
     if (root.value?.contains(chip)) paintChip(chip, own(entries, chip.dataset.media!) ? entries[chip.dataset.media!] : undefined, urls)
   }
+}
+
+type CompareState = 'loading' | 'ok' | { error: string }
+
+function paintCompare(figure: HTMLElement, entries: Media, urls: Map<string, MediaUrl>) {
+  const items = [...figure.querySelectorAll<HTMLElement>('.md-compare-item')]
+  if (items.length !== 2) return
+  const imgs = items.map((item) => item.querySelector<HTMLImageElement>('.md-compare-img')!)
+  const badges = items.map((item) => item.querySelector<HTMLElement>('.md-compare-badge')!)
+  const label = figure.querySelector<HTMLElement>('.md-compare-label')!
+  const pathEl = figure.querySelector<HTMLElement>('.md-compare-path')!
+  const status = figure.querySelector<HTMLElement>('.md-compare-status')!
+  const files = items.map((item) => (own(entries, item.dataset.media!) ? entries[item.dataset.media!]?.files[0] : undefined))
+  const paths = items.map((item, i) => files[i]?.path ?? item.dataset.media!)
+  pathEl.textContent = `${paths[0]} · ${paths[1]}`
+  const states: [CompareState, CompareState] = ['loading', 'loading']
+
+  const sync = () => {
+    if (states[0] === 'loading' || states[1] === 'loading') {
+      figure.classList.remove('flippable', 'stacked')
+      delete figure.dataset.active
+      label.hidden = true
+      status.textContent = 'Loading…'
+      return
+    }
+    if (states[0] === 'ok' && states[1] === 'ok') {
+      const [img0, img1] = imgs as [HTMLImageElement, HTMLImageElement]
+      if (img0.naturalWidth === img1.naturalWidth && img0.naturalHeight === img1.naturalHeight) {
+        figure.classList.add('flippable')
+        figure.classList.remove('stacked')
+        figure.dataset.active = '0'
+        img0.hidden = false
+        img1.hidden = true
+        badges[0]!.hidden = true
+        badges[1]!.hidden = true
+        label.textContent = items[0]!.dataset.label ?? ''
+        label.hidden = false
+        status.textContent = ''
+      } else {
+        figure.classList.remove('flippable')
+        figure.classList.add('stacked')
+        delete figure.dataset.active
+        img0.hidden = false
+        img1.hidden = false
+        badges[0]!.hidden = false
+        badges[1]!.hidden = false
+        label.hidden = true
+        status.textContent = `${img0.naturalWidth}×${img0.naturalHeight} and ${img1.naturalWidth}×${img1.naturalHeight}`
+      }
+      return
+    }
+    figure.classList.remove('flippable')
+    figure.classList.toggle('stacked', states.includes('ok'))
+    delete figure.dataset.active
+    label.hidden = true
+    states.forEach((state, i) => {
+      imgs[i]!.hidden = state !== 'ok'
+      badges[i]!.hidden = state !== 'ok'
+    })
+    if (states[0] !== 'ok' && states[1] !== 'ok') {
+      status.textContent = states[0].error === 'Open in the Parley window' && states[1].error === 'Open in the Parley window'
+        ? `Open ${paths[0]} and ${paths[1]} in the Parley window`
+        : `${states[0].error}; ${states[1].error}`
+    } else {
+      const failed = states[0] === 'ok' ? 1 : 0
+      const shown = 1 - failed
+      const err = (states[failed] as { error: string }).error
+      const message = err === 'Open in the Parley window' ? `Open ${paths[failed]} in the Parley window` : err
+      status.textContent = `${message} (${paths[shown]} shown)`
+    }
+  }
+
+  items.forEach((_, i) => {
+    const file = files[i]
+    const result = file && resolved(urls, file)
+    const img = imgs[i]!
+    const badge = badges[i]!
+    if (result?.status === 'ok' && result.url) {
+      states[i] = 'loading'
+      img.onload = () => {
+        states[i] = 'ok'
+        sync()
+      }
+      img.onerror = () => {
+        img.removeAttribute('src')
+        states[i] = { error: `Couldn't draw ${paths[i]!}` }
+        sync()
+      }
+      img.src = result.url
+    } else {
+      img.hidden = true
+      badge.hidden = true
+      img.removeAttribute('src')
+      states[i] = { error: failure(result?.status, paths[i]!, 'Open in the Parley window') }
+    }
+  })
+  sync()
+}
+
+function flipCompare(figure: HTMLElement) {
+  if (!figure.classList.contains('flippable')) return
+  const items = [...figure.querySelectorAll<HTMLElement>('.md-compare-item')]
+  if (items.length !== 2) return
+  const next = figure.dataset.active === '1' ? 0 : 1
+  figure.dataset.active = String(next)
+  items.forEach((item, i) => {
+    const img = item.querySelector<HTMLImageElement>('.md-compare-img')
+    if (img) img.hidden = i !== next
+  })
+  const label = figure.querySelector<HTMLElement>('.md-compare-label')
+  if (label) label.textContent = items[next]!.dataset.label ?? ''
 }
 
 function own(entries: object, key: string): boolean {
@@ -223,6 +344,12 @@ function onClick(event: MouseEvent) {
     }
     return
   }
+  const compare = target?.closest<HTMLElement>('[data-compare]')
+  if (compare) {
+    event.preventDefault()
+    if (event.type === 'click') flipCompare(compare)
+    return
+  }
   const toggle = target?.closest<HTMLButtonElement>('[data-preview-source]')
   if (toggle) {
     event.preventDefault()
@@ -249,7 +376,20 @@ function onClick(event: MouseEvent) {
 // An option's preview belongs to the option that has focus, and goes away
 // when focus leaves it: pressing Source or Copy in it mustn't move focus.
 function onMouseDown(event: MouseEvent) {
-  if ((event.target as Element | null)?.closest('[data-preview-source], [data-copy], [data-media-open], [data-sound]')) event.preventDefault()
+  const target = event.target as Element | null
+  if (target?.closest('[data-preview-source], [data-copy], [data-media-open], [data-sound]')) {
+    event.preventDefault()
+    return
+  }
+  if (target?.closest('[data-compare]')?.closest('.preview')) event.preventDefault()
+}
+
+function onKeyDown(event: KeyboardEvent) {
+  if (event.metaKey || event.ctrlKey || event.altKey || event.shiftKey || event.key !== 'x') return
+  const compare = (event.target as Element | null)?.closest<HTMLElement>('[data-compare]')
+  if (!compare) return
+  event.preventDefault()
+  flipCompare(compare)
 }
 
 // "Copied" for a moment. When the host won't allow the clipboard (an MCP Apps
@@ -283,5 +423,5 @@ let instances = 0
 
 <template>
   <!-- markdown-it escapes HTML (html: false), so this is safe to inject. -->
-  <component :is="inline ? 'span' : 'div'" ref="root" class="md" v-html="html" @click="onClick" @auxclick.prevent="onClick" @mousedown="onMouseDown" />
+  <component :is="inline ? 'span' : 'div'" ref="root" class="md" v-html="html" @click="onClick" @auxclick.prevent="onClick" @mousedown="onMouseDown" @keydown="onKeyDown" />
 </template>

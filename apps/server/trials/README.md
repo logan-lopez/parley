@@ -92,6 +92,7 @@ A changed prompt resets the comparison for that prompt.
 | sort-helpers | ask | first | a per-item assignment: should be one `review` with `decisions` |
 | crash-output | ask | other:… | output only the user can get: should be one `capture` |
 | screenshot-look | ask | first | a committed screenshot shown before a layout choice; should use `![caption](path)` |
+| before-after | ask | first | two committed screenshots to flip between in place; should use a ```` ```compare ```` fence |
 | sound-audition | ask | first | three committed WAV takes to pick from; should play them as `![…](…)` sound refs, not shell commands (`media: audio`) |
 | report-look | ask | first | a visual choice: should preview layouts or colors (`html preview`, chips, a palette) |
 | plan-check | ask | first | a plan to check: should put the file in front of the user (`show` with `path`) and ask about it |
@@ -488,3 +489,36 @@ Commands: `trial --client all --runs 3 --prompt sound-audition`, then
 - Every run asked once, a single `choice` question. No form named a command-line player.
 - `screenshot-look` stayed valid on the first call in both runs, each a `show` and then a
   `choice`, and used the answer.
+
+## Brief 25: before-and-after compare fences, targeted pass (2026-11-02)
+
+The tool description's media paragraph gained one sentence: "A ```` ```compare ```` block with two
+image paths (each with an optional label) shows a before and after that the user flips between." A
+second 320×64 PNG, `project/layout-after.png`, and the `before-after` prompt were added. A targeted
+pass, not a new full-suite baseline. Claude Code 2.1.317 with `claude-opus-5-5`; Codex CLI 0.166.0
+with `gpt-6-astra`.
+
+Commands: `trial --client all --prompt before-after --runs 3 --keep`, then
+`trial --client all --prompt screenshot-look --runs 1 --keep`. Results are the local, gitignored
+`results/2026-11-03T04-28-25-259Z.jsonl` and `results/2026-11-03T04-29-49-410Z.jsonl`.
+
+| prompt | client | asked | first call valid | used (raw scorer) | compare fence |
+| --- | --- | --- | --- | --- | --- |
+| before-after | Claude | 3/3 | 2/3 | 3/3 | 3/3 |
+| before-after | Codex | 3/3 | 3/3 | 3/3 | 3/3 |
+| screenshot-look | Claude | 1/1 | 1/1 | 0/1 | – |
+| screenshot-look | Codex | 1/1 | 1/1 | 1/1 | – |
+
+- Every `before-after` run (6/6) wrote a ```` ```compare ```` fence with `layout.png` and
+  `layout-after.png`, and both files resolved into `x-media`. All three Claude runs paired a `show`
+  carrying `layout.png Sidebar (current)` and `layout-after.png Top bar` in `content` with a
+  `choice` question; all three Codex runs put the ```` ```compare ```` fence directly in a single
+  `choice` question's `question` text (two with `Sidebar` and `Top bar` labels, one unlabelled,
+  which defaults to `A` and `B`).
+- `before-after` Claude run 1 first put the ```` ```compare ```` block in a `show` question's
+  `question` field with no `content` or `path`, bounced on `question 1 is a show with nothing to
+  show; give content (markdown) or path (a file in the project)`, and retried with the fence in
+  `content`.
+- Both `screenshot-look` runs stayed valid on the first call with `![…](layout.png)` in a `show`
+  block followed by a `choice`. Claude's final text wrote "keeping the sidebar" where the option
+  label was "Keep the sidebar", which misses the literal substring `used` check.

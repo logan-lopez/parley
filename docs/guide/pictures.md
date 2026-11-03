@@ -24,6 +24,29 @@ In Claude Desktop's inline card, images up to 2 MB each and 8 MB per ask appear 
 Larger images keep their caption and say **Open in the Parley window**. You can still answer the
 card in either place.
 
+## Before and after
+
+To compare two screenshots or renders in the same spot, the agent writes a `compare` code block
+with two image paths, each followed by an optional short label (without labels, they're labelled
+**A** and **B**; a path with spaces goes in `<...>`):
+
+````markdown
+```compare
+shots/menu-now.png Now
+shots/menu-big.png Bigger
+```
+````
+
+The frame shows the first image at full width with its label in the top-right corner, and lists
+both paths below it. Click the frame, or focus it and press `x`, to flip between the two images in
+place; the corner label updates to show which one you're looking at. Clicking a comparison in an
+option's or review item's preview flips it without moving focus off the option or row.
+
+If the two images have different pixel dimensions, flipping in place would jump, so Parley stacks
+them one above the other with their labels and shows their dimensions (`320×64 and 320×88`). If
+one of the files has changed or been deleted when you open the ask in history, the one that still
+loads is shown and the status line names both files.
+
 ## Sounds
 
 The same markdown with a sound file, such as `![Take 1](audition/jump/1.wav)`, is a play chip:

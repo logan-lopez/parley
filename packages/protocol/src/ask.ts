@@ -21,7 +21,7 @@ import {
   type Widget,
 } from './form.ts'
 import { fileMarkdown, SHOW_CONTENT_MAX, SHOW_EDIT_MAX, type ShowEdit } from './show.ts'
-import { mediaRefs, type Media } from './media.ts'
+import { compareFences, mediaRefs, type Media } from './media.ts'
 
 export const DEFAULT_TIMEOUT_SECONDS = 1800
 export const QUESTION_TYPES = ['choice', 'text', 'number', 'boolean', 'path', 'review', 'capture', 'show'] as const satisfies readonly Widget[]
@@ -329,16 +329,23 @@ export function compileQuestions(input: AskInput, files?: ShowFiles, media?: Med
 }
 
 // Every markdown surface the card renders, including a shown markdown file.
-export function askMediaRefs(input: AskInput, files?: ShowFiles): string[] {
+function askMarkdownTexts(input: AskInput, files?: ShowFiles): string[] {
   const ids = questionIds(input.questions)
-  const texts = input.questions.flatMap((q, i) => [
+  return input.questions.flatMap((q, i) => [
     q.question,
     ...(q.options ?? []).flatMap((o) => [o.description ?? '', o.preview ?? '']),
     ...(q.items ?? []).flatMap((item) => [item.detail ?? '', item.preview ?? '']),
     q.content ?? '',
     ...(files?.[ids[i]!] ? [fileMarkdown(files[ids[i]!]!.path, files[ids[i]!]!.text)] : []),
   ])
-  return [...new Set(texts.flatMap(mediaRefs))]
+}
+
+export function askMediaRefs(input: AskInput, files?: ShowFiles): string[] {
+  return [...new Set(askMarkdownTexts(input, files).flatMap(mediaRefs))]
+}
+
+export function askCompareFences(input: AskInput, files?: ShowFiles): string[] {
+  return askMarkdownTexts(input, files).flatMap(compareFences)
 }
 
 function compileQuestion(q: Question, file?: ShowFile): JsonSchema {

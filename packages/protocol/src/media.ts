@@ -4,6 +4,8 @@ import MarkdownIt from 'markdown-it'
 export type MediaFile = { path: string; abs: string; sha256: string; bytes: number; mime: string }
 export type MediaEntry = { kind: 'image' | 'audio'; files: MediaFile[] }
 export type Media = Record<string, MediaEntry>
+export type CompareSide = { src: string; label: string }
+export type ComparePair = [CompareSide, CompareSide]
 
 export const MEDIA_FILE_MAX_BYTES = 25 * 1024 * 1024
 export const MEDIA_ASK_MAX_FILES = 200
@@ -39,11 +41,47 @@ export function mediaMarkdown() {
 
 const parser = mediaMarkdown()
 
+export function isCompareFence(info: string): boolean {
+  return info.trim().split(/\s+/)[0] === 'compare'
+}
+
+// Two non-empty lines, each `<path>` or `<path> <label>` (`<path with spaces>`
+// in angle brackets, matching `![alt](<path with spaces>)`). Without a label,
+// the two sides are labelled `A` and `B`.
+export function parseCompare(source: string, media?: Media): ComparePair | undefined {
+  const lines = source.split(/\r?\n/).map((line) => line.trim()).filter(Boolean)
+  if (lines.length !== 2) return undefined
+  const first = parseCompareSide(lines[0]!, 'A', media)
+  const second = parseCompareSide(lines[1]!, 'B', media)
+  return first && second ? [first, second] : undefined
+}
+
+function parseCompareSide(line: string, fallback: string, media?: Media): CompareSide | undefined {
+  const match = line.startsWith('<')
+    ? /^<([^>\r\n]+)>(?:\s+(.*))?$/.exec(line)
+    : /^(\S+)(?:\s+(.*))?$/.exec(line)
+  const src = match?.[1]
+  if (!src || !src.trim() || src.startsWith('![') || !isMediaRef(src) || isMediaGlob(src) || looksLikeSound(src) || /\.svg$/i.test(src)) {
+    return undefined
+  }
+  if (media?.[src] && media[src].kind !== 'image') return undefined
+  return { src, label: match?.[2]?.trim() || fallback }
+}
+
 // Markdown-it's inline tokens exclude code spans, indented code and fences;
 // it also handles escaped punctuation, angle destinations and reference images.
+// A valid `compare` fence contributes both of its image paths.
 export function mediaRefs(text: string): string[] {
   const refs = new Set<string>()
   for (const block of parser.parse(text, {})) {
+    if (block.type === 'fence' && isCompareFence(block.info)) {
+      const pair = parseCompare(block.content)
+      if (pair) {
+        refs.add(pair[0].src)
+        refs.add(pair[1].src)
+      }
+      continue
+    }
     for (const token of block.children ?? []) {
       if (token.type !== 'image') continue
       const src = String(token.attrGet('src') ?? '')
@@ -51,4 +89,12 @@ export function mediaRefs(text: string): string[] {
     }
   }
   return [...refs]
+}
+
+export function compareFences(text: string): string[] {
+  const fences: string[] = []
+  for (const block of parser.parse(text, {})) {
+    if (block.type === 'fence' && isCompareFence(block.info)) fences.push(block.content)
+  }
+  return fences
 }

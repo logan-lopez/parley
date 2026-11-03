@@ -5,13 +5,17 @@ import { constants } from 'node:fs'
 import { open, readdir } from 'node:fs/promises'
 import {
   INLINE_MEDIA_ASK_MAX_BYTES, INLINE_MEDIA_FILE_MAX_BYTES, isMediaGlob,
-  MEDIA_ASK_MAX_FILES, MEDIA_FILE_MAX_BYTES, MEDIA_VARIANTS_MAX,
+  MEDIA_ASK_MAX_FILES, MEDIA_FILE_MAX_BYTES, MEDIA_VARIANTS_MAX, parseCompare,
   type Media, type MediaEntry, type MediaFile, type ShowFiles,
 } from '@parley/protocol'
-import { askMediaRefs, type AskInput } from '@parley/protocol/ask'
+import { askCompareFences, askMediaRefs, type AskInput } from '@parley/protocol/ask'
 import { locate, projectRoot, ShowFileError, type Project } from './show-files.ts'
 
 export async function readShowMedia(input: AskInput, files: ShowFiles, projectDir = process.cwd()): Promise<Media> {
+  const compares = askCompareFences(input, files)
+  for (const fence of compares) {
+    if (!parseCompare(fence)) throw badCompare()
+  }
   const refs = askMediaRefs(input, files)
   if (!refs.length) return {}
   if (refs.length > MEDIA_ASK_MAX_FILES) throw tooMany()
@@ -33,7 +37,14 @@ export async function readShowMedia(input: AskInput, files: ShowFiles, projectDi
     if (count > MEDIA_ASK_MAX_FILES) throw tooMany()
     media[src] = { kind: read[0]!.kind, files: read.map((r) => r.file) }
   }
+  for (const fence of compares) {
+    if (!parseCompare(fence, media)) throw badCompare()
+  }
   return media
+}
+
+function badCompare(): ShowFileError {
+  return new ShowFileError('A ```compare fence takes two image paths (PNG, JPEG, GIF or WebP), one per line with an optional label after the path')
 }
 
 function tooMany(): ShowFileError {

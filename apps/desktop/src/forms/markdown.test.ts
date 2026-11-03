@@ -110,6 +110,24 @@ describe('renderMarkdown', () => {
       expect(html).toMatch(/^<div class="code-block"><pre><code class="language-\w+">&lt;b&gt;x&lt;\/b&gt;/)
     }
   })
+
+  it('draws a compare block with two local image placeholders, labels and no src', () => {
+    const html = renderMarkdown('```compare\nshots/menu-now.png Now\n<shots/menu big.png> Bigger & better\n```')
+    expect(html).toContain('<figure class="md-compare" data-compare tabindex="0">')
+    expect(html).toContain('data-media="shots/menu-now.png" data-label="Now"')
+    expect(html).toContain('data-media="shots/menu big.png" data-label="Bigger &amp; better"')
+    expect(html).toContain('<span class="md-compare-path">shots/menu-now.png · shots/menu big.png</span>')
+    expect(html).not.toMatch(/\ssrc=/)
+  })
+
+  it('falls back to a code block when a compare fence is malformed or resolves to audio', () => {
+    const bad = renderMarkdown('```compare\nonly-one.png\n```')
+    expect(bad).toContain('<div class="code-block"><pre><code class="language-compare">')
+    expect(bad).not.toContain('md-compare')
+    const file = { path: 'b.bin', abs: '/b.bin', sha256: 'h', bytes: 1, mime: 'audio/wav' }
+    const audio = renderMarkdown('```compare\na.png\nb.bin\n```', false, { media: { 'b.bin': { kind: 'audio', files: [file] } } })
+    expect(audio).not.toContain('md-compare')
+  })
 })
 
 describe('sound chips', () => {

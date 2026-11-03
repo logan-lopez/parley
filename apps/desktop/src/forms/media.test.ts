@@ -158,3 +158,109 @@ describe('sound chips', () => {
     expect(down.defaultPrevented).toBe(true)
   })
 })
+
+describe('compare blocks', () => {
+  const pair: Media = {
+    'shots/before.png': { kind: 'image', files: [{ path: 'shots/before.png', abs: '/project/shots/before.png', sha256: 'h1', bytes: 10, mime: 'image/png' }] },
+    'shots/after.png': { kind: 'image', files: [{ path: 'shots/after.png', abs: '/project/shots/after.png', sha256: 'h2', bytes: 10, mime: 'image/png' }] },
+  }
+  const source = '```compare\nshots/before.png Now\nshots/after.png Bigger\n```'
+  const ok = new Map<string, MediaUrl>([
+    ['h1', { status: 'ok', url: 'asset://localhost/project/shots/before.png' }],
+    ['h2', { status: 'ok', url: 'asset://localhost/project/shots/after.png' }],
+  ])
+  const size = (img: HTMLImageElement, width: number, height: number) => {
+    Object.defineProperty(img, 'naturalWidth', { value: width, configurable: true })
+    Object.defineProperty(img, 'naturalHeight', { value: height, configurable: true })
+  }
+
+  it('loads both images and flips in place on click or x, updating the corner label', async () => {
+    vi.mocked(mediaUrls).mockResolvedValue(ok)
+    mount(pair, source)
+    await settle()
+    const figure = root.querySelector<HTMLElement>('.md-compare')!
+    const [first, second] = [...figure.querySelectorAll<HTMLImageElement>('.md-compare-img')]
+    const label = figure.querySelector<HTMLElement>('.md-compare-label')!
+    size(first!, 320, 64)
+    size(second!, 320, 64)
+    first!.dispatchEvent(new Event('load'))
+    second!.dispatchEvent(new Event('load'))
+    expect(figure.classList.contains('flippable')).toBe(true)
+    expect(first!.hidden).toBe(false)
+    expect(second!.hidden).toBe(true)
+    expect(label.hidden).toBe(false)
+    expect(label.textContent).toBe('Now')
+    figure.click()
+    expect(first!.hidden).toBe(true)
+    expect(second!.hidden).toBe(false)
+    expect(label.textContent).toBe('Bigger')
+    figure.dispatchEvent(new KeyboardEvent('keydown', { key: 'x', bubbles: true }))
+    expect(first!.hidden).toBe(false)
+    expect(second!.hidden).toBe(true)
+    expect(label.textContent).toBe('Now')
+  })
+
+  it('stacks both images with their labels and dimensions when natural sizes differ', async () => {
+    vi.mocked(mediaUrls).mockResolvedValue(ok)
+    mount(pair, source)
+    await settle()
+    const figure = root.querySelector<HTMLElement>('.md-compare')!
+    const [first, second] = [...figure.querySelectorAll<HTMLImageElement>('.md-compare-img')]
+    const badges = [...figure.querySelectorAll<HTMLElement>('.md-compare-badge')]
+    size(first!, 320, 64)
+    size(second!, 320, 88)
+    first!.dispatchEvent(new Event('load'))
+    second!.dispatchEvent(new Event('load'))
+    expect(figure.classList.contains('stacked')).toBe(true)
+    expect(figure.classList.contains('flippable')).toBe(false)
+    expect(first!.hidden).toBe(false)
+    expect(second!.hidden).toBe(false)
+    expect(badges.map((b) => [b.hidden, b.textContent])).toEqual([[false, 'Now'], [false, 'Bigger']])
+    expect(figure.querySelector('.md-compare-status')!.textContent).toBe('320×64 and 320×88')
+    figure.click()
+    expect(first!.hidden).toBe(false)
+    expect(second!.hidden).toBe(false)
+  })
+
+  it('shows whichever image loaded and names both paths when one or both fail', async () => {
+    vi.mocked(mediaUrls).mockResolvedValue(new Map([
+      ['h1', { status: 'ok', url: 'asset://localhost/project/shots/before.png' }],
+      ['h2', { status: 'missing' }],
+    ]))
+    mount(pair, source)
+    await settle()
+    const figure = root.querySelector<HTMLElement>('.md-compare')!
+    const [first, second] = [...figure.querySelectorAll<HTMLImageElement>('.md-compare-img')]
+    size(first!, 320, 64)
+    first!.dispatchEvent(new Event('load'))
+    expect(first!.hidden).toBe(false)
+    expect(second!.hidden).toBe(true)
+    const status = figure.querySelector('.md-compare-status')!.textContent!
+    expect(status).toContain('shots/after.png is gone')
+    expect(status).toContain('shots/before.png')
+
+    vi.mocked(mediaUrls).mockResolvedValue(new Map([
+      ['h1', { status: 'window' }],
+      ['h2', { status: 'window' }],
+    ]))
+    app?.unmount()
+    mount(pair, source)
+    await settle()
+    expect(root.querySelector('.md-compare-status')!.textContent)
+      .toBe('Open shots/before.png and shots/after.png in the Parley window')
+  })
+
+  it('prevents mousedown inside .preview so option focus stays put', async () => {
+    vi.mocked(mediaUrls).mockResolvedValue(ok)
+    const preview = document.createElement('div')
+    preview.className = 'preview'
+    root.append(preview)
+    app = createApp({ render: () => h(Markdown, { source, scope: 'q/preview-0' }) })
+    app.provide(MEDIA, mediaContext(() => pair))
+    app.mount(preview)
+    await settle()
+    const down = new MouseEvent('mousedown', { bubbles: true, cancelable: true })
+    preview.querySelector('.md-compare')!.dispatchEvent(down)
+    expect(down.defaultPrevented).toBe(true)
+  })
+})

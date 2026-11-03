@@ -89,6 +89,22 @@ describe('readShowMedia', () => {
   it('does nothing for remote URLs or code, even outside a project', async () => {
     expect(await readShowMedia(input('![x](https://example.com/a.png) `![x](a.png)`'), {}, '/')).toEqual({})
   })
+  it('resolves both images in a compare fence and refuses non-images or wrong line counts', async () => {
+    const media = await readShowMedia(input('```compare\n.dot/a.png Now\n<a b.png> Bigger\n```'), {}, project)
+    expect(Object.keys(media)).toEqual(['.dot/a.png', 'a b.png'])
+    expect(media['.dot/a.png']!.kind).toBe('image')
+    expect(media['a b.png']!.files[0]!.path).toBe('a b.png')
+    for (const bad of [
+      '```compare\n.dot/a.png\n```',
+      '```compare\n.dot/a.png\na b.png\npics/a.png\n```',
+      '```compare\n.dot/a.png\ntakes/1_1.wav\n```',
+    ]) {
+      await expect(readShowMedia(input(bad), {}, project)).rejects.toThrow(/```compare fence takes two image paths/)
+    }
+    writeFileSync(join(project, 'sound.bin'), wav)
+    await expect(readShowMedia(input('```compare\n.dot/a.png\nsound.bin\n```'), {}, project))
+      .rejects.toThrow(/```compare fence takes two image paths/)
+  })
 })
 
 describe('sounds', () => {

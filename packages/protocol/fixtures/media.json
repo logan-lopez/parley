@@ -9,14 +9,15 @@
     },
     {
       "header": "Next step",
-      "question": "Keep this arrangement?\n\n![The layout under review](packages/protocol/fixtures/files/layout.png)",
+      "question": "Keep the sidebar, or move navigation to a top bar?\n\n```compare\npackages/protocol/fixtures/files/layout.png Sidebar\npackages/protocol/fixtures/files/layout-after.png Top bar\n```",
       "options": [
         {
           "label": "Keep the sidebar (Recommended)",
           "preview": "![Navigation stays beside the cards](packages/protocol/fixtures/files/layout.png)"
         },
         {
-          "label": "Try top navigation"
+          "label": "Try top navigation",
+          "preview": "Different heights stack instead of flipping:\n\n```compare\npackages/protocol/fixtures/files/layout.png One row\npackages/protocol/fixtures/files/layout-tall.png Two rows\n```"
         }
       ]
     },

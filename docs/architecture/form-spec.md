@@ -122,7 +122,8 @@ with no Zod, so the window can import it from the root entry.
   images are resolved separately (`apps/desktop/src/forms/markdown.ts`): model HTML only ever
   reaches the screen as an image the
   app builds. Colors in code spans get swatches, a palette fence (```` ```palette ````) draws
-  swatches, and an ```` ```html preview ```` or ```` ```svg preview ```` fence is drawn as a
+  swatches, a ```` ```compare ```` fence with two image paths draws a flippable before/after
+  frame, and an ```` ```html preview ```` or ```` ```svg preview ```` fence is drawn as a
   picture ([the card](card-ui.md)); the schema carries them as plain markdown, so a client without
   Parley's renderer shows the text. Previews are capped at 10,000 characters, since they're kept
   in `history.jsonl`; question text isn't.
@@ -133,8 +134,10 @@ with no Zod, so the window can import it from the root entry.
   carries `{ path, abs, sha256, bytes, mime }`: project-relative name, real absolute path, and
   the hash, size and sniffed type. No bytes go over the hub or into history. `compileQuestions(input, files?, media?)`
   attaches resolved entries; absent entries render as unloaded. `mediaRefs(text)` shares
-  markdown-it's grammar with the renderer, preserves destination spelling, and skips code,
-  fences, schemes and protocol-relative URLs. `askMediaRefs` scans questions, option descriptions
+  markdown-it's grammar with the renderer, preserves destination spelling, reads valid
+  ```` ```compare ```` fences (`parseCompare`: two non-empty lines, each `<path>` or `<path> <label>`
+  with `<path with spaces>` in angle brackets, defaulting labels to `A` and `B`, images only), and skips other code,
+  fences, schemes and protocol-relative URLs. `askMediaRefs` (and `askCompareFences` for server validation) scans questions, option descriptions
   and previews, review details and previews, show content and shown markdown files. The tool's
   Zod input is unchanged. Caps: 25 MB per file, 200 media files per ask (each variant counts),
   1–12 variants per glob (`MEDIA_VARIANTS_MAX`); inline payloads use 2 MB per image and 8 MB per

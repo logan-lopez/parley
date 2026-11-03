@@ -104,8 +104,9 @@ How each part works, as you use it, is in [the guide](docs/guide/README.md).
   on colors and palettes, and [pictures](docs/guide/answering.md#colors-and-pictures) of the
   layouts, mockups and icons an agent drew in HTML or SVG.
 - [Project pictures](docs/guide/pictures.md) in questions, previews and shows: PNG, JPEG, GIF and
-  WebP from the project, with captions, a click to open, and a notice when a file changes or goes
-  missing in history. Small images appear in Claude Desktop's inline card too.
+  WebP from the project, with captions, a click to open, before-and-after comparisons that flip in
+  place, and a notice when a file changes or goes missing in history. Small images appear in Claude
+  Desktop's inline card too.
 - [Project sounds](docs/guide/pictures.md#sounds) as play chips, for auditions: WAV, AIFF, MP3,
   M4A, FLAC and Ogg, one playing at a time, and a glob (`takes/3_*.wav`) for a take's variants,
   played in turn. `p` plays a row's next take, so an audition is a keyboard pass. They play in the

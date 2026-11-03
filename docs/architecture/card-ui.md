@@ -7,7 +7,7 @@ The ask card and the question renderers: one ask as a form, rendered by JSON For
 compiled schema, driven from the keyboard. The same card runs in the window, in the inline card in
 Claude Desktop, and in the dev gallery.
 
-**History:** [brief 2](../briefs/archive/02-ask-tool-and-ui.md), [brief 5](../briefs/archive/05-review-question.md) (the review renderer), [brief 7](../briefs/archive/07-inline-cards.md) (the platform adapter, `html.inline`), [brief 11](../briefs/archive/11-review-decisions.md) (labelled review decisions), [brief 12](../briefs/archive/12-capture-question.md) (copy buttons, the capture renderer), [brief 13](../briefs/13-color-chips.md) (color chips, palettes), [brief 14](../briefs/14-fenced-previews.md) (HTML and SVG previews), [brief 15](../briefs/15-themes.md) (tokens from themes), [brief 16](../briefs/16-show-blocks.md) (the show renderer, `[data-passive]`), [brief 17](../briefs/17-editable-show.md) (Edit and View), [brief 21](../briefs/21-dont-ask-again.md) ("Don't ask again here"), [brief 24](../briefs/24-audition-keys.md) (audition keys)
+**History:** [brief 2](../briefs/archive/02-ask-tool-and-ui.md), [brief 5](../briefs/archive/05-review-question.md) (the review renderer), [brief 7](../briefs/archive/07-inline-cards.md) (the platform adapter, `html.inline`), [brief 11](../briefs/archive/11-review-decisions.md) (labelled review decisions), [brief 12](../briefs/archive/12-capture-question.md) (copy buttons, the capture renderer), [brief 13](../briefs/13-color-chips.md) (color chips, palettes), [brief 14](../briefs/14-fenced-previews.md) (HTML and SVG previews), [brief 15](../briefs/15-themes.md) (tokens from themes), [brief 16](../briefs/16-show-blocks.md) (the show renderer, `[data-passive]`), [brief 17](../briefs/17-editable-show.md) (Edit and View), [brief 21](../briefs/21-dont-ask-again.md) ("Don't ask again here"), [brief 24](../briefs/24-audition-keys.md) (audition keys), [brief 25](../briefs/25-compare-images.md) (before/after compare frames)
 
 `card/AskCard.vue` is the card. It knows nothing about the hub or Tauri. `App.vue` is the window
 around it: the queue, Send and Skip, history. `forms/` holds the renderers, their registration, the
@@ -141,7 +141,19 @@ keyboard contract and markdown. `platform.ts` is the one way renderers reach the
   and handles loading, drawn, changed, missing, refused and unresolved states; decode failures
   keep the caption and path too. Bitmaps keep natural size, at most the column's width. Clicking
   a drawn image opens the granted file through the platform adapter. An inline image above the
-  caps says “Open in the Parley window”. No new key chord.
+  caps says “Open in the Parley window”.
+  A ```` ```compare ```` fence that parses (`parseCompare`, two image lines with optional labels,
+  checked against `env.media`) renders as `figure.md-compare[data-compare][tabindex="0"]` with
+  both items (`img` with no `src` and a badge, both `hidden`), the corner label (`hidden` until
+  drawn), `<span class="md-compare-path">` (`a · b`), and `<span class="md-compare-status" role="status">`.
+  `paintCompare` resolves both through the shared `mediaUrls` grant: when both load with the same
+  `naturalWidth` and `naturalHeight`, it adds `.flippable`, shows the first image and the corner
+  label, and `flipCompare` toggles between them in place on click or `x` while the figure has
+  focus (`mousedown` is prevented when `.md-compare` is inside `.preview`, so option focus stays
+  put). When their natural sizes differ, it adds `.stacked`, shows both images with their badges,
+  and sets the status to `<w1>×<h1> and <w2>×<h2>`. When one or both fail, it shows whichever
+  loaded and sets the status to a failure line naming both paths. A `compare` fence that doesn't
+  parse falls back to an ordinary code block.
 - **Sound chips** (`forms/markdown.ts`, `Markdown.vue`, `forms/player.ts`): the image rule draws
   an audio ref (by its `x-media` kind, or by `looksLikeSound` when unresolved) as
   `button.md-sound[data-media][data-sound]` with ▶, the caption (the file name without one), and

@@ -1,4 +1,4 @@
-import { isMediaRef, looksLikeSound, mediaMarkdown, type Media } from '@parley/protocol'
+import { isCompareFence, isMediaRef, looksLikeSound, mediaMarkdown, parseCompare, type ComparePair, type Media } from '@parley/protocol'
 import { isColor, parsePalette } from './colors'
 import { parsePreviewInfo } from './preview'
 
@@ -53,19 +53,38 @@ function sound(src: string, caption: string, id: string): string {
 
 // Every fenced block gets a copy button. It carries nothing: Markdown.vue's
 // click handler copies the block's `<code>` text. A ```palette block that
-// parses draws its colors instead, and an ```html preview or ```svg preview
-// block becomes a figure around its code block.
+// parses draws its colors instead, a ```compare block with two image paths
+// draws a before/after frame, and an ```html preview or ```svg preview block
+// becomes a figure around its code block.
 const fence = md.renderer.rules.fence!
-md.renderer.rules.fence = (tokens, idx, options, env, self) => {
+md.renderer.rules.fence = (tokens, idx, options, renderEnv, self) => {
+  const env = (renderEnv ?? {}) as RenderEnv
   const token = tokens[idx]
   if (token.info.trim().split(/\s+/)[0] === 'palette') {
     const entries = parsePalette(token.content)
     if (entries) return palette(entries)
   }
-  const block = `<div class="code-block">${fence(tokens, idx, options, env, self)}`
+  if (isCompareFence(token.info)) {
+    const pair = parseCompare(token.content, env.media)
+    if (pair) return compare(pair)
+  }
+  const block = `<div class="code-block">${fence(tokens, idx, options, renderEnv, self)}`
     + '<button type="button" class="code-copy" data-copy tabindex="-1" aria-label="Copy the code">Copy</button></div>'
   const preview = parsePreviewInfo(token.info)
   return preview ? figure(preview, block) : block
+}
+
+function compare([a, b]: ComparePair): string {
+  const escape = md.utils.escapeHtml
+  const item = ({ src, label }: ComparePair[number]) =>
+    `<div class="md-compare-item" data-media="${escape(src)}" data-label="${escape(label)}">`
+    + `<img class="md-compare-img" alt="${escape(label)}" hidden>`
+    + `<span class="md-compare-badge" hidden>${escape(label)}</span></div>`
+  return '<figure class="md-compare" data-compare tabindex="0">'
+    + `<div class="md-compare-frame">${item(a)}${item(b)}`
+    + `<span class="md-compare-label" hidden>${escape(a.label)}</span></div>`
+    + `<figcaption><span class="md-compare-path">${escape(a.src)} · ${escape(b.src)}</span>`
+    + `<span class="md-compare-status" role="status">${escape(a.src)} and ${escape(b.src)} aren't loaded here</span></figcaption></figure>\n`
 }
 
 // The picture is an image Markdown.vue builds from the code block's text

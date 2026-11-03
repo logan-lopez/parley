@@ -318,6 +318,49 @@ span.remember { cursor: default; }
 .md .md-media-img[hidden] { display: none; }
 .md .md-media figcaption { font-size: 12px; }
 .md .md-media-path, .md .md-media-status { display: block; font-size: 11px; color: var(--text-muted); overflow-wrap: anywhere; }
+/* A before/after frame: both images share one grid cell when they match in
+   size, or stack with their labels when their sizes differ. */
+.md .md-compare {
+  margin: 8px 0;
+  max-width: 100%;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+.md .md-compare-frame { position: relative; display: grid; background: var(--code-bg); }
+.md .md-compare.flippable { cursor: pointer; user-select: none; }
+.md .md-compare.flippable .md-compare-item { grid-area: 1 / 1; }
+.md .md-compare.stacked .md-compare-frame { gap: 8px; padding: 8px; }
+.md .md-compare-item { position: relative; min-width: 0; }
+.md .md-compare-img { display: block; width: 100%; max-width: 100%; height: auto; }
+.md .md-compare.stacked .md-compare-img { border-radius: 4px; }
+.md .md-compare-img[hidden], .md .md-compare-badge[hidden], .md .md-compare-label[hidden] { display: none; }
+.md .md-compare-label, .md .md-compare-badge {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  padding: 1px 7px;
+  border: 1px solid var(--border-strong);
+  border-radius: 999px;
+  background: var(--surface-raised);
+  color: var(--text);
+  font-size: 11px;
+  font-weight: 600;
+  pointer-events: none;
+}
+.md .md-compare figcaption {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 2px 8px;
+  padding: 4px 8px;
+  border-top: 1px solid var(--border);
+  font-size: 11px;
+  color: var(--text-muted);
+}
+.md .md-compare-path, .md .md-compare-status { overflow-wrap: anywhere; }
+.md .md-compare-status { margin-left: auto; }
+.md .md-compare-status:empty { display: none; }
 /* A sound: a play chip, inline so takes can sit side by side in a line. */
 .md .md-sound {
   display: inline-flex; align-items: baseline; gap: 6px; max-width: 100%;

@@ -105,7 +105,11 @@ directory (located like a file, so a secret or outside directory is refused), ma
 with numbers in order (`take_2` before `take_10`). Each match is then located, read and sniffed
 like a named file, so a secret or non-media match fails the ask, naming it. No match, more than
 12, a glob in a directory name, or a glob that matches images (one image per `![]()`) is
-refused. More than 200 distinct refs or 200 files counting every variant, or a file over 25 MB,
+refused. Every ```` ```compare ```` fence (`askCompareFences`) is checked with `parseCompare`
+before and after reading: a fence that doesn't have two image lines, or whose file sniffs as
+audio, is refused with a `ShowFileError` explaining the two-line image format, while both paths in
+a valid fence go through the same image pipeline (`locate`, `O_NOFOLLOW`, 25 MB cap, magic-byte
+sniff, `sha256`, inline data URL cap). More than 200 distinct refs or 200 files counting every variant, or a file over 25 MB,
 is refused with a corrective message, before anything is shown. The form carries `x-media` references, never image bytes. Shown markdown
 uses project-relative media destinations, just like every other field. `fake-ask` resolves them
 the same way. Remote images and images inside code are ignored.
