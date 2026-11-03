@@ -123,6 +123,12 @@ describe('soft limits', () => {
     expect(qs.items.items.properties.detail.maxLength).toBe(300)
     expect(qs.options.items.properties.label.maxLength).toBe(60)
   })
+
+  it('publishes no tuple schemas, which llama.cpp backends reject', () => {
+    const json = JSON.stringify(z.toJSONSchema(askInputSchema, { io: 'input' }))
+    expect(json).not.toContain('prefixItems')
+    expect(json).not.toContain('"items":false')
+  })
 })
 
 describe('review validation', () => {

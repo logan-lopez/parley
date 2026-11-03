@@ -33,7 +33,7 @@ export async function readShowFiles(input: AskInput, projectDir = process.cwd())
       total += q.content?.length ?? 0
     } else {
       project ??= await projectRoot(projectDir)
-      const file = await readOne(q.path, q.lines, project, q.editable === true)
+      const file = await readOne(q.path, q.lines as [number, number] | undefined, project, q.editable === true)
       files[ids[i]!] = file
       // An editable show's text goes over the wire twice, as `x-content` and
       // `x-original`, so it counts twice against the line the hub accepts.

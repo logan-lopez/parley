@@ -93,7 +93,10 @@ const question = z.object({
     .max(SHOW_CONTENT_MAX, 'show content is 20,000 characters or fewer; for a longer file, give its `path` instead')
     .optional(),
   path: z.string().min(1).optional(),
-  lines: z.tuple([z.number().int().min(1), z.number().int().min(1)]).optional(),
+  // [start, end] as a plain array of two, not z.tuple: a tuple emits `prefixItems`
+  // and `items: false`, which llama.cpp's grammar converter rejects ("schema must
+  // be an object"). The superRefine below checks start ≤ end.
+  lines: z.array(z.number().int().min(1)).length(2).optional(),
   editable: z.boolean().optional(),
 })
 
@@ -459,7 +462,7 @@ function compileQuestion(q: Question, file?: ShowFile): JsonSchema {
       // `type: 'null'` with no data: nothing to answer, and nothing for AJV to check.
       const show = { 'x-widget': 'show', ...base, type: 'null' }
       if (q.path === undefined) return { ...show, ...(q.content !== undefined && { 'x-content': q.content }) }
-      if (!file) return { ...show, 'x-source': { path: q.path, ...(q.lines && { lines: q.lines }) } satisfies ShowSource }
+      if (!file) return { ...show, 'x-source': { path: q.path, ...(q.lines && { lines: q.lines as [number, number] }) } satisfies ShowSource }
       return {
         ...show,
         'x-content': fileMarkdown(file.path, file.text),
