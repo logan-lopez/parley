@@ -6,7 +6,7 @@ and move to `archive/` when they're done. Ideas that aren't scheduled yet are in
 
 ## Where things stand
 
-*Updated 2026-11-03.*
+*Updated 2026-11-05.*
 
 - Built: the hub, `ask`, the trial harness, history and `review` (briefs 1–5), inline cards in
   Claude Desktop (6–7), the window as a non-activating panel, menu-bar only (8–9), and three
@@ -30,6 +30,8 @@ and move to `archive/` when they're done. Ideas that aren't scheduled yet are in
   bar on the panel. Independent of the others.
   `crash-output` asked 2/3 in brief 14's pass (0/3 before); `sort-helpers` dropped `decisions`
   in 2/3 and wants a rerun.
+- Brief 27, written 2026-11-05: Stamp, a third way to end a card, and skips and timeouts that say
+  they aren't approval. Independent of the others, and model-facing, so it ends in a trial pass.
 - Loose ends waiting on Logan: the hand checks from briefs 10–12 (a draft and a copy button in
   Desktop's inline card, a screenshot pasted into the installed build, the draft box's height, four long decision labels in the 440 px
   window). Real use answered the `capture` one: agents reached for it 20 times by 2026-11-01, 11
@@ -72,6 +74,8 @@ and move to `archive/` when they're done. Ideas that aren't scheduled yet are in
     at full width.
 26. [`26-panel-polish.md`](26-panel-polish.md) (done, awaiting review): one-line text boxes grow to four rows (Enter is a new line),
     `hideOnBlur` hides the window when you click outside it (on by default), and no title bar.
+27. [`27-stamp.md`](27-stamp.md): a mouse-only Stamp button that approves every recommendation on a card,
+    and skip and timeout text that says outright it isn't approval; then a trial pass.
 
 ## Done
 

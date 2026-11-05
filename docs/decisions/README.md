@@ -8,6 +8,7 @@ from each file's frontmatter, so change a decision in its own file, not here.
 
 ## The ask tool
 
+- [Skips and timeouts aren't approval](skips-and-timeouts-arent-approval.md): Skip's and the timeout's results, and the server instructions, say outright that they aren't approval, and that an agent asking permission doesn't go ahead (2026-11-05)
 - [Files in shows](files-in-shows.md): The server reads `path`, inside its cwd only (after `realpath`), refusing secret-looking names (2026-10-14)
 - [`ask_async` / `collect`](ask-async-collect.md): Not built (2026-10-10)
 - [Result shape](result-shape.md): `structuredContent` (with an `outputSchema`) plus a text block, and `message` in the structured result repeats the text (2026-10-09)
@@ -22,6 +23,9 @@ from each file's frontmatter, so change a decision in its own file, not here.
 
 ## The card
 
+- [Stamp is mouse only](stamp-is-mouse-only.md): Stamp has no key and can't be reached from the keyboard, and a click in a card's first 500 ms is ignored (2026-11-05)
+- [Stamp is strict](stamp-is-strict.md): Stamp fills blanks with the recommendations, and is disabled if an answer disagrees with one or a required question with none is blank; no recommendations, no button (2026-11-05)
+- [Stamp label](stamp-label.md): The third button on a card is labelled "Stamp", with the tooltip "Approve every recommendation" (2026-11-05)
 - [Growing text boxes](growing-text-boxes.md): One-line text boxes (text, choice's Other, review comments) are textareas that grow from one row to four; Enter is a new line and Cmd+Enter sends (2026-11-03)
 - [Audition play keys](audition-play-keys.md): `p` plays the focused row's next sound chip, Shift+`p` replays, Esc stops; digits keep deciding the row (2026-11-02)
 - [Colors in markdown](colors-in-markdown.md): A color in a code span (hex or a CSS color function, no named colors) gets a swatch (2026-10-11)

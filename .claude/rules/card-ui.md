@@ -15,6 +15,9 @@ Before changing these files, read [The card](../../docs/architecture/card-ui.md)
 
 Decisions that bind these files, newest first:
 
+- [Stamp is mouse only](../../docs/decisions/stamp-is-mouse-only.md): Stamp has no key and can't be reached from the keyboard, and a click in a card's first 500 ms is ignored
+- [Stamp is strict](../../docs/decisions/stamp-is-strict.md): Stamp fills blanks with the recommendations, and is disabled if an answer disagrees with one or a required question with none is blank; no recommendations, no button
+- [Stamp label](../../docs/decisions/stamp-label.md): The third button on a card is labelled "Stamp", with the tooltip "Approve every recommendation"
 - [Growing text boxes](../../docs/decisions/growing-text-boxes.md): One-line text boxes (text, choice's Other, review comments) are textareas that grow from one row to four; Enter is a new line and Cmd+Enter sends
 - [Audition play keys](../../docs/decisions/audition-play-keys.md): `p` plays the focused row's next sound chip, Shift+`p` replays, Esc stops; digits keep deciding the row
 - [Media by reference](../../docs/decisions/media-by-reference.md): Images and sounds in a form are references (path, sha256, size) the window reads from disk, never copies or base64
@@ -22,7 +25,4 @@ Decisions that bind these files, newest first:
 - [Soft input limits](../../docs/decisions/soft-input-limits.md): The model sees tight limits on headers and descriptions; the server accepts a margin past them, and clips a long header on the card
 - [Colors in markdown](../../docs/decisions/colors-in-markdown.md): A color in a code span (hex or a CSS color function, no named colors) gets a swatch
 - [HTML and SVG previews](../../docs/decisions/html-and-svg-previews.md): Opt-in ```` ```html preview ```` / ```` ```svg preview ```` fences, drawn as an SVG image from a `data:` URL at a size the agent gives
-- [Pasted screenshots](../../docs/decisions/pasted-screenshots.md): `capture` saves them as PNGs under `$APPDATA/captures/<day>/` and returns the paths
-- [Review decisions](../../docs/decisions/review-decisions.md): `review` takes 2–4 `decisions` of its own
-- [`review` question](../../docs/decisions/review-question.md): 1–30 items, each approved or rejected with an optional comment
-- 2 more: `docket context docs/architecture/card-ui.md`
+- 5 more: `docket context docs/architecture/card-ui.md`
