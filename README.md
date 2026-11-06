@@ -50,8 +50,10 @@ Every question type, in light and dark: [What it looks like](docs/guide/screensh
   who's asking; nothing steals your focus, and every ask is kept in history with what you sent.
 - **Parley never answers for you.** A question you're tired of is retired in the project's own
   instructions, in a line you approve, not by Parley matching new asks against old answers.
+  Stamp fills recommendations only when you click it on the open card; nothing carries over.
 - **Answers the model reads cleanly.** Structured JSON plus a summary, with your own wording marked
-  as such, a note for the agent if you add one, and a sentence on what to do if you skip.
+  as such, a note for the agent if you add one, and skip and timeout guidance that says they aren't
+  approval.
 - **One card, two places.** The same card runs in the window and, in Claude Desktop, inline in the
   chat, where the first answer wins.
 - **Your theme, from inn.** Colors come from inn's base16/base24 theme files, read where they are,
@@ -88,8 +90,8 @@ How each part works, as you use it, is in [the guide](docs/guide/README.md).
   ask with a sound you can pick, a count in the menu bar, and a title-bar-less window on Cmd+Ctrl+P that takes your typing without pulling
   you out of the app you're in, and hides when you click away (`hideOnBlur`, on by default).
 - [Cards built for the keyboard](docs/guide/answering.md): number keys to pick, Cmd+Enter to send,
-  a note for the agent, text boxes that grow to four lines (Enter is a new line), drafts that
-  survive a restart.
+  a mouse-only Stamp to approve every recommendation, a note for the agent, text boxes that grow
+  to four lines (Enter is a new line), drafts that survive a restart.
 - [Don't ask again here](docs/guide/answering.md#dont-ask-again-here) on a single-choice or yes/no
   question: the agent drafts a line for your project's `AGENTS.md` and saves it only if you accept
   it.

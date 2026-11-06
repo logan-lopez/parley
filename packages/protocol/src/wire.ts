@@ -29,13 +29,13 @@ export type ServerToApp =
   | { type: 'resolved'; id: string; outcome: InlineOutcome }
 
 export type InlineOutcome =
-  | { status: 'answered'; data: unknown; note?: string }
+  | { status: 'answered'; data: unknown; stamped?: true; note?: string }
   | { status: 'dismissed'; note?: string }
 
 export type AppToServer =
   | { type: 'welcome'; protocol: number; appVersion: string }
   // `note`: optional free text the user added for the agent, with an answer or a skip.
   // `remember`: ids of the questions whose "Don't ask again here" was on. Omitted when empty.
-  | { type: 'answer'; id: string; data: unknown; note?: string; remember?: string[] }
+  | { type: 'answer'; id: string; data: unknown; stamped?: true; note?: string; remember?: string[] }
   | { type: 'dismissed'; id: string; note?: string }
   | { type: 'error'; id?: string; code: 'version_mismatch' | 'invalid_message' | 'unknown_ask'; message: string }

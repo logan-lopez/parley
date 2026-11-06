@@ -122,6 +122,7 @@ function finish(outcome: AskOutcome) {
         :position="1"
         :total="1"
         @submit="(data, note, remember) => finish({ status: 'answered', data, note, remember })"
+        @stamp="(data, note, remember) => finish({ status: 'answered', data, note, remember, stamped: true })"
         @skip="(note) => finish({ status: 'dismissed', note })"
       >
         <template #meta><ZoomControl /></template>

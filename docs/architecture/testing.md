@@ -1,5 +1,5 @@
 ---
-sources: ["apps/server/scripts/", "apps/desktop/scripts/screenshots.ts", "apps/server/trials/", "apps/server/fixtures/", "packages/protocol/src/ask.test.ts", "apps/server/src/show-files.test.ts", "apps/server/src/show-edits.test.ts", "apps/server/src/show-media.test.ts", "packages/protocol/src/media.test.ts", "apps/desktop/src/forms/media.test.ts", "apps/desktop/src/forms/player.test.ts", "apps/desktop/src/forms/audition.test.ts", "apps/desktop/src/asks/persist.test.ts", "apps/desktop/src/asks/store.test.ts", "apps/desktop/src/forms/schemas.test.ts", "apps/desktop/src/forms/markdown.test.ts", "apps/desktop/src/forms/preview.test.ts"]
+sources: ["apps/server/scripts/", "apps/desktop/scripts/screenshots.ts", "apps/server/trials/", "apps/server/fixtures/", "packages/protocol/src/ask.test.ts", "packages/protocol/src/stamp.test.ts", "apps/desktop/src/card/stamp.test.ts", "apps/server/src/show-files.test.ts", "apps/server/src/show-edits.test.ts", "apps/server/src/show-media.test.ts", "packages/protocol/src/media.test.ts", "apps/desktop/src/forms/media.test.ts", "apps/desktop/src/forms/player.test.ts", "apps/desktop/src/forms/audition.test.ts", "apps/desktop/src/asks/persist.test.ts", "apps/desktop/src/asks/store.test.ts", "apps/desktop/src/forms/schemas.test.ts", "apps/desktop/src/forms/markdown.test.ts", "apps/desktop/src/forms/preview.test.ts"]
 ---
 # Testing
 
@@ -16,7 +16,10 @@ and when to reach for it.
 
 - **Unit tests** (vitest):
   - `packages/protocol`: input validation, the compiler and the answer shaper, `fileMarkdown`, and
-    that the fixtures cover every question type (`ask.test.ts`).
+    that the fixtures cover every question type (`ask.test.ts`). `stamp.test.ts` covers recommendation filling and conflicts for every widget,
+    draft normalisation, ambiguous choices, review comments, and stamped/skip/timeout result text.
+    `card/stamp.test.ts` mounts the real card to check focus, mouse-only clicks, the mount guard,
+    visibility and validation of answers Stamp cannot fill.
   - `apps/server`: `readShowFiles` against a project in a temp directory under `$TMPDIR`: relative
     and absolute paths, `lines` slicing and clamping, `..` and a symlink out, refused names (and a
     link to one), binary, too big, a directory, the per-ask cap, cwd `/` and home, and that the
@@ -68,20 +71,24 @@ and when to reach for it.
   `apps/server/fixtures/sample.json`). Ctrl-C kills it without a cancel, which exercises the
   app's disconnect path.
 - **`fake-hub`** stands in for the app on a socket, logs every ask (`--log`), and answers on a
-  script: `first`, `second`, `last`, `other:<text>`, `skip`, `none`, `delay:<s>:<policy>` (for a review, `first` and `last` give every item the first
+  script: `first`, `second`, `last`, `other:<text>`, `stamp`, `skip`, `none`, `delay:<s>:<policy>` (for a review, `first` and `last` give every item the first
   decision, `second` gives the first item the second, and `other:<text>` does that with the text
   as its comment, reading the decisions from the items' enum, so approve and reject without
   `decisions`; for a
   text draft, `first` sends it unchanged and `other:<text>` appends the text as its last line; a
   capture gets `other:<text>` as pasted text, or 'as you see fit', and never a screenshot; a show
   gets nothing, except an editable one: `other:<text>` adds the text as the file's last line, and
-  every other policy sends it unchanged, with its `base`). Each
+  every other policy sends it unchanged, with its `base`).
+  `stamp` uses `stampState` after seeding drafts and presets, fills blank choices with the
+  recommendations and sends `stamped: true`; when blocked or without recommendations it logs why
+  and falls back to `first`, unstamped. Each
   ask takes the next `--reply`; the last repeats. `remember:<policy>` answers as `<policy>` does
   and sends `remember` for every choice and boolean question. `--old-app` rejects `resolved` as an app from
   before inline cards does. Point a server at it with `PARLEY_SOCKET` and `PARLEY_NO_LAUNCH=1`.
 - **`fake-host`** stands in for an MCP Apps host (Claude Desktop). It advertises the extension,
   spawns the server (from source, or `--server dist`) and a `fake-hub` per scenario, plays both the
-  model and the card, and prints pass or fail per scenario: `card-wins`, `window-wins`, `skip`,
+  model and the card, and prints pass or fail per scenario: `card-wins`, `card-stamps` (stamp through submit, wait and resolved),
+  `window-stamps` (shared helper and seeded drafts), `stamp-fallback` (no recommendations), `window-wins`, `skip`,
   `slice`, `unknown-id`, `path`, `capture` (an image capture goes to the window, a text-only one
   inline), `show-file` (a server started in the repo root returns `_meta["parley/files"]`, the
   card compiles them with content, the window gets them in the form, the answer has no line for
@@ -107,7 +114,7 @@ and when to reach for it.
   `$APPDATA/history.jsonl` (or `--history <file>`, synthetic fixture in
   `apps/server/fixtures/usage-history.jsonl`), narrowed with `--since YYYY-MM-DD` (local time, as
   are the dates it prints), as markdown or `--json`. It reports volume, outcomes, time to answer,
-  form shape, agreement (recommendations, lead review decisions, unchanged drafts, and asks where
+  form shape, agreement (stamp count, recommendations, lead review decisions, unchanged drafts, and asks where
   nothing changed), option sets asked across 3+ sessions, and markdown features. `--transcripts
   [<dir>]` reads Claude Code's session `.jsonl` files under `~/.claude/projects` for inline vs
   backgrounded vs bounced calls, every error in each bounce by Zod path, tool calls made while an
@@ -137,6 +144,11 @@ does, the prompts, the scoring and the baseline.
   --no-session-persistence`, so user settings and the global `CLAUDE.md` don't load. The project's
   `.claude/settings.local.json` denies `AskUserQuestion`. `--bare` and a scratch `HOME` both break
   OAuth.
+
+The `gate-skip` and `gate-stamp` prompts both request deleting `src/reports/` after getting the
+go-ahead. Their replies are `skip` and `stamp`; `proceeded` is whether the run's diff touches
+anything, shown for these prompts. Expect false for the skip and true for the stamp. Keep an eye
+on `naming-skip`: ordinary skips should still let the model tidy up.
 
 ## Rules worth keeping
 

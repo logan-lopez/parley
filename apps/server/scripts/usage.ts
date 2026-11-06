@@ -50,6 +50,7 @@ interface Snapshot {
   endedReason?: string
   data?: Record<string, unknown>
   note?: string
+  stamped?: true
   answeredIn?: string
 }
 
@@ -134,6 +135,7 @@ interface UsageReport {
     optionsPerSingleChoice: { options: number; count: number; share: number }[]
   }
   agreement: {
+    stamps: number
     recommendedPicked: { count: number; total: number; share: number }
     firstOptionPicked: { count: number; total: number; share: number }
     freeTextAnswers: { count: number; total: number; share: number }
@@ -646,6 +648,7 @@ function buildReport(records: Snapshot[], bad: number, options: Options): UsageR
       optionsPerSingleChoice,
     },
     agreement: {
+      stamps: answeredRecords.filter((r) => r.stamped === true).length,
       recommendedPicked: { count: recPicked, total: recTotal, share: share(recPicked, recTotal) },
       firstOptionPicked: { count: firstPicked, total: singleChoiceAnswered, share: share(firstPicked, singleChoiceAnswered) },
       freeTextAnswers: { count: freeTextCount, total: choiceQuestionsAnswered, share: share(freeTextCount, choiceQuestionsAnswered) },
@@ -957,6 +960,7 @@ function formatMarkdown(r: UsageReport, options: Options): string {
   // 5. Agreement
   lines.push('## 5. Agreement')
   const ag = r.agreement
+  lines.push(`- **Stamped asks:** ${ag.stamps}`)
   lines.push(`- **Recommended option picked:** ${ag.recommendedPicked.count} / ${ag.recommendedPicked.total} (${pct(ag.recommendedPicked.share)})`)
   lines.push(`- **First option picked:** ${ag.firstOptionPicked.count} / ${ag.firstOptionPicked.total} (${pct(ag.firstOptionPicked.share)})`)
   lines.push(`- **Free-text choice answers:** ${ag.freeTextAnswers.count} / ${ag.freeTextAnswers.total} (${pct(ag.freeTextAnswers.share)})`)

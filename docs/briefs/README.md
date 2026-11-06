@@ -74,7 +74,7 @@ and move to `archive/` when they're done. Ideas that aren't scheduled yet are in
     at full width.
 26. [`26-panel-polish.md`](26-panel-polish.md) (done, awaiting review): one-line text boxes grow to four rows (Enter is a new line),
     `hideOnBlur` hides the window when you click outside it (on by default), and no title bar.
-27. [`27-stamp.md`](27-stamp.md): a mouse-only Stamp button that approves every recommendation on a card,
+27. [`27-stamp.md`](27-stamp.md) (done, awaiting review): a mouse-only Stamp button that approves every recommendation on a card,
     and skip and timeout text that says outright it isn't approval; then a trial pass.
 
 ## Done

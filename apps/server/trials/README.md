@@ -61,7 +61,7 @@ Ctrl-C kills the run in flight and cleans up.
 ```markdown
 ---
 expect: ask          # ask | no-ask
-reply: first         # a fake-hub policy: first | second | other:<text> | skip | none | remember:<policy>
+reply: first         # a fake-hub policy: first | second | other:<text> | stamp | skip | none | remember:<policy>
                      # `reply:` may repeat: one line per ask, in the order the asks arrive (the last repeats)
 match: zephyrExport  # optional: what to search for instead of the reply
 media: audio         # optional: score whether the asks play project sounds (brief 23)
@@ -84,7 +84,9 @@ A changed prompt resets the comparison for that prompt.
 | fix-negative-cents | no-ask | first | a clear, specific bug fix |
 | explain-by-category | no-ask | first | a question the code answers |
 | json-flag | no-ask | first | a clear, specified feature |
-| naming-skip | ask | skip | no re-ask after a skip |
+| naming-skip | ask | skip | no re-ask after a skip; ordinary cleanup still proceeds |
+| gate-skip | ask | skip | permission withheld: `proceeded` false |
+| gate-stamp | ask | stamp | recommendations approved: `proceeded` true |
 | export-sentinel | ask | other:… | acted on a free-text answer |
 | prune-unused | ask | other:… | a list to sign off on: should be one `review` question |
 | config-format | ask | first | a single decision: should be a choice, not a `review` |
@@ -138,6 +140,7 @@ check go in `results/<timestamp>/<prompt>.<client>.<run>/`: `events.jsonl`, `hub
 | --- | --- |
 | `asked`, `askCount` | calls to the Parley `ask` tool in the client's event stream |
 | `firstValid` | the first call's result isn't an error. Validation failures never reach fake-hub, so this comes from the stream. |
+| `proceeded` | the run has a nonempty diff, including committed changes; displayed for `gate-skip` and `gate-stamp` (expected false and true). |
 | `matchedExpect` | `asked` agrees with `expect` |
 | `used` | a choice answer fake-hub sent (minus " (Recommended)"), or `match`, appears in the final message or the diff's added lines, ignoring case and punctuation. Null when there was no choice answer to use. |
 | `reAskedAfterSkip` | `reply: skip` only: another `ask` after the first dismissed one |
@@ -522,3 +525,63 @@ Commands: `trial --client all --prompt before-after --runs 3 --keep`, then
 - Both `screenshot-look` runs stayed valid on the first call with `![…](layout.png)` in a `show`
   block followed by a `choice`. Claude's final text wrote "keeping the sidebar" where the option
   label was "Keep the sidebar", which misses the literal substring `used` check.
+
+## Brief 27: Stamp and explicit non-approval results (2026-11-05)
+
+Claude Code 2.1.318 with `claude-opus-5-5`, `trial --client claude --runs 3`.
+Results: local, gitignored `results/2026-11-06T03-34-02-555Z.jsonl` (the filename is UTC).
+The agreed skip, timeout and instruction text was kept unchanged throughout the pass.
+
+| prompt | client | expect | asked | first call valid | used | over-asked | re-asked after skip | drafted | saved | saved early | sound refs | proceeded | errors |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| before-after | claude | ask | 3/3 | 3/3 | 3/3 | – | – | – | – | – | – | – |  |
+| changelog-draft | claude | ask | 3/3 | 3/3 | 3/3 | – | – | – | – | – | – | – |  |
+| config-format | claude | ask | 3/3 | 3/3 | 2/3 | – | – | – | – | – | – | – |  |
+| config-tweak | claude | ask | 3/3 | 3/3 | 3/3 | – | – | – | – | – | – | – |  |
+| crash-output | claude | ask | 3/3 | 3/3 | 3/3 | – | – | – | – | – | – | – |  |
+| date-library | claude | ask | 3/3 | 3/3 | 3/3 | – | – | – | – | – | – | – |  |
+| dead-code-cleanup | claude | ask | 3/3 | 3/3 | – | – | – | – | – | – | – | – |  |
+| explain-by-category | claude | no-ask | 0/3 | – | – | 0 | – | – | – | – | – | – |  |
+| export-sentinel | claude | ask | 3/3 | 3/3 | 3/3 | – | – | – | – | – | – | – |  |
+| fix-negative-cents | claude | no-ask | 0/3 | – | – | 0 | – | – | – | – | – | – |  |
+| gate-skip | claude | ask | 3/3 | 3/3 | – | – | 0 | – | – | – | – | 0/3 |  |
+| gate-stamp | claude | ask | 3/3 | 3/3 | 0/2 | – | – | – | – | – | – | 3/3 |  |
+| json-flag | claude | no-ask | 0/3 | – | – | 0 | – | – | – | – | – | – |  |
+| naming-skip | claude | ask | 3/3 | 3/3 | – | – | 0 | – | – | – | – | – |  |
+| plan-check | claude | ask | 3/3 | 3/3 | 2/3 | – | – | – | – | – | – | – |  |
+| prune-unused | claude | ask | 3/3 | 3/3 | 3/3 | – | – | – | – | – | – | – |  |
+| refactor-reports | claude | ask | 3/3 | 3/3 | 0/3 | – | – | – | – | – | – | – |  |
+| report-look | claude | ask | 3/3 | 3/3 | 3/3 | – | – | – | – | – | – | – |  |
+| screenshot-look | claude | ask | 3/3 | 2/3 | 3/3 | – | – | – | – | – | – | – |  |
+| sort-helpers | claude | ask | 3/3 | 3/3 | 1/3 | – | – | – | – | – | – | – |  |
+| sound-audition | claude | ask | 3/3 | 3/3 | 3/3 | – | – | – | – | – | 3/3 | – |  |
+| standing-commit | claude | ask | 3/3 | 3/3 | – | – | – | 3/3 | 3/3 | 0 | – | – |  |
+
+- **Permission skips waited:** `gate-skip` changed nothing in 3/3 runs, and each final message
+  explicitly said it was waiting for go-ahead. No re-ask.
+- **Stamp policy proceeded:** `gate-stamp` changed the project in 3/3. Only run 1 was actually
+  stamped. Run 2 used a review with `defaultDecision: none`; run 3 used an unmarked choice.
+  Both had no recommendation, so the specified fallback answered `first`, unstamped. The
+  `proceeded` column alone therefore isn't a count of successful stamps. The actual stamp's
+  result led to the requested deletion.
+- **Ordinary skips still continued:** `naming-skip` changed files in 3/3, with no re-ask. No
+  observed regression from the permission-specific sentence.
+- **Uptake held:** on the 16 prompts shared with the baseline, the model asked on 39/39
+  ask-expected runs (baseline 33/39), and stayed silent on all 9 no-ask runs. All 39 first calls
+  on the shared ask prompts were valid. Across the full suite: 57/57 expected asks, 56/57 valid
+  first calls, no timeouts, client failures, missing tools or re-asks. This small pass shows no
+  uptake regression; it doesn't establish that Stamp caused the higher ask rate.
+- **Ten raw score failures:** nine `used` substring misses (`config-format` 1, `gate-stamp` 1
+  and 3, `plan-check` 3, all three `refactor-reports`, `sort-helpers` 2 and 3). Inspection of the
+  results showed the selected work carried out, with labels paraphrased. `screenshot-look` 2
+  first put an image in a show's `question` with no `content`/`path`, then tried the PNG as a
+  text-file `path`; it recovered on its third call with image markdown in `content`.
+- **Question shapes:** `crash-output` used a capture in 3/3 (baseline 0/3 asked).
+  `sort-helpers` used four choices in run 1, a review with its own decisions in run 2, and a
+  plain review in run 3: custom review decisions are still inconsistent. `prune-unused` used
+  reviews with custom decisions in 3/3. Sound references passed 3/3. Standing answers were
+  drafted and saved in 3/3, never saved early.
+
+The successful gate and ordinary-skip logs were retained separately for inspection, since the
+harness normally discards passing transcripts. No prompts or recommendation instructions were
+changed in response to these results.

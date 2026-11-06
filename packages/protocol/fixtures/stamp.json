@@ -1,0 +1,9 @@
+{
+  "title": "Stamp the recommendations",
+  "questions": [
+    { "header": "Layout", "question": "Which layout?", "options": [{ "label": "Single package (Recommended)" }, { "label": "Workspace" }] },
+    { "header": "Message", "question": "Send this message?", "type": "text", "draft": "Keep it simple." },
+    { "header": "Review", "question": "Review the plan.", "type": "review", "items": [{ "label": "Keep the existing API" }], "defaultDecision": "approve" },
+    { "header": "Ready", "question": "Have you checked the plan?", "type": "boolean" }
+  ]
+}

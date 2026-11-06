@@ -29,7 +29,8 @@ reads the files show blocks name, and `show-edits.ts` saves editable shows' edit
   more than one reading, when choosing between approaches, before large or irreversible changes, or
   for a detail that can't be inferred; 1–4 questions, choice questions preferred, the
   recommendation first with " (Recommended)"; no
-  "Other" option; never secrets; don't re-ask a skipped question; read the note. Inline clients get
+  "Other" option; never secrets; don't re-ask a skipped question; a skip isn't approval, so an
+  agent asking permission must wait in chat; read the note. Inline clients get
   one sentence swapped for the two-step flow. Claude Code caps server instructions at 2,048
   characters.
 - **The tool.** `ask` declares the input schema and an `outputSchema` (the result schema from
@@ -50,6 +51,11 @@ reads the files show blocks name, and `show-edits.ts` saves editable shows' edit
 - **Who's asking.** The client's name and version come from `getClientVersion()` (the
   `initialize` handshake), or the `_meta` envelope's client info. They go in the `hello`, and the
   app shows the name on the card with the project directory.
+
+A stamped answer carries `stamped: true` and starts "The user read this and approved every
+recommendation:" in both text and `message`. The server trusts the app's claim. Skip and timeout
+results say "That isn't approval" and tell an agent that was asking permission to say in chat
+that it's waiting. Ordinary skips still mean continue with best judgment and state assumptions.
 
 ## Show files
 

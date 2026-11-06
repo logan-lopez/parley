@@ -5,6 +5,8 @@ paths:
   - "apps/server/trials/**"
   - "apps/server/fixtures/**"
   - "packages/protocol/src/ask.test.ts"
+  - "packages/protocol/src/stamp.test.ts"
+  - "apps/desktop/src/card/stamp.test.ts"
   - "apps/server/src/show-files.test.ts"
   - "apps/server/src/show-edits.test.ts"
   - "apps/server/src/show-media.test.ts"

@@ -25,7 +25,7 @@ Parley shows the user a form in a desktop window and returns their answers. Use 
 - Don't add an "Other" option. Choice questions accept free text automatically.
 - Don't ask what the conversation, the code, or sensible defaults already answer.
 - Never ask for passwords, API keys, or other secrets.
-- If the user skips a question, don't ask it again. Proceed and say what you assumed.
+- If the user skips a question, don't ask it again. Proceed and say what you assumed. A skip isn't approval: if you were asking for permission to go ahead, don't; say in chat that you're waiting.
 - The user can add a note to any answer or skip. Read it: it can change what they want.
 `.trim()
 

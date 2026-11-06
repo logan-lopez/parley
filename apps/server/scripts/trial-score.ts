@@ -43,6 +43,7 @@ export type Op =
   | { kind: 'write'; path: string }
 
 export interface RunScore {
+  proceeded: boolean
   asked: boolean
   askCount: number
   firstValid: boolean | null
@@ -77,6 +78,7 @@ export function scoreRun(dir: string): RunResult {
   const asks = stream.asks
   const asked = asks.length > 0
 
+  const proceeded = diff.trim().length > 0
   const firstValid = asked ? asks[0]!.error === false : null
   const matchedExpect = asked === (meta.expect === 'ask')
 
@@ -121,6 +123,7 @@ export function scoreRun(dir: string): RunResult {
 
   return {
     ...meta,
+    proceeded,
     model: stream.model ?? meta.model,
     asked,
     askCount: asks.length,
@@ -336,6 +339,7 @@ export interface Summary {
   reAsked: number
   errors: number
   standing?: { drafted: number; saved: number; early: number }   // "Don't ask again" prompts only
+  proceeded?: number
   sounds?: number          // runs whose asks played project sounds, for `media: audio` prompts
 }
 
@@ -358,6 +362,7 @@ export function summarize(results: RunResult[]): Summary[] {
     underAsked: rs.filter((r) => r.failed.includes('underAsked')).length,
     reAsked: rs.filter((r) => r.reAskedAfterSkip).length,
     errors: rs.filter((r) => r.failed.includes('timedOut') || r.failed.includes('exitCode')).length,
+    ...(rs[0]!.prompt.startsWith('gate-') && { proceeded: rs.filter((r) => r.proceeded).length }),
     ...(rs.some((r) => r.soundRefs !== null) && { sounds: rs.filter((r) => r.soundRefs).length }),
     ...(rs.some((r) => r.drafted !== null) && {
       standing: {
@@ -373,14 +378,16 @@ export function summarize(results: RunResult[]): Summary[] {
 export function formatSummary(rows: Summary[]): string {
   // The "Don't ask again" columns appear only when a prompt in the run has them.
   const standing = rows.some((s) => s.standing)
+  const gates = rows.some((s) => s.proceeded !== undefined)
   const sounds = rows.some((s) => s.sounds !== undefined)
   const lines = [
-    `| prompt | client | expect | asked | first call valid | used | over-asked | re-asked after skip |${standing ? ' drafted | saved | saved early |' : ''}${sounds ? ' sound refs |' : ''} errors |`,
-    `| --- | --- | --- | --- | --- | --- | --- | --- |${standing ? ' --- | --- | --- |' : ''}${sounds ? ' --- |' : ''} --- |`,
+    `| prompt | client | expect | asked | first call valid | used | over-asked | re-asked after skip |${standing ? ' drafted | saved | saved early |' : ''}${sounds ? ' sound refs |' : ''}${gates ? ' proceeded |' : ''} errors |`,
+    `| --- | --- | --- | --- | --- | --- | --- | --- |${standing ? ' --- | --- | --- |' : ''}${sounds ? ' --- |' : ''}${gates ? ' --- |' : ''} --- |`,
   ]
   for (const s of rows) {
     const extra = (standing ? ` ${s.standing ? `${s.standing.drafted}/${s.runs} | ${s.standing.saved}/${s.runs} | ${s.standing.early}` : '– | – | –'} |` : '')
       + (sounds ? ` ${s.sounds !== undefined ? `${s.sounds}/${s.runs}` : '–'} |` : '')
+      + (gates ? ` ${s.proceeded !== undefined ? `${s.proceeded}/${s.runs}` : '–'} |` : '')
     lines.push(
       `| ${s.prompt} | ${s.client} | ${s.expect} | ${s.asked}/${s.runs} | ${s.asked ? `${s.validFirst}/${s.asked}` : '–'} | ${s.usedOf[1] ? `${s.usedOf[0]}/${s.usedOf[1]}` : '–'} | ${s.expect === 'no-ask' ? s.overAsked : '–'} | ${s.skip ? s.reAsked : '–'} |${extra} ${s.errors || ''} |`,
     )

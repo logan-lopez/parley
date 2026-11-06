@@ -21,6 +21,7 @@
 // under `other:<text>` with <text> as a new last line (the draft policies).
 //   remember:<policy>       answer as <policy> does, with "Don't ask again here" on for every
 //                           choice and boolean question (`remember:first`, `remember:other:x`)
+//   stamp                   approve every recommendation, or fall back to first unstamped
 //   skip                    dismiss
 //   none                    never answer (let it time out or be cancelled)
 //   delay:<s>:<policy>      wait, then apply the policy
@@ -31,7 +32,7 @@
 import { createServer, type Socket } from 'node:net'
 import { appendFileSync, existsSync, unlinkSync } from 'node:fs'
 import { parseArgs } from 'node:util'
-import { PROTOCOL_VERSION, type AppToServer, type FormSpec, type ServerToApp } from '@parley/protocol'
+import { stampState, PROTOCOL_VERSION, type AppToServer, type FormSpec, type ServerToApp } from '@parley/protocol'
 
 const { values, positionals } = parseArgs({
   allowPositionals: true,
@@ -91,6 +92,24 @@ function serve(socket: Socket) {
     if (policy === 'skip') {
       log({ at: new Date().toISOString(), type: 'dismissed', id })
       return send({ type: 'dismissed', id })
+    }
+    if (policy === 'stamp') {
+      // Renderers seed drafts and preset reviews before a user can click.
+      const seeded = fill(form, 'first')
+      const properties = (form.schema.properties ?? {}) as Record<string, Record<string, any>>
+      for (const [key, prop] of Object.entries(properties)) {
+        if (prop['x-widget'] === 'choice') delete seeded[key]
+        if (prop['x-widget'] === 'review' && prop['x-default-decision'] !== 'none') {
+          seeded[key] = (prop.items as any[]).map(() => ({ decision: prop['x-default-decision'] }))
+        }
+      }
+      const state = stampState(form.schema, seeded)
+      if (state.kind === 'ready') {
+        log({ at: new Date().toISOString(), type: 'reply', id, policy, data: state.data, stamped: true })
+        return send({ type: 'answer', id, data: state.data, stamped: true })
+      }
+      console.error(`fake-hub: cannot stamp: ${state.kind === 'blocked' ? state.reasons.join('; ') : 'no recommendations'}`)
+      policy = 'first'
     }
     const remembering = policy.startsWith('remember:')
     if (remembering) policy = policy.slice('remember:'.length)

@@ -37,6 +37,16 @@ A multi-select.
 | --- | --- |
 | ![multi select, light](images/cards/multi-select-light.png) | ![multi select, dark](images/cards/multi-select-dark.png) |
 
+## Stamp
+
+How it works: [Answering a card](answering.md#sending-stamping-skipping-and-the-note).
+
+A recommendation, draft and preset review, with a required yes/no answer that starts Stamp blocked.
+
+| Light | Dark |
+| --- | --- |
+| ![stamp, light](images/cards/stamp-light.png) | ![stamp, dark](images/cards/stamp-dark.png) |
+
 ## Text
 
 How it works: [Question types](question-types.md#text).

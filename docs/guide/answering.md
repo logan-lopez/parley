@@ -70,14 +70,24 @@ it ([from the keyboard](pictures.md#playing-from-the-keyboard)).
 
 Some question types add their own keys; see [Question types](question-types.md).
 
-## Sending, skipping and the note
+## Sending, stamping, skipping and the note
 
 **Send** returns your answers to the agent and moves to the next waiting ask; after the last one,
-the window hides. **Skip** tells the agent you didn't answer, and the agent is told not to ask
-again and to say what it assumed instead.
+the window hides.
 
-The note for the agent is free text that goes with either: context for an answer, why you're
-skipping, or a correction. The agent gets it quoted after your answers. It's collapsed until you
+**Stamp** says you read the card and approve every recommendation. It fills blank choices with
+the recommended options and accepts drafts and preset review decisions. It appears only when
+there's a recommendation, between Skip and Send. If an answer differs, a draft was cleared, a
+shown file was edited, or a required answer is missing, it's disabled; hover for the reason.
+Answers without a recommendation stay as you gave them. Stamp has no key on purpose: Tab never
+lands on it, and you must reach for the mouse. A click keeps focus where it was.
+
+**Skip** tells the agent you didn't answer. It isn't approval. The agent is told not to ask again
+and to say what it assumed; if it was asking permission to go ahead, it's told to wait in chat.
+A timeout isn't approval either.
+
+The note for the agent is free text that goes with any of the three: context for an answer, why
+you're skipping, or a correction. The agent gets it quoted after your answers. It's collapsed until you
 press Cmd+N or click it.
 
 What you've typed is kept as a draft as you go. If you hide the window, switch to another ask, or

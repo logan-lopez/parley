@@ -175,3 +175,29 @@ describe("Don't ask again here", () => {
     expect(getRecord(id)).not.toHaveProperty('remember')
   })
 })
+
+describe('stamps', () => {
+  it('keeps the stamp in the record, persistence and reconnect reply', async () => {
+    const id = ask()
+    answer(id, { q: 'yes' }, 'ok', ['q'], true)
+    expect(getRecord(id)).toMatchObject({ stamped: true, status: 'answered' })
+    const { append } = await import('./persist')
+    expect(append).toHaveBeenLastCalledWith(expect.objectContaining({ stamped: true }))
+    expect(tauri.sent[0]!.message).toMatchObject({ type: 'answer', stamped: true })
+    tauri.sent.length = 0
+    deliver({ type: 'ask', id, form: { schema: {} }, createdAt: Date.now() })
+    expect(tauri.sent[0]!.message).toMatchObject({ type: 'answer', stamped: true })
+  })
+  it('replaces the stamp in both directions from the chat outcome', () => {
+    for (const stamped of [true, undefined] as const) {
+      const id = ask({ inline: true })
+      answer(id, {}, undefined, undefined, stamped ? undefined : true)
+      deliver({ type: 'resolved', id, outcome: { status: 'answered', data: {}, ...(stamped && { stamped }) } })
+      expect(getRecord(id)!.stamped).toBe(stamped)
+    }
+    const id = ask()
+    answer(id, {}, undefined, undefined, true)
+    deliver({ type: 'resolved', id, outcome: { status: 'dismissed' } })
+    expect(getRecord(id)).not.toHaveProperty('stamped')
+  })
+})

@@ -38,6 +38,9 @@ says what was sent: "Sent.", "Sent with a note.", "Only the note was sent." for 
 had typed." for an ask that ended with a draft in it. A question you turned "Don't ask again here"
 on for shows "Don't ask again" beside its header.
 
+A stamp keeps the **Answered** chip. Its detail says "Stamped." or "Stamped with a note.", or
+"Stamped in the chat" for a stamp in Claude Desktop, with a note clause if you added one.
+
 [Project pictures](pictures.md) are references, so opening an old ask checks the file again. If it
 changed or was deleted, its caption and path stay, with a notice instead of the new picture.
 

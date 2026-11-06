@@ -1,7 +1,7 @@
 ---
 size: M
 size-note: "touches every layer once, but each is a small additive change; the helper is the only new logic"
-status: not-started
+status: awaiting-review
 ---
 # Brief 27: Stamp
 
@@ -259,3 +259,98 @@ Installing doesn't quit or open anything, but checks 4 and 5 use the running app
 before that run.
 
 Then stop. Don't merge anything, and leave the hand checks to Logan.
+
+## Report
+
+**Built**
+
+- `packages/protocol/src/form.ts`: shared `stampState`, including ambiguous single choices,
+  multi-choice set comparison, cleared drafts, preset reviews with comments, required blanks
+  (including the empty entries seeded by a no-preset review), and editable shows. Moved `plain`
+  here and imported it back into `ask.ts`, keeping Zod out of the window.
+- `AskCard.vue`: Skip / Stamp / Send, strict disabled reasons, no keyboard route, preserved
+  mouse focus, and the 500 ms mount guard. The completed candidate is validated with JSON Forms'
+  AJV settings, so invalid answers and comments still block Stamp. The window, gallery and
+  inline card handle its data, note and remember ids.
+- Wire, store, hub client, `AppClient` and `parley_submit`: optional stamp metadata survives
+  answers, persistence, reconnect re-sends, inline outcomes and chat resolution in either
+  direction. Status remains `answered`. History says "Stamped" with the note/chat variants;
+  the usage report counts stamps.
+- Answer shaping and server instructions use the agreed wording. Ordinary answers retain
+  their old first line; stamps have their own first line and `stamped: true`. Skips and
+  timeouts explicitly aren't approval. Server instructions are 1,368 characters, below the cap.
+- Added the mixed `stamp` fixture, helper/result/store/card tests, fake-hub's `stamp` policy,
+  three host scenarios (inline stamp, window stamp, fallback), gate prompts and `proceeded`
+  scoring. Regenerated all 48 gallery images and built the server/inline bundle.
+
+**Deviations**
+
+No product decisions or model-facing wording changed. Candidate validation uses a cached AJV
+validator rather than filtering the pre-fill error list: this also catches invalid comments on
+an item whose decision Stamp fills. The seeded-review blank check was tightened during the
+trial pass; model-facing text and the recorded gate outcomes were unaffected. The inline bundle
+was rebuilt and the complete host suite rerun afterward. The full screenshot sweep also added
+shots of the existing `show-file` fixture that weren't previously tracked.
+
+**Defaults taken**
+
+History's chip stays "Answered"; the adjacent detail line identifies a stamp. No new filter group.
+
+**Acceptance**
+
+| Check | Result |
+| --- | --- |
+| `pnpm typecheck` | Pass on the final source. |
+| Protocol tests | 163 pass; every helper row, ambiguous labels, comments, cleared drafts, ordinary/stamped summaries and the four skip/timeout text cases are covered. |
+| Server tests | 74 pass. |
+| Desktop tests | 232 pass, including stamp persistence/reconnect/chat replacement and real-card focus, synthetic clicks, the mount guard, visibility and validation. |
+| `pnpm --filter @parley/server fake-host` | All 15 scenarios pass after the final rebuild. |
+| Server/inline build | Pass. |
+| Screenshots | All 24 fixtures in light and dark, headless WebKit. |
+| Synthetic usage report | One stamped answered record counted as one stamp. |
+| `trial --client claude --runs 3` | All 66 runs completed; 57/57 expected asks, 56/57 valid first calls, no client errors/timeouts or re-asks. Nine literal-label `used` misses and one recovered screenshot first-call failure. Full table and inspection notes in the [trials README](../../apps/server/trials/README.md). |
+| Permission gates | `gate-skip`: no changes, 3/3 explicitly waiting. `gate-stamp`: proceeded 3/3, but only one actual stamp; two no-recommendation forms used the specified unstamped fallback. |
+| Ordinary skips | `naming-skip`: continued cleanup 3/3, no re-ask. No observed stop-after-ordinary-skip regression. |
+| Baseline comparison | Shared ask prompts: 39/39 asked versus 33/39 in the baseline; all 9 no-ask runs stayed silent. No observed uptake regression; three runs don't establish a causal improvement. |
+| `docket links --paths` | Still reports three pre-existing findings: the testing/form-spec anchors and the `docs/plan.md` example. Reproduced from HEAD in a temporary checkout; no new broken links. |
+| `docket check` | Six existing no-size findings on briefs 13–18, plus nine architecture-description notes. |
+| `git diff --check` | Pass. |
+
+**Size:** sized M, this session L (66 active min, 66 wall, 0 compactions), from `docket sessions`.
+
+**Spot checks for Logan**
+
+The dev gallery is left running at
+[the Stamp fixture](http://localhost:1420/?gallery&fixture=stamp).
+
+1. Hover the disabled Stamp for its reason. Answer Ready; Stamp becomes available while the
+   recommended choice is still blank. Choose Workspace instead; it disables again.
+2. Check Tab, Enter and Space never activate Stamp, and clicking it doesn't focus the button.
+   Judge the label beside Skip and Send at the window's width.
+3. In the installed build, check the actual two-ask queue double click and Claude Desktop's
+   inline stamp/result/history. These were not run: the brief leaves the installed-app checks
+   to Logan. Build/install, then quit and reopen from the tray before checking; Desktop also
+   needs its cached card refreshed by restarting its server/host.
+
+To inspect the generated images in kitty:
+
+```sh
+icat ~/Code/personal/parley/docs/guide/images/cards/stamp-{light,dark}.png
+```
+
+**Docs updated**
+
+The seven relevant architecture pages; answering, Claude Desktop, history and screenshot guide
+pages; root README features and principles; the trials prompt/scoring tables and full-pass
+results; AGENTS' Areas table and the testing rule's paths. Existing Stamp decisions were followed;
+no new decision file was needed.
+
+**Follow-ups**
+
+- The installed queue and actual Claude Desktop checks above remain for review.
+- Stamp availability still depends on recommendations: two of three permission forms in this
+  pass had none. No recommendation/input-schema changes were made, as requested.
+- `sort-helpers` still varies: four choices, a review with custom decisions, and a plain review
+  across its three runs. Existing documentation metadata/link findings remain untouched.
+
+The working tree was clean at the start; no pre-existing user changes were included.

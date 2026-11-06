@@ -124,15 +124,16 @@ export function registerInline(server: McpServer) {
         kind: z.enum(['answer', 'skip']),
         data: z.unknown().optional(),
         note: z.string().optional(),
+        stamped: z.boolean().optional(),
       }),
       _meta: appOnly,
     },
-    async ({ askId, kind, data, note }) => {
+    async ({ askId, kind, data, note, stamped }) => {
       if (kind === 'answer' && data === undefined) {
         return { content: [{ type: 'text', text: 'An answer needs `data`.' }], isError: true }
       }
       const withNote = note?.trim() ? { note: note.trim() } : {}
-      const outcome: InlineOutcome = kind === 'answer' ? { status: 'answered', data, ...withNote } : { status: 'dismissed', ...withNote }
+      const outcome: InlineOutcome = kind === 'answer' ? { status: 'answered', data, ...(stamped && { stamped: true }), ...withNote } : { status: 'dismissed', ...withNote }
       const { accepted, ...status } = answerInline(askId, outcome)
       const text = accepted ? 'Sent.' : status.state === 'unknown' ? 'No ask with that id.' : `That ask already ended: ${describe(status)}.`
       return { content: [{ type: 'text', text }], structuredContent: { accepted, ...status } }

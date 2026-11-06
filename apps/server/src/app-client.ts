@@ -233,7 +233,7 @@ class SocketAppClient implements AppClient {
         log(`connected to Parley ${message.appVersion}`)
         return
       case 'answer':
-        this.pending.get(message.id)?.settle({ status: 'answered', data: message.data, ...note(message.note), ...remember(message.remember) })
+        this.pending.get(message.id)?.settle({ status: 'answered', data: message.data, ...(message.stamped === true && { stamped: true }), ...note(message.note), ...remember(message.remember) })
         return
       case 'dismissed':
         this.pending.get(message.id)?.settle({ status: 'dismissed', ...note(message.note) })

@@ -27,7 +27,9 @@ lines without reading them. `src/hub/client.ts` is the webview end, which owns t
   `unknown_ask`). `answer` and `dismissed` carry an optional `note`, `answer` an optional
   `remember` (the ids of the questions whose "Don't ask again here" was on, left out when empty;
   Rust forwards it unread, and `AppClient` passes the strings through), and `ask` an optional
-  `inline` flag; all were added without a version bump. `resolved` has no `remember`: the inline
+  `inline` flag; all were added without a version bump. `answer` and the answered branch of `resolved` also carry optional `stamped: true`, omitted
+  for ordinary answers. Both ends preserve it, including the reconnect answer re-send.
+  `resolved` has no `remember`: the inline
   card has no such toggle.
 - **The Rust hub** (`hub.rs`) binds the socket at startup. If the socket exists and something
   answers on it, another Parley owns it, and this one exits: that's how the app stays single

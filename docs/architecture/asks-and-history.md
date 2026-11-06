@@ -18,7 +18,7 @@ when a new ask notifies.
 - **A record** (`AskRecord`) holds the ask (`id`, `form`, `createdAt`, `expiresAt`, `inline`), the
   session it came from, the connection it's on (`conn`, 0 for a record loaded from disk), and its
   `status`: `pending`, `answered`, `dismissed`, `cancelled`, `timed_out` or `orphaned`. An ended
-  record has `endedAt`, maybe `endedReason`, the `data`, `note` and `remember` (the ids with "Don't
+  record has `endedAt`, maybe `endedReason`, the `data`, optional `stamped: true`, `note` and `remember` (the ids with "Don't
   ask again here" on) it was sent with, and
   `answeredIn: 'chat'` when the inline card won. `draft` is unsent input (`data`, `note` and `remember`).
 - **One store.** `queue` is the pending records, oldest first. `history` is the ended ones, newest
@@ -33,11 +33,12 @@ when a new ask notifies.
     that owns it may cancel it.
   - `resolved`: the inline card won. The record ends answered or skipped with `answeredIn:
     'chat'`, and that overwrites an answer or skip sent from the window that lost the race, so
-    history matches what the agent got (including no `remember`).
+    history matches what the agent got (including replacing `stamped` in either direction and no `remember`).
   - `disconnected`: every pending record on that connection becomes `orphaned`. If the server
     re-sends within its 30 s reconnect window, it's pending again.
 - **Answer and skip** (`answer`, `dismiss`) end the record and send `answer` or `dismissed` with
   the note; an answer also carries `remember` when it isn't empty, and a skip never does.
+  Stamp uses the same answer path with `stamped: true`; reconnect re-sends keep it.
   Answering drops the draft; a skip keeps it.
 - **Drafts.** `setDraft` keeps what's typed, ignoring JSON Forms' empty data on mount. A draft is
   saved after a 500 ms pause, a status change at once, and anything pending on `pagehide`.
@@ -72,6 +73,9 @@ when a new ask notifies.
   with "Don't ask again here" on carries a "Don't ask again" mark beside its header. Clear history
   drops every ended record, on disk too. Keys: `j`/`k` or the arrows, `/` to filter, Enter to open,
   Esc goes back (detail → list → queue) and never hides.
+
+Stamped answers keep the "Answered" chip and filters. The detail line says "Stamped." or
+"Stamped with a note.", and "Stamped in the chat" with its note clause for an inline stamp.
 
 ## Rules worth keeping
 

@@ -64,10 +64,10 @@ function step(by: number) {
   if (next) selectedId.value = next.id
 }
 
-function send(data: unknown, note: string, remember: string[]) {
+function send(data: unknown, note: string, remember: string[], stamped?: true) {
   const id = selectedId.value!
   advanceFrom(id)
-  answer(id, data, note, remember)
+  answer(id, data, note, remember, stamped)
 }
 
 function skip(note: string) {
@@ -114,6 +114,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKey))
       @note="setDraft(shown.id, { note: $event })"
       @remember="setDraft(shown.id, { remember: $event })"
       @submit="send"
+      @stamp="(data, note, remember) => send(data, note, remember, true)"
       @skip="skip"
       @prev="step(-1)"
       @next="step(1)"

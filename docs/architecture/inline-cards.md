@@ -90,6 +90,11 @@ app is the card: `McpApp.vue` around the same `AskCard` the window uses, and `th
   the server reads the card from `dist-mcp-app/` instead. Either way it's read on every
   `resources/read`, and a missing card is an error there, not at startup.
 
+`parley_submit` accepts optional boolean `stamped` from the app-only card; when true on an
+answer, it survives the lifecycle, `ask_wait` result and `resolved` message as `stamped: true`.
+The shared card's mouse-only Stamp sends it through the same path as Send. The server doesn't
+recheck recommendations, and the model cannot call the app-only submit tool.
+
 ## Claude Desktop
 
 Checked against Claude Desktop 2.31226.1 (2026-10-10, brief 6):

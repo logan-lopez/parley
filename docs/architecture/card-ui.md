@@ -10,13 +10,13 @@ Claude Desktop, and in the dev gallery.
 **History:** [brief 2](../briefs/archive/02-ask-tool-and-ui.md), [brief 5](../briefs/archive/05-review-question.md) (the review renderer), [brief 7](../briefs/archive/07-inline-cards.md) (the platform adapter, `html.inline`), [brief 11](../briefs/archive/11-review-decisions.md) (labelled review decisions), [brief 12](../briefs/archive/12-capture-question.md) (copy buttons, the capture renderer), [brief 13](../briefs/13-color-chips.md) (color chips, palettes), [brief 14](../briefs/14-fenced-previews.md) (HTML and SVG previews), [brief 15](../briefs/15-themes.md) (tokens from themes), [brief 16](../briefs/16-show-blocks.md) (the show renderer, `[data-passive]`), [brief 17](../briefs/17-editable-show.md) (Edit and View), [brief 21](../briefs/21-dont-ask-again.md) ("Don't ask again here"), [brief 24](../briefs/24-audition-keys.md) (audition keys), [brief 25](../briefs/25-compare-images.md) (before/after compare frames)
 
 `card/AskCard.vue` is the card. It knows nothing about the hub or Tauri. `App.vue` is the window
-around it: the queue, Send and Skip, history. `forms/` holds the renderers, their registration, the
+around it: the queue, Send, Stamp and Skip, history. `forms/` holds the renderers, their registration, the
 keyboard contract and markdown. `platform.ts` is the one way renderers reach the host.
 
 ## How it works
 
 - **The window** (`App.vue`) shows the queue of pending asks one card at a time, oldest first,
-  with "n of m" in the meta row. After Send or Skip it moves to the next ask, and hides the window
+  with "n of m" in the meta row. After Send, Stamp or Skip it moves to the next ask, and hides the window
   when none are left. An ask that ends under the user (withdrawn, timed out, its agent gone, or
   answered in the chat) stays up read-only with a banner until they press Enter to continue; if
   the window is hidden at the time, it moves on without the banner. Esc hides the window; it
@@ -273,7 +273,16 @@ keyboard contract and markdown. `platform.ts` is the one way renderers reach the
   `claude-code · parley`). `&theme=<id>` paints a bundled theme (`parley-light`, `parley-dark`);
   without it the pair follows the system.
 
+Stamp sits between Skip and Send when `stampState` finds a recommendation. It emits the completed
+data, note and remember ids through `stamp`; the window records `stamped: true` and the inline card
+passes it through `parley_submit`. The helper supplies blocked reasons; the card also validates the
+completed candidate with JSON Forms' AJV settings, so invalid answers still block it.
+
 ## Rules worth keeping
+
+- **Stamp is mouse only.** No chord, `tabindex="-1"`, prevented mousedown to keep focus, and a
+  click with `detail === 0` is ignored. Ignore clicks during the first 500 ms after mount too:
+  a double click must not stamp the next queued card. No Stamp on read-only or withdrawn cards.
 
 - **Renderers import `platform.ts`, never `@tauri-apps/*`,** so they run in the inline card. The
   card keeps no Tauri import either.

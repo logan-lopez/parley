@@ -55,6 +55,39 @@ interface Scenario {
 }
 
 const scenarios: Record<string, Scenario> = {
+  'window-stamps': {
+    reply: ['stamp'],
+    async run({ client }, check) {
+      const askId = await ask(client, fixture('stamp'))
+      const result = await call(client, 'ask_wait', { askId })
+      const answer = result.structuredContent as any
+      check('fake-hub stamps the recommendations', answer?.stamped === true, answer)
+      check('the helper fills the recommended choice', answer?.answers?.layout?.value === 'Single package (Recommended)', answer)
+      check('the draft is accepted unchanged', answer?.answers?.message?.edited === false, answer)
+    },
+  },
+  'stamp-fallback': {
+    reply: ['stamp'],
+    async run({ client }, check) {
+      const askId = await ask(client, fixture('boolean'))
+      const result = await call(client, 'ask_wait', { askId })
+      const answer = result.structuredContent as any
+      check('no recommendations falls back to an unstamped answer', answer?.status === 'answered' && answer.stamped === undefined, answer)
+    },
+  },
+  'card-stamps': {
+    reply: ['none'],
+    async run({ client, hubLog }, check) {
+      const askId = await ask(client, fixture('choice'))
+      const data = { layout: 'Workspace (Recommended)', node_version: '24 LTS (Recommended)' }
+      await structured(client, 'parley_submit', { askId, kind: 'answer', data, stamped: true })
+      const result = await call(client, 'ask_wait', { askId })
+      check('ask_wait keeps stamped', (result.structuredContent as any)?.stamped === true, result)
+      check('the summary says approved every recommendation', JSON.stringify(result.content).includes('approved every recommendation'), result)
+      await sleep(300)
+      check('resolved keeps stamped', hubLog().some((l) => l.type === 'resolved' && l.outcome?.stamped === true), hubLog())
+    },
+  },
   // The card answers first. The app hears `resolved` with the data, never `cancel`.
   'card-wins': {
     reply: ['none'],

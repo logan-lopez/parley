@@ -5,6 +5,7 @@
 import * as z from 'zod/v4'
 import {
   CAPTURE_MAX_IMAGES,
+  plain,
   REVIEW_DECISIONS,
   type ChoiceOptionSchema,
   type DefaultDecision,
@@ -252,6 +253,7 @@ const reviewOutcome = z.object({
 export const askResultSchema = z.object({
   status: z.enum(['answered', 'dismissed', 'timed_out', 'cancelled']),
   message: z.string(),
+  stamped: z.boolean().optional(),
   answers: z.record(z.string(), z.object({
     header: z.string(),
     value: answerValue,        // null: an optional question left blank
@@ -282,7 +284,7 @@ export type AnswerValue = Answer['value']
 export type ReviewOutcome = z.infer<typeof reviewOutcome>
 
 export type AskOutcome =
-  | { status: 'answered'; data: unknown; note?: string; remember?: string[] }
+  | { status: 'answered'; data: unknown; note?: string; remember?: string[]; stamped?: boolean }
   | { status: 'dismissed'; note?: string }
   | { status: 'cancelled' }   // the MCP client cancelled the call
   | { status: 'timed_out' }
@@ -505,18 +507,18 @@ export function shapeAnswer(
 ): { structured: AskResult; text: string } {
   const note = 'note' in outcome ? outcome.note?.trim() || undefined : undefined
   const text = (status: AskResult['status'], message: string, answers?: AskResult['answers'], remember?: AskResult['remember']) => ({
-    structured: { status, message, ...(answers && { answers }), ...(remember?.length && { remember }), ...(note && { note }) },
+    structured: { status, message, ...(outcome.status === 'answered' && outcome.stamped && { stamped: true }), ...(answers && { answers }), ...(remember?.length && { remember }), ...(note && { note }) },
     text: message,
   })
   switch (outcome.status) {
     case 'dismissed':
       return text('dismissed', note
         ? `The user skipped this without answering, and left a note:\n${quote(note)}\n\n`
-          + "Don't ask it again unless the note says to. Continue with your best judgment and say what you assumed."
-        : "The user skipped this without answering. Don't ask it again. Continue with your best judgment and say what you assumed.")
+          + "That isn't approval. Don't ask it again unless the note says to. Continue with your best judgment and say what you assumed, but if you were asking for permission to go ahead, don't: say in chat that you're waiting."
+        : "The user skipped this without answering. That isn't approval. Don't ask it again. Continue with your best judgment and say what you assumed, but if you were asking for permission to go ahead, don't: say in chat that you're waiting.")
     case 'timed_out':
       return text('timed_out', `No answer after ${duration(input.timeoutSeconds ?? DEFAULT_TIMEOUT_SECONDS)}, so the question was withdrawn. `
-        + 'Continue with your best judgment and say what you assumed, or ask in chat.')
+        + "That isn't approval. Continue with your best judgment and say what you assumed, or ask in chat, but if you were asking for permission to go ahead, don't: say in chat that you're waiting.")
     case 'cancelled':
       return text('cancelled', 'The question was cancelled before the user answered.')
     case 'answered':
@@ -526,7 +528,7 @@ export function shapeAnswer(
   const data = isRecord(outcome.data) ? outcome.data : {}
   const ids = questionIds(input.questions)
   const answers: Record<string, Answer> = {}
-  const lines = ['The user answered:']
+  const lines = [outcome.stamped ? 'The user read this and approved every recommendation:' : 'The user answered:']
   input.questions.forEach((q, i) => {
     const id = ids[i]!
     if (q.type === 'show' && q.editable && q.path !== undefined) {
@@ -785,10 +787,6 @@ function duration(seconds: number): string {
   if (seconds < 120) return `${seconds} seconds`
   const minutes = Math.round(seconds / 60)
   return `${minutes} minutes`
-}
-
-function plain(text: string): string {
-  return text.replace(/\r\n?/g, '\n').trim()
 }
 
 function isFilled(value: unknown): value is string {

@@ -586,12 +586,12 @@ describe('shapeAnswer', () => {
 
   it('shapes every non-answer status', () => {
     const input = fixture('choice')
-    const dismissed = "The user skipped this without answering. Don't ask it again. Continue with your best judgment and say what you assumed."
+    const dismissed = "The user skipped this without answering. That isn't approval. Don't ask it again. Continue with your best judgment and say what you assumed, but if you were asking for permission to go ahead, don't: say in chat that you're waiting."
     expect(shapeAnswer(input, { status: 'dismissed' })).toEqual({
       structured: { status: 'dismissed', message: dismissed },
       text: dismissed,
     })
-    const timedOut = 'No answer after 30 minutes, so the question was withdrawn. Continue with your best judgment and say what you assumed, or ask in chat.'
+    const timedOut = "No answer after 30 minutes, so the question was withdrawn. That isn't approval. Continue with your best judgment and say what you assumed, or ask in chat, but if you were asking for permission to go ahead, don't: say in chat that you're waiting."
     expect(shapeAnswer(input, { status: 'timed_out' })).toEqual({
       structured: { status: 'timed_out', message: timedOut },
       text: timedOut,
@@ -621,7 +621,7 @@ describe('shapeAnswer', () => {
     expect(skipped.structured).toEqual({ status: 'dismissed', message: skipped.text, note: 'Ask me in chat instead.' })
     expect(skipped.text).toBe(
       'The user skipped this without answering, and left a note:\n> Ask me in chat instead.\n\n'
-      + "Don't ask it again unless the note says to. Continue with your best judgment and say what you assumed.",
+      + "That isn't approval. Don't ask it again unless the note says to. Continue with your best judgment and say what you assumed, but if you were asking for permission to go ahead, don't: say in chat that you're waiting.",
     )
 
     // A blank note is no note.

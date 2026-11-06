@@ -158,3 +158,73 @@ export function isWindowOnly(form: FormSpec): boolean {
   return Object.values(properties).some((p) =>
     p?.['x-widget'] === 'path' || (p?.['x-widget'] === 'capture' && p['x-accept'] !== 'text'))
 }
+
+// Shared with answer shaping; renderer textareas normalise line endings.
+export function plain(text: string): string {
+  return text.replace(/\r\n?/g, '\n').trim()
+}
+
+export type StampState =
+  | { kind: 'none' }
+  | { kind: 'blocked'; reasons: string[] }
+  | { kind: 'ready'; data: Record<string, unknown> }
+
+export function stampState(schema: FormSpec['schema'], value: unknown): StampState {
+  const data: Record<string, unknown> = value && typeof value === 'object' && !Array.isArray(value)
+    ? { ...value as Record<string, unknown> } : {}
+  const properties = (schema.properties ?? {}) as Record<string, JsonSchema>
+  const required = new Set((schema.required ?? []) as string[])
+  const reasons: string[] = []
+  let recommendations = 0
+  for (const [id, prop] of Object.entries(properties)) {
+    const title = prop.title ?? id
+    const raw = data[id]
+    const blank = raw == null || raw === '' || (Array.isArray(raw) && !raw.length)
+      || (typeof raw === 'object' && !Object.keys(raw).length)
+      || (prop['x-widget'] === 'review' && Array.isArray(raw) && raw.every((entry) => !entry?.decision))
+    const different = () => reasons.push(`You chose differently on: ${title}`)
+    let recommended = false
+    switch (prop['x-widget']) {
+      case 'choice': {
+        const multi = prop.type === 'array'
+        const options = (multi ? prop.items : prop) as JsonSchema
+        const branches = (options.oneOf ?? options.anyOf ?? []) as ChoiceOptionSchema[]
+        const picks = branches.filter((o) => /\(recommended\)$/i.test(o.title ?? '') && typeof o.const === 'string').map((o) => o.const)
+        if (!(multi ? picks.length : picks.length === 1)) break
+        recommended = true
+        if (blank) data[id] = multi ? picks : picks[0]
+        else if (multi ? !Array.isArray(raw) || raw.length !== picks.length || new Set(raw).size !== picks.length || picks.some((p) => !raw.includes(p)) : raw !== picks[0]) different()
+        break
+      }
+      case 'text': {
+        const draft = prop['x-draft']
+        if (typeof draft !== 'string') break
+        recommended = true
+        if (typeof raw !== 'string' || !raw.trim() || plain(raw) !== plain(draft)) different()
+        break
+      }
+      case 'review': {
+        const preset = prop['x-default-decision']
+        if (typeof preset !== 'string' || preset === 'none') break
+        recommended = true
+        const items = (prop.items ?? []) as ReviewItemSchema[]
+        const entries = Array.isArray(raw) ? raw : []
+        let differs = entries.length > items.length
+        data[id] = items.map((_, i) => {
+          const entry = (entries[i] ?? {}) as ReviewEntry
+          if (entry.decision && entry.decision !== preset) differs = true
+          return { ...entry, decision: entry.decision || preset }
+        })
+        if (differs) different()
+        break
+      }
+      case 'show': {
+        if (prop['x-editable'] && raw != null && (raw as ShowEditValue).text !== prop['x-original']) different()
+        continue
+      }
+    }
+    if (recommended) recommendations++
+    else if (required.has(id) && blank) reasons.push(`Still needs an answer: ${title}`)
+  }
+  return !recommendations ? { kind: 'none' } : reasons.length ? { kind: 'blocked', reasons } : { kind: 'ready', data }
+}

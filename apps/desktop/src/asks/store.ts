@@ -29,6 +29,7 @@ export interface AskRecord {
   endedAt?: number
   endedReason?: CancelReason | 'disconnected'
   data?: unknown
+  stamped?: true
   note?: string   // the user's note for the agent, sent with the answer or skip
   remember?: string[]   // the questions answered with "Don't ask again here" on
   draft?: Draft   // unsent input; dropped on answer, kept on a skip or withdrawal
@@ -120,12 +121,12 @@ window.addEventListener('pagehide', () => {
   }
 })
 
-export function answer(id: string, data: unknown, note?: string, remember?: string[]) {
+export function answer(id: string, data: unknown, note?: string, remember?: string[], stamped?: true) {
   const record = records.get(id)
   if (record?.status !== 'pending') return
   delete record.draft
-  end(record, { status: 'answered', data, ...withNote(note), ...withRemember(remember) })
-  void send(record.conn, { type: 'answer', id, data, ...withNote(note), ...withRemember(remember) })
+  end(record, { status: 'answered', data, ...withNote(note), ...withRemember(remember), ...(stamped && { stamped }) })
+  void send(record.conn, { type: 'answer', id, data, ...withNote(note), ...withRemember(remember), ...(stamped && { stamped }) })
 }
 
 export function dismiss(id: string, note?: string) {
@@ -164,7 +165,7 @@ export const hubHandlers: HubHandlers = {
       save(existing)
     } else if (existing.status === 'answered') {
       // The answer was sent into a connection that had just died.
-      void send(conn, { type: 'answer', id: ask.id, data: existing.data, ...withNote(existing.note), ...withRemember(existing.remember) })
+      void send(conn, { type: 'answer', id: ask.id, data: existing.data, ...withNote(existing.note), ...withRemember(existing.remember), ...(existing.stamped && { stamped: true }) })
     } else if (existing.status === 'dismissed') {
       void send(conn, { type: 'dismissed', id: ask.id, ...withNote(existing.note) })
     }
@@ -186,12 +187,13 @@ export const hubHandlers: HubHandlers = {
     if (!record || record.conn !== conn) return false
     if (!['pending', 'orphaned', 'answered', 'dismissed'].includes(record.status)) return true
     delete record.endedReason
+    delete record.stamped
     delete record.data
     delete record.note
     delete record.remember   // the chat's card has no such toggle
     if (outcome.status === 'answered') {
       delete record.draft
-      end(record, { status: 'answered', answeredIn: 'chat', data: outcome.data, ...withNote(outcome.note) })
+      end(record, { status: 'answered', answeredIn: 'chat', data: outcome.data, ...(outcome.stamped && { stamped: true }), ...withNote(outcome.note) })
     } else {
       end(record, { status: 'dismissed', answeredIn: 'chat', ...withNote(outcome.note) })
     }

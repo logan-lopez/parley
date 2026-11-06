@@ -19,7 +19,9 @@ front of you. The tray count still includes it.
   "Answered in the chat", and history records it as answered in the chat.
 - **Answer in the window,** and the chat's card turns into a record of how it ended ("Answered in
   Parley.").
-- **Skip** in either place works the same way.
+- **Stamp** in either place approves every recommendation, as in the window. It's mouse only.
+  History says "Stamped in the chat" when you stamp there.
+- **Skip** in either place works the same way, and isn't approval to go ahead.
 - **Stop the chat** while it waits, and the ask is cancelled: the window shows "Withdrawn by the
   agent."
 

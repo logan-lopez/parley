@@ -113,7 +113,7 @@ async function watch(id: string) {
   }
 }
 
-async function send(kind: 'answer' | 'skip', data: unknown, note: string) {
+async function send(kind: 'answer' | 'skip', data: unknown, note: string, stamped?: true) {
   if (!askId.value || sending.value) return
   sendError.value = undefined
   sending.value = { data, note }
@@ -124,6 +124,7 @@ async function send(kind: 'answer' | 'skip', data: unknown, note: string) {
         askId: askId.value,
         kind,
         // JSON Forms hands back a Vue proxy, which postMessage's structured clone can't copy.
+        ...(stamped && { stamped }),
         ...(kind === 'answer' && { data: JSON.parse(JSON.stringify(data ?? null)) }),
         ...(note.trim() && { note }),
       },
@@ -199,6 +200,7 @@ const expiresAt = computed(() => shownAt + (input.value?.timeoutSeconds ?? DEFAU
       :initial-note="draft.note"
       @change="draft.data = $event"
       @note="draft.note = $event"
+      @stamp="(data, note) => send('answer', data, note, true)"
       @submit="(data, note) => send('answer', data, note)"
       @skip="(note) => send('skip', undefined, note)"
     />

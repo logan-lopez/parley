@@ -1,9 +1,10 @@
 <script setup lang="ts">
-// One ask as a card: meta line, title, the questions, Skip and Send. It knows
+// One ask as a card: meta line, title, the questions, Skip, Stamp and Send. It knows
 // nothing about the hub or Tauri, so the gallery renders it as-is.
 import { computed, nextTick, onBeforeUnmount, onMounted, provide, ref, shallowRef } from 'vue'
+import { createAjv } from '@jsonforms/core'
 import { JsonForms, type JsonFormsChangeEvent } from '@jsonforms/vue'
-import type { FormSpec, Media } from '@parley/protocol'
+import { stampState, type FormSpec, type Media } from '@parley/protocol'
 import { firstToAnswer, focusQuestion, questionsIn } from '../forms/keyboard'
 import { renderers } from '../forms/renderers'
 import { REMEMBER } from '../forms/remember'
@@ -35,6 +36,7 @@ const emit = defineEmits<{
   note: [note: string]
   remember: [ids: string[]]
   submit: [data: unknown, note: string, remember: string[]]
+  stamp: [data: unknown, note: string, remember: string[]]
   skip: [note: string]
   prev: []
   next: []
@@ -122,6 +124,28 @@ function isBlank(value: unknown) {
   if (value === undefined) return true
   if (Array.isArray(value)) return !value.length
   return typeof value === 'object' && value !== null && !Object.keys(value).length
+}
+
+// Validate the completed candidate, so errors on fields Stamp fills disappear,
+// while malformed answers to other questions still block it.
+const stamp = computed(() => stampState(props.form.schema, data.value))
+const stampValidator = computed(() => createAjv().compile(props.form.schema))
+const stampProblems = computed(() => {
+  const state = stamp.value
+  if (state.kind === 'blocked') return state.reasons
+  if (state.kind !== 'ready') return []
+  const validate = stampValidator.value
+  if (validate(state.data)) return []
+  const properties = (props.form.schema.properties ?? {}) as Record<string, { title?: string }>
+  return (validate.errors ?? []).map((error) => {
+    const key = error.instancePath.split('/')[1] || String(error.params.missingProperty ?? '')
+    return `${properties[key]?.title ?? key}: ${error.message ?? 'is invalid'}`
+  })
+})
+let mountedAt = Infinity
+function stampClick(event: MouseEvent) {
+  if (event.detail === 0 || performance.now() - mountedAt < 500 || locked.value || stampProblems.value.length) return
+  if (stamp.value.kind === 'ready') emit('stamp', stamp.value.data, note.value, remember.value)
 }
 
 function submit() {
@@ -257,6 +281,7 @@ function onWindowFocus() {
 }
 
 onMounted(() => {
+  mountedAt = performance.now()
   window.addEventListener('keydown', onKey)
   window.addEventListener('focus', onWindowFocus)
   document.addEventListener('focusin', onFocusIn)
@@ -352,6 +377,9 @@ onBeforeUnmount(() => {
           <button type="button" class="button" @click="skip">
             Skip <kbd class="key">⌘.</kbd>
           </button>
+          <button v-if="stamp.kind !== 'none'" type="button" class="button" tabindex="-1"
+            :disabled="stampProblems.length > 0" :title="stampProblems.length ? stampProblems.join('\n') : 'Approve every recommendation'"
+            @mousedown.prevent @click="stampClick">Stamp</button>
           <button type="button" class="button primary" :disabled="!valid" @click="submit">
             Send <kbd class="key">↵</kbd>
           </button>

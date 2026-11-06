@@ -126,7 +126,7 @@ function isObject(value: unknown): value is Record<string, unknown> {
 function inlineOutcome(value: unknown): InlineOutcome | undefined {
   if (!isObject(value)) return undefined
   const note = typeof value.note === 'string' ? { note: value.note } : {}
-  if (value.status === 'answered' && 'data' in value) return { status: 'answered', data: value.data, ...note }
+  if (value.status === 'answered' && 'data' in value) return { status: 'answered', data: value.data, ...(value.stamped === true && { stamped: true }), ...note }
   if (value.status === 'dismissed') return { status: 'dismissed', ...note }
   return undefined
 }

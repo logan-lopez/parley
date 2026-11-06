@@ -198,10 +198,27 @@ with no Zod, so the window can import it from the root entry.
   Without `edits` (the gallery) the line says the server saves it, and `extra.files`, when given,
   tells an edit from the file as it was. A draft's answer stays the full text: the diff is for
   files ([decision](../decisions/drafts-to-edit.md)).
-  Skips and timeouts each get a sentence that tells the model what to do next (don't ask again,
-  continue and say what you assumed); a cancel only says so. `message` is the same text.
+  Skips and timeouts say they aren't approval: continue and say what you assumed for ordinary
+  questions, but wait in chat when asking permission; don't re-ask a skipped question; a cancel only says so. `message` is the same text.
 - **Fixtures** in `packages/protocol/fixtures/` are `ask` tool input, at least one per question type.
   The gallery, `fake-ask` and the desktop tests all read them.
+
+## Recommendations and Stamp
+
+`stampState(schema, data)` in `form.ts` is pure and imports no Zod. It returns `none` when there
+are no recommendations, `blocked` with reasons naming the question, or `ready` with a new data
+object. Single choices need exactly one label ending in `(Recommended)` (case insensitive);
+multi choices use every such label and compare answers as sets. Blanks are filled, while a
+conflicting choice blocks. A draft must still match under `plain` (normalised line endings,
+trimmed edges); clearing it blocks. A review preset other than `none` fills missing decisions,
+rejects different decisions, and keeps comments. Required blanks without recommendations block;
+other answers stay. Plain shows are ignored; editing a shown file blocks Stamp.
+The helper doesn't validate JSON Schema; the card validates the completed candidate separately.
+
+A stamp keeps status `answered` and adds `stamped: true`. Its summary starts "The user read this
+and approved every recommendation:"; ordinary answers still start "The user answered:". The
+server passes the claim through without rechecking it. Skips and timeouts explicitly say they
+aren't approval and tell an agent asking permission to wait in chat.
 
 ## Rules worth keeping
 
