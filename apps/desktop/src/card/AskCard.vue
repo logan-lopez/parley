@@ -1,320 +1,399 @@
 <script setup lang="ts">
 // One ask as a card: meta line, title, the questions, Skip, Stamp and Send. It knows
 // nothing about the hub or Tauri, so the gallery renders it as-is.
-import { computed, nextTick, onBeforeUnmount, onMounted, provide, ref, shallowRef } from 'vue'
-import { createAjv } from '@jsonforms/core'
-import { JsonForms, type JsonFormsChangeEvent } from '@jsonforms/vue'
-import { stampState, type FormSpec, type Media } from '@parley/protocol'
-import { firstToAnswer, focusQuestion, questionsIn } from '../forms/keyboard'
-import { renderers } from '../forms/renderers'
-import { REMEMBER } from '../forms/remember'
-import { MEDIA, mediaContext } from '../forms/media'
-import { player } from '../forms/player'
-import { useNow } from './now'
+import {
+  computed,
+  nextTick,
+  onBeforeUnmount,
+  onMounted,
+  provide,
+  ref,
+  shallowRef,
+} from "vue";
+import { createAjv } from "@jsonforms/core";
+import { JsonForms, type JsonFormsChangeEvent } from "@jsonforms/vue";
+import { stampState, type FormSpec, type Media } from "@parley/protocol";
+import { firstToAnswer, focusQuestion, questionsIn } from "../forms/keyboard";
+import { renderers } from "../forms/renderers";
+import { REMEMBER } from "../forms/remember";
+import { MEDIA, mediaContext } from "../forms/media";
+import { player } from "../forms/player";
+import { useNow } from "./now";
 
-type ErrorObject = NonNullable<JsonFormsChangeEvent['errors']>[number]
+type ErrorObject = NonNullable<JsonFormsChangeEvent["errors"]>[number];
 
 const props = defineProps<{
-  form: FormSpec
-  source: string
-  createdAt: number
-  expiresAt?: number
-  position?: number   // 1-based place in the queue
-  total?: number
-  withdrawn?: string  // why it ended under the user; the card goes read-only
-  withdrawnHint?: string  // the footer line then; "Nothing was sent." by default
-  readonly?: boolean  // history: no Send or Skip, no keys, a `footer` slot instead
-  embedded?: boolean  // in a host's page (the MCP Apps card): no focus on mount, no esc hint
-  dragRegion?: boolean  // the window's: the meta row drags it (the attribute is Tauri's; the card never imports Tauri)
-  initialData?: unknown
-  initialNote?: string
-  initialRemember?: string[]   // question ids with "Don't ask again here" on
-}>()
+  form: FormSpec;
+  source: string;
+  createdAt: number;
+  expiresAt?: number;
+  position?: number; // 1-based place in the queue
+  total?: number;
+  withdrawn?: string; // why it ended under the user; the card goes read-only
+  withdrawnHint?: string; // the footer line then; "Nothing was sent." by default
+  readonly?: boolean; // history: no Send or Skip, no keys, a `footer` slot instead
+  embedded?: boolean; // in a host's page (the MCP Apps card): no focus on mount, no esc hint
+  dragRegion?: boolean; // the window's: the meta row drags it (the attribute is Tauri's; the card never imports Tauri)
+  initialData?: unknown;
+  initialNote?: string;
+  initialRemember?: string[]; // question ids with "Don't ask again here" on
+}>();
 
 const emit = defineEmits<{
-  change: [data: unknown]
-  note: [note: string]
-  remember: [ids: string[]]
-  submit: [data: unknown, note: string, remember: string[]]
-  stamp: [data: unknown, note: string, remember: string[]]
-  skip: [note: string]
-  prev: []
-  next: []
-  continue: []
-}>()
+  change: [data: unknown];
+  note: [note: string];
+  remember: [ids: string[]];
+  submit: [data: unknown, note: string, remember: string[]];
+  stamp: [data: unknown, note: string, remember: string[]];
+  skip: [note: string];
+  prev: [];
+  next: [];
+  continue: [];
+}>();
 
-const root = ref<HTMLElement>()
-const emptyMedia: Media = {}
-provide(MEDIA, mediaContext(() => (props.form.schema['x-media'] as Media | undefined) ?? emptyMedia))
-const body = ref<HTMLElement>()
-const data = shallowRef<unknown>(props.initialData ?? {})
-const errors = shallowRef<ErrorObject[]>([])
-const nudge = ref(false)
+const root = ref<HTMLElement>();
+const emptyMedia: Media = {};
+provide(
+  MEDIA,
+  mediaContext(
+    () => (props.form.schema["x-media"] as Media | undefined) ?? emptyMedia,
+  ),
+);
+const body = ref<HTMLElement>();
+const data = shallowRef<unknown>(props.initialData ?? {});
+const errors = shallowRef<ErrorObject[]>([]);
+const nudge = ref(false);
 
 // A note for the agent, sent with an answer or a skip. Collapsed until wanted.
-const note = ref(props.initialNote ?? '')
-const noteOpen = ref(!!note.value)
-const noteInput = ref<HTMLTextAreaElement>()
+const note = ref(props.initialNote ?? "");
+const noteOpen = ref(!!note.value);
+const noteInput = ref<HTMLTextAreaElement>();
 
 async function openNote() {
-  noteOpen.value = true
-  await nextTick()
-  noteInput.value?.focus()
+  noteOpen.value = true;
+  await nextTick();
+  noteInput.value?.focus();
 }
 
 function onNoteInput(event: Event) {
-  note.value = (event.target as HTMLTextAreaElement).value
-  emit('note', note.value)
+  note.value = (event.target as HTMLTextAreaElement).value;
+  emit("note", note.value);
 }
 
 function onChange(event: JsonFormsChangeEvent) {
-  data.value = event.data
-  errors.value = event.errors ?? []
-  emit('change', event.data)
+  data.value = event.data;
+  errors.value = event.errors ?? [];
+  emit("change", event.data);
 }
 
-const valid = computed(() => errors.value.length === 0)
-const locked = computed(() => props.readonly || !!props.withdrawn)
+const valid = computed(() => errors.value.length === 0);
+const locked = computed(() => props.readonly || !!props.withdrawn);
 
 // "Don't ask again here", per question. The inline card has no way to send it, so it offers none.
-const remember = ref<string[]>([...(props.initialRemember ?? [])])
+const remember = ref<string[]>([...(props.initialRemember ?? [])]);
 if (!props.embedded) {
   provide(REMEMBER, {
     ids: remember,
     locked,
     toggle(id) {
-      if (locked.value) return
-      remember.value = remember.value.includes(id) ? remember.value.filter((x) => x !== id) : [...remember.value, id]
-      emit('remember', remember.value)
+      if (locked.value) return;
+      remember.value = remember.value.includes(id)
+        ? remember.value.filter((x) => x !== id)
+        : [...remember.value, id];
+      emit("remember", remember.value);
     },
-  })
+  });
 }
 
 // What stands between the user and Send, by question header.
 const problems = computed(() => {
-  const properties = (props.form.schema.properties ?? {}) as Record<string, { title?: string }>
-  const record = (data.value ?? {}) as Record<string, unknown>
-  const missing = new Set<string>()
-  const invalid = new Map<string, string>()
-  const undecided = new Map<string, Set<string>>()   // a review's items with no decision yet
+  const properties = (props.form.schema.properties ?? {}) as Record<
+    string,
+    { title?: string }
+  >;
+  const record = (data.value ?? {}) as Record<string, unknown>;
+  const missing = new Set<string>();
+  const invalid = new Map<string, string>();
+  const undecided = new Map<string, Set<string>>(); // a review's items with no decision yet
   for (const error of errors.value) {
-    const [, top, item] = error.instancePath.split('/')
-    if (error.keyword === 'required' && top && item !== undefined) {
-      undecided.set(top, (undecided.get(top) ?? new Set()).add(item))
-      continue
+    const [, top, item] = error.instancePath.split("/");
+    if (error.keyword === "required" && top && item !== undefined) {
+      undecided.set(top, (undecided.get(top) ?? new Set()).add(item));
+      continue;
     }
     // A required error at the root names the question; one inside a capture's object is about that question.
-    const key = error.keyword === 'required' && !top ? String(error.params.missingProperty) : top
-    if (!key) continue
-    const value = record[key]
-    const title = properties[key]?.title ?? key
-    if (isBlank(value)) missing.add(title)
-    else if (!invalid.has(title)) invalid.set(title, error.message ?? 'is invalid')
+    const key =
+      error.keyword === "required" && !top
+        ? String(error.params.missingProperty)
+        : top;
+    if (!key) continue;
+    const value = record[key];
+    const title = properties[key]?.title ?? key;
+    if (isBlank(value)) missing.add(title);
+    else if (!invalid.has(title))
+      invalid.set(title, error.message ?? "is invalid");
   }
-  const parts: string[] = []
-  if (missing.size) parts.push(`Still needs an answer: ${[...missing].join(', ')}`)
+  const parts: string[] = [];
+  if (missing.size)
+    parts.push(`Still needs an answer: ${[...missing].join(", ")}`);
   for (const [key, items] of undecided) {
-    parts.push(`${properties[key]?.title ?? key}: ${items.size} ${items.size === 1 ? 'item' : 'items'} undecided`)
+    parts.push(
+      `${properties[key]?.title ?? key}: ${items.size} ${items.size === 1 ? "item" : "items"} undecided`,
+    );
   }
-  for (const [title, message] of invalid) parts.push(`${title} ${message}`)
-  return parts
-})
+  for (const [title, message] of invalid) parts.push(`${title} ${message}`);
+  return parts;
+});
 
 function isBlank(value: unknown) {
-  if (value === undefined) return true
-  if (Array.isArray(value)) return !value.length
-  return typeof value === 'object' && value !== null && !Object.keys(value).length
+  if (value === undefined) return true;
+  if (Array.isArray(value)) return !value.length;
+  return (
+    typeof value === "object" && value !== null && !Object.keys(value).length
+  );
 }
 
 // Validate the completed candidate, so errors on fields Stamp fills disappear,
 // while malformed answers to other questions still block it.
-const stamp = computed(() => stampState(props.form.schema, data.value))
-const stampValidator = computed(() => createAjv().compile(props.form.schema))
+const stamp = computed(() => stampState(props.form.schema, data.value));
+const stampValidator = computed(() => createAjv().compile(props.form.schema));
 const stampProblems = computed(() => {
-  const state = stamp.value
-  if (state.kind === 'blocked') return state.reasons
-  if (state.kind !== 'ready') return []
-  const validate = stampValidator.value
-  if (validate(state.data)) return []
-  const properties = (props.form.schema.properties ?? {}) as Record<string, { title?: string }>
+  const state = stamp.value;
+  if (state.kind === "blocked") return state.reasons;
+  if (state.kind !== "ready") return [];
+  const validate = stampValidator.value;
+  if (validate(state.data)) return [];
+  const properties = (props.form.schema.properties ?? {}) as Record<
+    string,
+    { title?: string }
+  >;
   return (validate.errors ?? []).map((error) => {
-    const key = error.instancePath.split('/')[1] || String(error.params.missingProperty ?? '')
-    return `${properties[key]?.title ?? key}: ${error.message ?? 'is invalid'}`
-  })
-})
-let mountedAt = Infinity
+    const key =
+      error.instancePath.split("/")[1] ||
+      String(error.params.missingProperty ?? "");
+    return `${properties[key]?.title ?? key}: ${error.message ?? "is invalid"}`;
+  });
+});
+let mountedAt = Infinity;
 function stampClick(event: MouseEvent) {
-  if (event.detail === 0 || performance.now() - mountedAt < 500 || locked.value || stampProblems.value.length) return
-  if (stamp.value.kind === 'ready') emit('stamp', stamp.value.data, note.value, remember.value)
+  if (
+    event.detail === 0 ||
+    performance.now() - mountedAt < 500 ||
+    locked.value ||
+    stampProblems.value.length
+  )
+    return;
+  if (stamp.value.kind === "ready")
+    emit("stamp", stamp.value.data, note.value, remember.value);
 }
 
 function submit() {
-  if (locked.value) return
+  if (locked.value) return;
   if (!valid.value) {
-    nudge.value = true
-    setTimeout(() => (nudge.value = false), 600)
-    return
+    nudge.value = true;
+    setTimeout(() => (nudge.value = false), 600);
+    return;
   }
-  emit('submit', data.value, note.value, remember.value)
+  emit("submit", data.value, note.value, remember.value);
 }
 
 function skip() {
-  if (!locked.value) emit('skip', note.value)
+  if (!locked.value) emit("skip", note.value);
 }
 
 // Time.
-const now = useNow()
-const age = computed(() => ago(now.value - props.createdAt))
-const remaining = computed(() => (props.expiresAt ? Math.max(0, props.expiresAt - now.value) : undefined))
+const now = useNow();
+const age = computed(() => ago(now.value - props.createdAt));
+const remaining = computed(() =>
+  props.expiresAt ? Math.max(0, props.expiresAt - now.value) : undefined,
+);
 
 function ago(ms: number) {
-  const s = Math.floor(ms / 1000)
-  if (s < 45) return 'just now'
-  const m = Math.round(s / 60)
-  if (m < 60) return `${m} min ago`
-  const h = Math.floor(m / 60)
-  if (h < 48) return `${h} h ago`
-  return `${Math.floor(h / 24)} d ago`
+  const s = Math.floor(ms / 1000);
+  if (s < 45) return "just now";
+  const m = Math.round(s / 60);
+  if (m < 60) return `${m} min ago`;
+  const h = Math.floor(m / 60);
+  if (h < 48) return `${h} h ago`;
+  return `${Math.floor(h / 24)} d ago`;
 }
 
 function clock(ms: number) {
-  const s = Math.ceil(ms / 1000)
-  const m = Math.floor(s / 60)
-  return m >= 60 ? `${Math.floor(m / 60)}:${String(m % 60).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}` : `${m}:${String(s % 60).padStart(2, '0')}`
+  const s = Math.ceil(ms / 1000);
+  const m = Math.floor(s / 60);
+  return m >= 60
+    ? `${Math.floor(m / 60)}:${String(m % 60).padStart(2, "0")}:${String(s % 60).padStart(2, "0")}`
+    : `${m}:${String(s % 60).padStart(2, "0")}`;
 }
 
 // Keyboard. Questions are found through the DOM contract in forms/keyboard.ts.
 function questions() {
-  return root.value ? questionsIn(root.value) : []
+  return root.value ? questionsIn(root.value) : [];
 }
 
 function activeQuestion(): HTMLElement | undefined {
-  const all = questions()
-  return all.find((q) => q.contains(document.activeElement)) ?? firstToAnswer(all)
+  const all = questions();
+  return (
+    all.find((q) => q.contains(document.activeElement)) ?? firstToAnswer(all)
+  );
 }
 
 function moveQuestion(step: number) {
-  const all = questions()
-  if (!all.length) return
-  const i = all.findIndex((q) => q.contains(document.activeElement))
-  const next = i === -1 ? (step > 0 ? 0 : all.length - 1) : (i + step + all.length) % all.length
-  focusQuestion(all[next])
+  const all = questions();
+  if (!all.length) return;
+  const i = all.findIndex((q) => q.contains(document.activeElement));
+  const next =
+    i === -1
+      ? step > 0
+        ? 0
+        : all.length - 1
+      : (i + step + all.length) % all.length;
+  focusQuestion(all[next]);
 }
 
 function pick(n: number) {
-  const question = activeQuestion()
-  const target = question?.querySelector<HTMLElement>(`[data-pick="${n}"]`)
-  if (!question || !target) return
+  const question = activeQuestion();
+  const target = question?.querySelector<HTMLElement>(`[data-pick="${n}"]`);
+  if (!question || !target) return;
   // A text box (the Other row) is focused, not clicked.
-  if (target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement) return target.focus()
-  target.click()
-  if (question.hasAttribute('data-advance-on-pick')) {
+  if (
+    target instanceof HTMLInputElement ||
+    target instanceof HTMLTextAreaElement
+  )
+    return target.focus();
+  target.click();
+  if (question.hasAttribute("data-advance-on-pick")) {
     // Never onto the note: Enter there would open it instead of sending.
-    const all = questions().filter((q) => !q.hasAttribute('data-note'))
-    const next = all[all.indexOf(question) + 1]
-    if (next) return focusQuestion(next)
+    const all = questions().filter((q) => !q.hasAttribute("data-note"));
+    const next = all[all.indexOf(question) + 1];
+    if (next) return focusQuestion(next);
   }
-  target.focus()
+  target.focus();
 }
 
 function isTyping(el: Element | null) {
-  return !!el?.matches('input[type="text"], input:not([type]), textarea, [contenteditable="true"]')
+  return !!el?.matches(
+    'input[type="text"], input:not([type]), textarea, [contenteditable="true"]',
+  );
 }
 
 function onKey(event: KeyboardEvent) {
-  if (props.readonly) return
-  const target = document.activeElement
-  const mod = event.metaKey || event.ctrlKey || event.altKey
+  if (props.readonly) return;
+  const target = document.activeElement;
+  const mod = event.metaKey || event.ctrlKey || event.altKey;
 
-  if (event.metaKey && event.key === '[') return void (event.preventDefault(), emit('prev'))
-  if (event.metaKey && event.key === ']') return void (event.preventDefault(), emit('next'))
+  if (event.metaKey && event.key === "[")
+    return void (event.preventDefault(), emit("prev"));
+  if (event.metaKey && event.key === "]")
+    return void (event.preventDefault(), emit("next"));
 
   if (props.withdrawn) {
-    if (event.key === 'Enter') {
-      event.preventDefault()
-      emit('continue')
+    if (event.key === "Enter") {
+      event.preventDefault();
+      emit("continue");
     }
-    return
+    return;
   }
 
-  if (event.metaKey && event.key === 'Enter') return void (event.preventDefault(), submit())
-  if (event.metaKey && event.key.toLowerCase() === 'n' && !event.shiftKey) return void (event.preventDefault(), openNote())
+  if (event.metaKey && event.key === "Enter")
+    return void (event.preventDefault(), submit());
+  if (event.metaKey && event.key.toLowerCase() === "n" && !event.shiftKey)
+    return void (event.preventDefault(), openNote());
   // Cmd+. is macOS's cancel, and unlike Cmd+Backspace it isn't an editing key, so it works from text fields.
-  if (event.metaKey && event.key === '.') return void (event.preventDefault(), skip())
+  if (event.metaKey && event.key === ".")
+    return void (event.preventDefault(), skip());
 
-  if (event.key === 'Tab' && !mod) {
-    event.preventDefault()
-    return moveQuestion(event.shiftKey ? -1 : 1)
+  if (event.key === "Tab" && !mod) {
+    event.preventDefault();
+    return moveQuestion(event.shiftKey ? -1 : 1);
   }
 
-  if (event.key === 'Enter' && !mod && !event.shiftKey) {
-    if (target?.matches('textarea')) return
+  if (event.key === "Enter" && !mod && !event.shiftKey) {
+    if (target?.matches("textarea")) return;
     // A focused option that isn't picked yet: Enter picks it, like Space.
-    if (target instanceof HTMLElement && target.matches('[data-pick]:not(input):not(textarea)') && target.getAttribute('aria-checked') !== 'true') {
-      event.preventDefault()
-      return pick(Number(target.dataset.pick))
+    if (
+      target instanceof HTMLElement &&
+      target.matches("[data-pick]:not(input):not(textarea)") &&
+      target.getAttribute("aria-checked") !== "true"
+    ) {
+      event.preventDefault();
+      return pick(Number(target.dataset.pick));
     }
     // Other buttons (the path picker, remove) keep their own Enter.
-    if (target?.matches('button:not([data-pick])')) return
-    event.preventDefault()
-    return submit()
+    if (target?.matches("button:not([data-pick])")) return;
+    event.preventDefault();
+    return submit();
   }
 
   // A renderer that used the digit itself (a review row with its own decisions) prevented it.
-  if (event.defaultPrevented) return
+  if (event.defaultPrevented) return;
   if (/^[1-9]$/.test(event.key) && !mod && !isTyping(target)) {
-    event.preventDefault()
-    pick(Number(event.key))
+    event.preventDefault();
+    pick(Number(event.key));
   }
 }
 
 // Back in the window (hotkey, or after a link opened the browser): put focus
 // back where it was, without scrolling. The first question to answer if there's nowhere.
-let lastFocused: HTMLElement | null = null
+let lastFocused: HTMLElement | null = null;
 function onFocusIn(event: FocusEvent) {
-  if (root.value?.contains(event.target as Node)) lastFocused = event.target as HTMLElement
+  if (root.value?.contains(event.target as Node))
+    lastFocused = event.target as HTMLElement;
 }
 function onWindowFocus() {
-  if (root.value?.contains(document.activeElement)) return
-  const target = lastFocused?.isConnected ? lastFocused : firstToAnswer(questions())?.querySelector<HTMLElement>('[data-primary]')
-  target?.focus({ preventScroll: true })
+  if (root.value?.contains(document.activeElement)) return;
+  const target = lastFocused?.isConnected
+    ? lastFocused
+    : firstToAnswer(questions())?.querySelector<HTMLElement>("[data-primary]");
+  target?.focus({ preventScroll: true });
 }
 
 onMounted(() => {
-  mountedAt = performance.now()
-  window.addEventListener('keydown', onKey)
-  window.addEventListener('focus', onWindowFocus)
-  document.addEventListener('focusin', onFocusIn)
+  mountedAt = performance.now();
+  window.addEventListener("keydown", onKey);
+  window.addEventListener("focus", onWindowFocus);
+  document.addEventListener("focusin", onFocusIn);
   void nextTick(() => {
     // Never pull focus out of the host's own input.
-    if (props.embedded) return
+    if (props.embedded) return;
     // Read-only: focus the body, so the arrow keys scroll it.
-    if (props.readonly) body.value?.focus({ preventScroll: true })
-    else focusQuestion(firstToAnswer(questions()))
-    body.value?.scrollTo({ top: 0 })   // keep the title in view
-  })
-})
+    if (props.readonly) body.value?.focus({ preventScroll: true });
+    else focusQuestion(firstToAnswer(questions()));
+    body.value?.scrollTo({ top: 0 }); // keep the title in view
+  });
+});
 onBeforeUnmount(() => {
-  player.stop()   // an answered or withdrawn ask stops its sound
-  window.removeEventListener('keydown', onKey)
-  window.removeEventListener('focus', onWindowFocus)
-  document.removeEventListener('focusin', onFocusIn)
-})
+  player.stop(); // an answered or withdrawn ask stops its sound
+  window.removeEventListener("keydown", onKey);
+  window.removeEventListener("focus", onWindowFocus);
+  document.removeEventListener("focusin", onFocusIn);
+});
 </script>
 
 <template>
-  <article ref="root" class="card" :class="{ withdrawn: !!withdrawn && !readonly }">
-    <header class="meta" :data-tauri-drag-region="dragRegion ? 'deep' : undefined">
+  <article
+    ref="root"
+    class="card"
+    :class="{ withdrawn: !!withdrawn && !readonly }"
+  >
+    <header
+      class="meta"
+      :data-tauri-drag-region="dragRegion ? 'deep' : undefined"
+    >
       <span class="source" :title="source">{{ source }}</span>
       <span class="sep">·</span>
       <span>{{ age }}</span>
       <template v-if="remaining !== undefined && !locked">
         <span class="sep">·</span>
-        <span :class="{ urgent: remaining < 60_000 }">expires in {{ clock(remaining) }}</span>
+        <span :class="{ urgent: remaining < 60_000 }"
+          >expires in {{ clock(remaining) }}</span
+        >
       </template>
       <span class="meta-end">
         <slot name="meta" />
-        <span v-if="position && total" class="position">{{ position }} of {{ total }}</span>
+        <span v-if="position && total" class="position"
+          >{{ position }} of {{ total }}</span
+        >
       </span>
     </header>
 
@@ -337,7 +416,13 @@ onBeforeUnmount(() => {
         <p class="note-text">{{ note }}</p>
       </section>
       <section v-else-if="!locked || note" class="note" data-question data-note>
-        <button v-if="!noteOpen" type="button" class="note-toggle" data-primary @click="openNote">
+        <button
+          v-if="!noteOpen"
+          type="button"
+          class="note-toggle"
+          data-primary
+          @click="openNote"
+        >
           Add a note for the agent <kbd class="key">⌘N</kbd>
         </button>
         <template v-else>
@@ -361,7 +446,7 @@ onBeforeUnmount(() => {
     <footer class="actions">
       <slot v-if="readonly" name="footer" />
       <template v-else-if="withdrawn">
-        <span class="hints">{{ withdrawnHint ?? 'Nothing was sent.' }}</span>
+        <span class="hints">{{ withdrawnHint ?? "Nothing was sent." }}</span>
         <button type="button" class="button primary" @click="emit('continue')">
           Continue <kbd class="key">↵</kbd>
         </button>
@@ -372,15 +457,53 @@ onBeforeUnmount(() => {
         </p>
         <div class="buttons">
           <span class="hints">
-            <kbd>1</kbd>–<kbd>9</kbd> pick · <kbd>⇥</kbd> next<template v-if="(total ?? 0) > 1"> · <kbd>⌘[</kbd> <kbd>⌘]</kbd> queue</template><template v-if="!embedded"> · <kbd>esc</kbd> hide</template>
+            <kbd>1</kbd>–<kbd>9</kbd> pick · <kbd>⇥</kbd> next<template
+              v-if="(total ?? 0) > 1"
+            >
+              · <kbd>⌘[</kbd> <kbd>⌘]</kbd> queue</template
+            ><template v-if="!embedded"> · <kbd>esc</kbd> hide</template>
           </span>
           <button type="button" class="button" @click="skip">
             Skip <kbd class="key">⌘.</kbd>
           </button>
-          <button v-if="stamp.kind !== 'none'" type="button" class="button" tabindex="-1"
-            :disabled="stampProblems.length > 0" :title="stampProblems.length ? stampProblems.join('\n') : 'Approve every recommendation'"
-            @mousedown.prevent @click="stampClick">Stamp</button>
-          <button type="button" class="button primary" :disabled="!valid" @click="submit">
+          <button
+            v-if="stamp.kind !== 'none'"
+            type="button"
+            class="button"
+            tabindex="-1"
+            :disabled="stampProblems.length > 0"
+            :title="
+              stampProblems.length
+                ? stampProblems.join('\n')
+                : 'Approve every recommendation'
+            "
+            @mousedown.prevent
+            @click="stampClick"
+          >
+            <svg
+              style="padding-right: 3px"
+              width="14"
+              height="14"
+              viewBox="0 0 24 24"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                fill="none"
+                stroke="currentColor"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M14 13V8.5C14 7 15 7 15 5a3 3 0 0 0-6 0c0 2 1 2 1 3.5V13m10 2.5a2.5 2.5 0 0 0-2.5-2.5h-11A2.5 2.5 0 0 0 4 15.5V17a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1zM5 22h14"
+              />
+            </svg>
+            Stamp
+          </button>
+          <button
+            type="button"
+            class="button primary"
+            :disabled="!valid"
+            @click="submit"
+          >
             Send <kbd class="key">↵</kbd>
           </button>
         </div>
